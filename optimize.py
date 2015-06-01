@@ -25,12 +25,6 @@ root_logger = logging.getLogger()
 root_logger.addHandler(logging.StreamHandler(STDOUT))
 logger = logging.getLogger("optimize")
 
-# First check if ROOTCOREDIR exists, implies ROOTCORE is set up
-try:
-  os.environ['ROOTCOREDIR']
-except KeyError:
-  raise OSError("It appears RootCore is not set up. Please set up RootCore and then try running me again. Hint: try running `rcSetup`")
-
 # import all libraries
 import argparse
 
@@ -115,7 +109,6 @@ if __name__ == "__main__":
                       dest='tree_name',
                       help='Specify the tree that contains the StoreGate structure. Default: CollectionTree',
                       default='oTree')
-                      required=False,
 
   '''general arguments for verbosity'''
   parser.add_argument('-v',
@@ -174,6 +167,8 @@ if __name__ == "__main__":
 
       # Print some information
       logger.info('Number of input events: %s' % t.GetEntries())
+
+      import pdb; pdb.set_trace();
 
       logger.log(25, "All done!")
 
