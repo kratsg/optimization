@@ -90,7 +90,7 @@ def echo(*echoargs, **echokwargs):
   return echo_wrap
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Process ROOT ntuples and Optimize Cuts.', usage='%(prog)s filename [filename] [options]')
+  parser = argparse.ArgumentParser(description='Process ROOT ntuples and Optimize Cuts.', usage='%(prog)s --signal filename ... --bckgd filename ... [options]')
   # positional argument, require the first argument to be the input filename
   parser.add_argument('--signal',
                       required=True,
