@@ -89,15 +89,19 @@ def echo(*echoargs, **echokwargs):
     return echo_wrap(echoargs[0])
   return echo_wrap
 
+@echo(write=logger.info)
+def get_significance(signal, bkgd, cuts):
+  return
+
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Process ROOT ntuples and Optimize Cuts.', usage='%(prog)s --signal filename ... --bckgd filename ... [options]')
+  parser = argparse.ArgumentParser(description='Process ROOT ntuples and Optimize Cuts.', usage='%(prog)s --signal filename ... --bkgd filename ... [options]')
   # positional argument, require the first argument to be the input filename
   parser.add_argument('--signal',
                       required=True,
                       type=str,
                       nargs='+',
                       help='signal ntuples')
-  parser.add_argument('--bckgd',
+  parser.add_argument('--bkgd',
                       required=True,
                       type=str,
                       nargs='+',
@@ -135,8 +139,6 @@ if __name__ == "__main__":
 
   # parse the arguments, throw errors if missing any
   args = parser.parse_args()
-  if args.property_name_regex != '*' or args.attribute_name_regex != '*' or args.interactive:
-    parser.error("The following arguments have not been implemented yet: --filterProps, --filterAttrs, --interactive. Sorry for the inconvenience.")
 
   try:
     # start execution of actual program
@@ -155,18 +157,30 @@ if __name__ == "__main__":
       # if flag is shown, set batch_mode to true, else false
       ROOT.gROOT.SetBatch(args.batch_mode)
 
-      # start by making a TChain
-      logger.info("Initializing TChain")
-      t = ROOT.TChain(args.tree_name)
-      for fname in args.input_filename:
-        if not os.path.isfile(fname):
-          raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
-        else:
-          logger.info("\tAdding {0}".format(fname))
-          t.Add(fname)
+      # this is a dict that holds all the trees
+      trees = {'signal': None, 'bkgd': None}
 
-      # Print some information
-      logger.info('Number of input events: %s' % t.GetEntries())
+      for group in ['signal', 'bkgd']:
+        logger.info("Initializing TChain: {0}".format(group))
+        # start by making a TChain
+        trees[group] = ROOT.TChain(args.tree_name)
+        for fname in vars(args).get(group, []):
+          if not os.path.isfile(fname):
+            raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
+          else:
+            logger.info("\tAdding {0}".format(fname))
+            trees[group].Add(fname)
+
+        # Print some information
+        logger.info('Number of input events: %s' % trees[group].GetEntries())
+
+      signalBranches = set(i.GetName() for i in trees['signal'].GetListOfBranches())
+      bkgdBranches = set(i.GetName() for i in trees['bkgd'].GetListOfBranches())
+
+      if not signalBranches == bkgdBranches:
+        raise ValueError('The signal and background trees do not have the same branches!')
+
+      logger.info("The signal and background trees have the same branches.")
 
       import pdb; pdb.set_trace();
 
