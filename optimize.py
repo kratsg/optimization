@@ -27,6 +27,7 @@ logger = logging.getLogger("optimize")
 
 # import all libraries
 import argparse
+import itertools
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -41,6 +42,10 @@ import argparse
 
 # Set up ROOT
 import ROOT
+
+#root_numpy
+import root_numpy as rnp
+import numpy as np
 
 
 def format_arg_value(arg_val):
@@ -180,7 +185,25 @@ if __name__ == "__main__":
       if not signalBranches == bkgdBranches:
         raise ValueError('The signal and background trees do not have the same branches!')
 
+      # we have our branches
+      branches = signalBranches
+      # clear our variable
+      signalBranches = bkgdBranches = None
+
       logger.info("The signal and background trees have the same branches.")
+
+      for b in sorted(branches):
+        signalArr = rnp.tree2array(trees['signal'], branches=b)
+        bkgdArr = rnp.tree2array(trees['bkgd'], branches=b)
+
+        skipSignal = signalArr >= 0
+        skipBkgd = bkgdArr >= 0
+
+        signalArr = signalArr[skipSignal]
+        bkgdArr = bkgdArr[skipBkgd]
+
+        prelimStr = "{0}\n\tSignal ({2:10d} skipped):\t{1}\t{1}\t{1}\t{1}\t{1}\n\tBkgd   ({3:10d} skipped):\t{1}\t{1}\t{1}\t{1}\t{1}".format("{:s}", "{:12.2f}", np.sum(~skipSignal), np.sum(~skipBkgd))
+        logger.log(25, prelimStr.format(b, *itertools.chain(np.percentile(signalArr, [0., 25., 50., 75., 100.]), np.percentile(bkgdArr, [0., 25., 50., 75., 100.]))))
 
       import pdb; pdb.set_trace();
 
