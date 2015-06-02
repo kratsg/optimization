@@ -28,6 +28,7 @@ logger = logging.getLogger("optimize")
 # import all libraries
 import argparse
 import itertools
+import subprocess
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -99,25 +100,49 @@ def get_significance(signal, bkgd, cuts):
   return
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Process ROOT ntuples and Optimize Cuts.', usage='%(prog)s --signal filename ... --bkgd filename ... [options]')
+  class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    pass
+
+  __version__ = subprocess.check_output(["git", "describe", "--always"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
+  __short_hash__ = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
+
+  parser = argparse.ArgumentParser(description='Become an accountant and cook the books!',
+                                   usage='%(prog)s filename [filename] [options]',
+                                   formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+
+  parser = argparse.ArgumentParser(description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
+                                  usage='%(prog)s --signal filename ... --bkgd filename ... [options]',
+                                  formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+
   # positional argument, require the first argument to be the input filename
   parser.add_argument('--signal',
                       required=True,
                       type=str,
                       nargs='+',
+                      metavar='<files>',
                       help='signal ntuples')
   parser.add_argument('--bkgd',
                       required=True,
                       type=str,
                       nargs='+',
+                      metavar='<files>',
                       help='background ntuples')
   # these are options allowing for various additional configurations in filtering container and types to dump
   parser.add_argument('--tree',
                       type=str,
                       required=False,
                       dest='tree_name',
-                      help='Specify the tree that contains the StoreGate structure. Default: CollectionTree',
+                      metavar='<tree name>',
+                      help='Specify the tree that contains the StoreGate structure.',
                       default='oTree')
+
+  parser.add_argument('--globalMinVal',
+                      type=float,
+                      required=False,
+                      dest='globalMinVal',
+                      metavar='<min val>',
+                      help='Specify the minimum value of which to exclude completely when analyzing branch-by-branch.',
+                      default=-99.0)
 
   '''general arguments for verbosity'''
   parser.add_argument('-v',
@@ -125,16 +150,16 @@ if __name__ == "__main__":
                       dest='verbose',
                       action='count',
                       default=0,
-                      help='Enable verbose output of various levels. Use --debug-root to enable ROOT debugging. Default: no verbosity')
+                      help='Enable verbose output of various levels. Use --debug-root to enable ROOT debugging.')
   parser.add_argument('--debug-root',
                       dest='root_verbose',
                       action='store_true',
-                      help='Enable ROOT debugging/output. Default: disabled')
+                      help='Enable ROOT debugging/output.')
   parser.add_argument('-b',
                       '--batch',
                       dest='batch_mode',
                       action='store_true',
-                      help='Enable batch mode for ROOT. Default: disabled')
+                      help='Enable batch mode for ROOT. ')
 
   parser.add_argument('-i',
                       '--interactive',
@@ -196,14 +221,16 @@ if __name__ == "__main__":
         signalArr = rnp.tree2array(trees['signal'], branches=b)
         bkgdArr = rnp.tree2array(trees['bkgd'], branches=b)
 
-        skipSignal = signalArr >= 0
-        skipBkgd = bkgdArr >= 0
+        skipSignal = signalArr > args.globalMinVal
+        skipBkgd = bkgdArr > args.globalMinVal
 
         signalArr = signalArr[skipSignal]
         bkgdArr = bkgdArr[skipBkgd]
 
+        signalPercentile = np.percentile(signalArr, [0., 25., 50., 75., 100.])
+        bkgdPercentile = np.percentile(bkgdArr, [0., 25., 50., 75., 100.])
         prelimStr = "{0}\n\tSignal ({2:10d} skipped):\t{1}\t{1}\t{1}\t{1}\t{1}\n\tBkgd   ({3:10d} skipped):\t{1}\t{1}\t{1}\t{1}\t{1}".format("{:s}", "{:12.2f}", np.sum(~skipSignal), np.sum(~skipBkgd))
-        logger.log(25, prelimStr.format(b, *itertools.chain(np.percentile(signalArr, [0., 25., 50., 75., 100.]), np.percentile(bkgdArr, [0., 25., 50., 75., 100.]))))
+        logger.log(25, prelimStr.format(b, *itertools.chain(signalPercentile, bkgdPercentile)))
 
       import pdb; pdb.set_trace();
 
