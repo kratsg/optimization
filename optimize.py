@@ -29,7 +29,8 @@ logger = logging.getLogger("optimize")
 import argparse
 import subprocess
 import json
-import pprint
+import hashlib
+import copy
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -96,25 +97,47 @@ def echo(*echoargs, **echokwargs):
     return echo_wrap(echoargs[0])
   return echo_wrap
 
-@echo(write=logger.info)
-def apply_cut(arr, minVal, maxVal):
-  if minVal is not None and maxVal is not None:
-    return (arr > minVal)&(arr < maxVal)
-  elif minVal is not None and maxVal is None:
-    return (arr > minVal)
-  elif minVal is None and maxVal is not None:
-    return (arr < maxVal)
+@echo(write=logger.debug)
+def apply_cut(arr, pivot, direction):
+  """ Given a numpy array of values, apply a cut in the direction of expected signal
+
+  >>> apply_cut(np.random.randn(100), 0, '>')  # only positive values (val > cut)
+  >>> apply_cut(np.random.randn(100), 0, '<')  # only negative values (val < cut)
+  """
+  if direction == '<' and pivot is not None:
+    return arr < pivot
+  elif direction == '>' and pivot is not None:
+    return arr > pivot
   else:
     return np.ones(arr.shape, dtype=bool)
 
-@echo(write=logger.info)
+@echo(write=logger.debug)
 def apply_cuts(arr, cuts):
-  return reduce(np.bitwise_and, (apply_cut(arr[cut['branch']], cut.get('min', None), cut.get('max', None)) for cut in cuts))
+  return reduce(np.bitwise_and, (apply_cut(arr[cut['branch']], cut.get('pivot', None), cut.get('signal_direction', None)) for cut in cuts))
 
-@echo(write=logger.info)
+@echo(write=logger.debug)
+def get_cut(superCuts, index=0):
+  # reached bottom of iteration, yield what we've done
+  if index >= len(superCuts): yield superCuts
+  else:
+    # start of iteration, make a copy of the input dictionary
+    # if index == 0: superCuts = copy.deepcopy(superCuts)
+    # reference to item
+    item = superCuts[index]
+    for pivot in xrange(item['min'], item['max'], item['step']):
+      # set the pivot value
+      item['pivot'] = pivot
+      # recursively call, yield the result which is the superCuts
+      for cut in get_cut(superCuts, index+1): yield cut
+
+@echo(write=logger.debug)
+def get_cut_hash(cut):
+  return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
+
+@echo(write=logger.debug)
 def get_significance(signal, bkgd, cuts):
-  numSignal = apply_cuts(signal, cuts)
-  numBkgd   = apply_cuts(bkgd, cuts)
+  numSignal = np.sum(apply_cuts(signal, cuts))
+  numBkgd   = np.sum(apply_cuts(bkgd, cuts))
   return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, args.bkgdUncertainty)
 
 if __name__ == "__main__":
@@ -150,7 +173,7 @@ if __name__ == "__main__":
                       type=str,
                       metavar='<file>',
                       help='json dict of cuts to optimize over',
-                      default='cuts.json')
+                      default='supercuts.json')
   # these are options allowing for various additional configurations in filtering container and types to dump
   parser.add_argument('--tree',
                       type=str,
@@ -268,9 +291,12 @@ if __name__ == "__main__":
       with open(args.cuts) as cuts_file:
         data = json.load(cuts_file)
 
-      pprint.pprint(data, stream=STDOUT)
+      # get signal and background trees
+      signal = rnp.tree2array(trees['signal'])
+      bkgd = rnp.tree2array(trees['bkgd'])
 
-      logger.log(25, "All done!")
+      for cut in get_cut(copy.deepcopy(data)):
+        logger.log(25, "{0:32s}\t{1:4.2f}".format(get_cut_hash(cut), get_significance(signal, bkgd, cut)))
 
       if not args.root_verbose:
         ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
