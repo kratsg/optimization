@@ -2,8 +2,8 @@
   {
     "branch": "multiplicity_jet",
     "min": 2,
-    "max": 10,
+    "max": 15,
     "step": 1,
-    "signal_direction": "<"
+    "signal_direction": ">"
   }
 ]
