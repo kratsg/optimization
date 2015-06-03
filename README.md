@@ -26,7 +26,7 @@ I use [`virtualenvwrapper`](https://virtualenvwrapper.readthedocs.org/en/latest/
 pip install virtualenvwrapper
 ```
 
-and then add the following in your `.bash\_profile`
+and then add the following in your `.bash_profile`
 
 ```
 source /usr/local/bin/virtualenvwrapper.sh
@@ -64,7 +64,7 @@ tar -xzvf 20150602_1.tar.gz
 
 ### Running
 
-after that, we just (at a bare minimum) specify the `signal` and `bkgd` ROOT files. Since the script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified for each either as a pattern or just explicitly writing them out.
+After that, we just (at a bare minimum) specify the `signal` and `bkgd` ROOT files. Since the script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified for each either as a pattern or just explicitly writing them out.
 
 ```
 python optimize.py --signal 20150602_1/data-optimizationTree/mc14_13TeV.204533* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* -b
