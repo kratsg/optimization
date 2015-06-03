@@ -11,10 +11,10 @@
 # Optimization - A PyRoot Codebase
 
 ## Dependencies
- - PyROOT
- - numPy
- - matplotlib
- - root\_numpy
+ - [PyROOT](https://root.cern.ch/drupal/content/pyroot)
+ - [numPy](http://www.numpy.org/)
+ - [matplotlib](http://matplotlib.org/)
+ - [root\_numpy](http://rootpy.github.io/root_numpy/)
 
 ## Installing
 
