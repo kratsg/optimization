@@ -232,27 +232,9 @@ if __name__ == "__main__":
 
         signalPercentile = np.percentile(signalArr, [0., 25., 50., 75., 100.])
         bkgdPercentile = np.percentile(bkgdArr, [0., 25., 50., 75., 100.])
-        prelimStr = "{0}\n\tSignal ({1:6d} skipped):\t{2[0]:12.2f}\t{2[1]:12.2f}\t{2[2]:12.2f}\t{2[3]:12.2f}\t{2[4]:12.2f}\n\tBkgd   ({3:6d} skipped):\t{4[0]:12.2f}\t{4[1]:12.2f}\t{4[2]:12.2f}\t{4[3]:12.2f}\t{4[4]:12.2f}\n\tDiff                   :\t{5[0]:12.2f}\t{5[1]:12.2f}\t{5[2]:12.2f}\t{5[3]:12.2f}\t{5[4]:12.2f}"
-        with np.errstate(divide='ignore', invalid='ignore'):
-          divResult = (signalPercentile - bkgdPercentile) / bkgdPercentile
-          divResult[bkgdPercentile == 0] = 0
-          divResult = np.abs(divResult)
+        prelimStr = "{0}\n\tSignal ({1:6d} skipped):\t{2[0]:12.2f}\t{2[1]:12.2f}\t{2[2]:12.2f}\t{2[3]:12.2f}\t{2[4]:12.2f}\n\tBkgd   ({3:6d} skipped):\t{4[0]:12.2f}\t{4[1]:12.2f}\t{4[2]:12.2f}\t{4[3]:12.2f}\t{4[4]:12.2f}"
 
-        logger.log(25, prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile, divResult))
-
-        optimalDifferences.append((b,) + tuple(divResult))
-
-      optimalDifferences = np.array(optimalDifferences, dtype=np.dtype([('branch', np.str, 50), ('0%', np.float), ('25%', np.float), ('50%', np.float), ('75%', np.float), ('100%', np.float)]))
-
-      for sortBranch in optimalDifferences.dtype.names:
-        if sortBranch == 'branch': continue
-        logger.log(25, "\n\nTop branches for {0}".format(sortBranch))
-        topNRows = optimalDifferences.argsort(order=sortBranch)[:-6:-1]
-
-        for b, v in optimalDifferences[['branch', sortBranch]][topNRows]:
-          logger.log(25, "\t{0:25s}: {1:12.2f}".format(b, v))
-
-
+        logger.log(25, prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
 
       import pdb; pdb.set_trace();
 
