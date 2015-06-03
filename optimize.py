@@ -27,8 +27,9 @@ logger = logging.getLogger("optimize")
 
 # import all libraries
 import argparse
-import itertools
 import subprocess
+import json
+import pprint
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -148,7 +149,8 @@ if __name__ == "__main__":
                       required=False,
                       type=str,
                       metavar='<file>',
-                      help='json dict of cuts to optimize over')
+                      help='json dict of cuts to optimize over',
+                      default='cuts.json')
   # these are options allowing for various additional configurations in filtering container and types to dump
   parser.add_argument('--tree',
                       type=str,
@@ -259,9 +261,14 @@ if __name__ == "__main__":
         bkgdPercentile = np.percentile(bkgdArr, [0., 25., 50., 75., 100.])
         prelimStr = "{0}\n\tSignal ({1:6d} skipped):\t{2[0]:12.2f}\t{2[1]:12.2f}\t{2[2]:12.2f}\t{2[3]:12.2f}\t{2[4]:12.2f}\n\tBkgd   ({3:6d} skipped):\t{4[0]:12.2f}\t{4[1]:12.2f}\t{4[2]:12.2f}\t{4[3]:12.2f}\t{4[4]:12.2f}"
 
-        logger.log(25, prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
+        logger.info(prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
 
-      import pdb; pdb.set_trace();
+      # now read the cuts file and start optimizing
+      logger.info("Opening {0} for reading".format(args.cuts))
+      with open(args.cuts) as cuts_file:
+        data = json.load(cuts_file)
+
+      pprint.pprint(data, stream=STDOUT)
 
       logger.log(25, "All done!")
 
