@@ -96,8 +96,14 @@ def echo(*echoargs, **echokwargs):
   return echo_wrap
 
 @echo(write=logger.info)
+def apply_cuts(arr, cuts):
+  return np.random.randn(1000) > 0
+
+@echo(write=logger.info)
 def get_significance(signal, bkgd, cuts):
-  return
+  numSignal = apply_cuts(signal, cuts)
+  numBkgd   = apply_cuts(bkgd, cuts)
+  return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, args.bkgdUncertainty)
 
 if __name__ == "__main__":
   class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
@@ -135,7 +141,6 @@ if __name__ == "__main__":
                       metavar='<tree name>',
                       help='Specify the tree that contains the StoreGate structure.',
                       default='oTree')
-
   parser.add_argument('--globalMinVal',
                       type=float,
                       required=False,
@@ -143,6 +148,13 @@ if __name__ == "__main__":
                       metavar='<min val>',
                       help='Specify the minimum value of which to exclude completely when analyzing branch-by-branch.',
                       default=-99.0)
+  parser.add_argument('--bkgdUncertainty',
+                      type=float,
+                      required=False,
+                      dest='bkgdUncertainty',
+                      metavar='<sigma>',
+                      help='Specify the background uncertainty for calculating significance using BinomialExpZ',
+                      default=0.3)
 
   '''general arguments for verbosity'''
   parser.add_argument('-v',
