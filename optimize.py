@@ -96,9 +96,7 @@ def echo(*echoargs, **echokwargs):
   return echo_wrap
 
 @echo(write=logger.info)
-def apply_cut(arr, cut):
-  minVal = cut.get('min', None)
-  maxVal = cut.get('max', None)
+def apply_cut(arr, minVal, maxVal):
   if minVal is not None and maxVal is not None:
     return (arr > minVal)&(arr < maxVal)
   elif minVal is not None and maxVal is None:
@@ -110,7 +108,7 @@ def apply_cut(arr, cut):
 
 @echo(write=logger.info)
 def apply_cuts(arr, cuts):
-  return reduce(np.bitwise_and, (apply_cut(arr[cut['branch']], cut) for cut in cuts))
+  return reduce(np.bitwise_and, (apply_cut(arr[cut['branch']], cut.get('min', None), cut.get('max', None)) for cut in cuts))
 
 @echo(write=logger.info)
 def get_significance(signal, bkgd, cuts):
@@ -146,6 +144,11 @@ if __name__ == "__main__":
                       nargs='+',
                       metavar='<files>',
                       help='background ntuples')
+  parser.add_argument('--cuts',
+                      required=False,
+                      type=str,
+                      metavar='<file>',
+                      help='json dict of cuts to optimize over')
   # these are options allowing for various additional configurations in filtering container and types to dump
   parser.add_argument('--tree',
                       type=str,
@@ -239,9 +242,6 @@ if __name__ == "__main__":
       branches = signalBranches
       # clear our variable
       signalBranches = bkgdBranches = None
-
-      # store the result of a difference ratio to find out what is most optimal
-      optimalDifferences = []
 
       logger.info("The signal and background trees have the same branches.")
 
