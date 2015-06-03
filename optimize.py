@@ -136,8 +136,8 @@ def get_cut_hash(cut):
 
 @echo(write=logger.debug)
 def get_significance(signal, bkgd, cuts):
-  numSignal = np.sum(apply_cuts(signal, cuts))
-  numBkgd   = np.sum(apply_cuts(bkgd, cuts))
+  numSignal = np.sum(signal[args.eventWeightBranch][apply_cuts(signal, cuts)])
+  numBkgd   = np.sum(bkgd[args.eventWeightBranch][apply_cuts(bkgd, cuts)])
   return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, args.bkgdUncertainty)
 
 if __name__ == "__main__":
@@ -196,6 +196,13 @@ if __name__ == "__main__":
                       metavar='<sigma>',
                       help='Specify the background uncertainty for calculating significance using BinomialExpZ',
                       default=0.3)
+  parser.add_argument('--eventWeight',
+                      type=str,
+                      required=False,
+                      dest='eventWeightBranch',
+                      metavar='<branch name>',
+                      help='Specify a different branch that contains the event weight',
+                      default='event_weight')
 
   '''general arguments for verbosity'''
   parser.add_argument('-v',
