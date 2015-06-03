@@ -96,8 +96,21 @@ def echo(*echoargs, **echokwargs):
   return echo_wrap
 
 @echo(write=logger.info)
+def apply_cut(arr, cut):
+  minVal = cut.get('min', None)
+  maxVal = cut.get('max', None)
+  if minVal is not None and maxVal is not None:
+    return (arr > minVal)&(arr < maxVal)
+  elif minVal is not None and maxVal is None:
+    return (arr > minVal)
+  elif minVal is None and maxVal is not None:
+    return (arr < maxVal)
+  else:
+    return np.ones(arr.shape, dtype=bool)
+
+@echo(write=logger.info)
 def apply_cuts(arr, cuts):
-  return np.random.randn(1000) > 0
+  return reduce(np.bitwise_and, (apply_cut(arr[cut['branch']], cut) for cut in cuts))
 
 @echo(write=logger.info)
 def get_significance(signal, bkgd, cuts):
