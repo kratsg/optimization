@@ -4,6 +4,13 @@
 
 - [Optimization - A PyRoot Codebase](#optimization---a-pyroot-codebase)
   - [Dependencies](#dependencies)
+  - [Installing](#installing)
+    - [Using a virtual environment to manage python packages](#using-a-virtual-environment-to-manage-python-packages)
+    - [... the code](#-the-code)
+  - [How to use](#how-to-use)
+    - [Grab some optimization ntuples](#grab-some-optimization-ntuples)
+    - [Running](#running)
+  - [Profiling Code](#profiling-code)
   - [Authors](#authors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
