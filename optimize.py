@@ -32,6 +32,8 @@ import json
 import hashlib
 import copy
 import operator
+import re
+import fnmatch
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -125,10 +127,17 @@ def get_cut(superCuts, index=0):
     # if index == 0: superCuts = copy.deepcopy(superCuts)
     # reference to item
     item = superCuts[index]
-    for pivot in np.arange(item['min'], item['max'], item['step']):
-      # set the pivot value
-      item['pivot'] = pivot
-      # recursively call, yield the result which is the superCuts
+    # are we doing a fixed cut? they should specify only pivot
+    try:
+      # if they don't want a fixed cut, then they need min, max, step
+      for pivot in np.arange(item['min'], item['max'], item['step']):
+        # set the pivot value
+        item['pivot'] = pivot
+        item['fixed'] = False
+        # recursively call, yield the result which is the superCuts
+        for cut in get_cut(superCuts, index+1): yield cut
+    except KeyError:
+      item['fixed'] = True
       for cut in get_cut(superCuts, index+1): yield cut
 
 #@echo(write=logger.debug)
@@ -162,7 +171,7 @@ def get_ttrees(tree_name, signalFilenames, bkgdFilenames, eventWeightBranch):
         trees[group].Add(fname)
 
     # Print some information
-    logger.info('Number of input events: %s' % trees[group].GetEntries())
+    logger.info('\tNumber of input events: %s' % trees[group].GetEntries())
 
   # make sure the branches are compatible between the two
   signalBranches = set(i.GetName() for i in trees['signal'].GetListOfBranches())
@@ -177,10 +186,21 @@ def get_ttrees(tree_name, signalFilenames, bkgdFilenames, eventWeightBranch):
 
 #@echo(write=logger.debug)
 def read_supercuts_file(filename):
-  logger.info("Opening {0} for reading".format(filename))
+  logger.info("Reading supercuts file {0}".format(filename))
+  logger.info("\tOpening")
   with open(filename) as f:
-    data = json.load(f)
-  return data
+    supercuts = json.load(f)
+
+  logger.info("\tLoaded")
+  branches = set([supercut['branch'] for supercut in supercuts])
+  try:
+    for supercut in supercuts:
+      branches.remove(supercut['branch'])
+  except KeyError:
+    raise KeyError("Found more than one supercut definition on {0}".format(supercut['branch']))
+
+  logger.info("\tFound {1:d} supercut definitions".format(filename, len(supercuts)))
+  return supercuts
 
 #@echo(write=logger.debug)
 def do_optimize(args):
@@ -190,16 +210,20 @@ def do_optimize(args):
   # this is a dict that holds all the trees
   trees = get_ttrees(args.tree_name, args.signal, args.bkgd, args.eventWeightBranch)
 
-  # get signal and background trees
-  signal = rnp.tree2array(trees['signal'])
-  bkgd = rnp.tree2array(trees['bkgd'])
-
-  # now read the cuts file and start optimizing
+  # read the cuts file
   data = read_supercuts_file(args.supercuts)
+  branchesToRead = [args.eventWeightBranch]+[i['branch'] for i in data]
+  logger.info("Loading {0:d} branches ({1:d} branches + {2:s}) from the signal and bkgd ttrees".format(len(branchesToRead), len(branchesToRead)-1, args.eventWeightBranch))
+
+  # get signal and background trees, only need some of the branches (not all!)
+  signal = rnp.tree2array(trees['signal'], branches=branchesToRead)
+  bkgd = rnp.tree2array(trees['bkgd'], branches=branchesToRead)
+
+  # start optimizing
+  logger.log(25, "Calculating significance for a variety of cuts")
 
   # hold list of dictionaries {'hash': <sha1>, 'significance': <significance>}
   significances = []
-  logger.log(25, "Calculating significance for a variety of cuts")
   for cut in get_cut(copy.deepcopy(data)):
     cut_hash = get_cut_hash(cut)
     cut_significance = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.bkgdUncertainty)
@@ -212,6 +236,13 @@ def do_optimize(args):
     f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance'), reverse=True), sort_keys=True, indent=4))
 
   return True
+
+#@echo(write=logger.debug)
+def match_branch(branch, list_of_branches):
+  if branch in list_of_branches: return True
+  for b in list_of_branches:
+    if re.compile(fnmatch.translate(b)).search(branch): return True
+  return False
 
 #@echo(write=logger.debug)
 def do_generate(args):
@@ -229,24 +260,34 @@ def do_generate(args):
   bkgd = rnp.tree2array(trees['bkgd'], branches=branches)
 
   supercuts = []
+
   for b in branches:
+    if match_branch(b, args.skip_branches):
+      logger.log(25, "{0:32s}:\tSkipping as requested".format(b))
+      continue
+
     skipSignal = signal[b] < args.globalMinVal
     skipBkgd = bkgd[b] < args.globalMinVal
 
     signalPercentile = np.percentile(signal[b][~skipSignal], [0., 25., 50., 75., 100.])
     bkgdPercentile = np.percentile(bkgd[b][~skipBkgd], [0., 25., 50., 75., 100.])
-    prelimStr = "{0}\n\tSignal ({1:6d} skipped):\t{2[0]:12.2f}\t{2[1]:12.2f}\t{2[2]:12.2f}\t{2[3]:12.2f}\t{2[4]:12.2f}\n\tBkgd   ({3:6d} skipped):\t{4[0]:12.2f}\t{4[1]:12.2f}\t{4[2]:12.2f}\t{4[3]:12.2f}\t{4[4]:12.2f}"
+    prelimStr = "{0}\n\tSignal ({1:6d} ignored):\t{2[0]:12.4f}\t{2[1]:12.4f}\t{2[2]:12.4f}\t{2[3]:12.4f}\t{2[4]:12.4f}\n\tBkgd   ({3:6d} ignored):\t{4[0]:12.4f}\t{4[1]:12.4f}\t{4[2]:12.4f}\t{4[3]:12.4f}\t{4[4]:12.4f}"
 
     logger.info(prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
 
     if signalPercentile[2] > bkgdPercentile[2]: signal_direction = '>'
     else: signal_direction = '<'
 
-    supercuts.append({'branch': b,
-                      'min': signalPercentile[0],
-                      'max': signalPercentile[-1],
-                      'step': 1,
-                      'signal_direction': signal_direction})
+    if match_branch(b, args.fixed_branches):
+      supercuts.append({'branch': b,
+                        'pivot': signalPercentile[2],
+                        'signal_direction': signal_direction})
+    else:
+      supercuts.append({'branch': b,
+                        'min': signalPercentile[0],
+                        'max': signalPercentile[-1],
+                        'step': 1,
+                        'signal_direction': signal_direction})
 
   with open(args.output_filename, 'w+') as f:
     f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('branch')), sort_keys=True, indent=4))
@@ -271,7 +312,7 @@ def do_hash(args):
     cut_hash = get_cut_hash(cut)
     if cut_hash in args.hash_values:
       with open(os.path.join(args.output_directory, "{0}.json".format(cut_hash)), 'w+') as f:
-        f.write(json.dumps([{k: v for k, v in d.iteritems() if k in ['branch', 'pivot', 'signal_direction']} for d in cut], sort_keys=True, indent=4))
+        f.write(json.dumps([{k: v for k, v in d.iteritems() if k in ['branch', 'pivot', 'signal_direction', 'fixed']} for d in cut], sort_keys=True, indent=4))
       args.hash_values.remove(cut_hash)
       logger.info("\tFound cut for hash {0:32s}. {1:d} hashes left.".format(cut_hash, len(args.hash_values)))
     if not args.hash_values: break
@@ -325,9 +366,9 @@ if __name__ == "__main__":
   main_parser.add_argument('--debug', dest='debug', action='store_true', help='Enable ROOT output and full-on debugging. Use this if you need to debug the application.')
   main_parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT.')
   # positional argument, require the first argument to be the input filename
-  requiredNamed_optimize_generate.add_argument('--signal', required=True, type=str, nargs='+', metavar='<files>', help='ROOT files containing the signal ttrees')
-  requiredNamed_optimize_generate.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<files>', help='ROOT files containing the background ttrees')
-  requiredNamed_optimize_hash.add_argument('--supercuts', required=True, type=str, dest='supercuts', metavar='<file>', help='json dict of supercuts to generate optimization cuts over signal and bkgd')
+  requiredNamed_optimize_generate.add_argument('--signal', required=True, type=str, nargs='+', metavar='<file.root>', help='ROOT files containing the signal ttrees')
+  requiredNamed_optimize_generate.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<file.root>', help='ROOT files containing the background ttrees')
+  requiredNamed_optimize_hash.add_argument('--supercuts', required=True, type=str, dest='supercuts', metavar='<file.json>', help='json dict of supercuts to generate optimization cuts over signal and bkgd')
   # these are options allowing for various additional configurations in filtering container and types to dump
   optimize_generate_parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='name of the tree containing the ntuples', default='oTree')
   optimize_generate_parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='name of event weight branch in the ntuples. It must exist.', default='event_weight')
@@ -340,7 +381,7 @@ if __name__ == "__main__":
                                           usage='%(prog)s  --signal=signal.root [..] --bkgd=bkgd.root [...] --supercuts=supercuts.json [options]', help='Find optimal cuts',
                                           formatter_class=lambda prog: CustomFormatter(prog, max_help_position=40),
                                           epilog='optimize will take in signal, background, supercuts and calculate the significances for all cuts possible.')
-  optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<filename>', help='output json file to store the significances computed', default='significances.json')
+  optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the significances computed', default='significances.json')
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
 
   # needs: signal, bkgd, tree, globalMinVal, eventWeight
@@ -349,9 +390,10 @@ if __name__ == "__main__":
                                           usage='%(prog)s --signal=signal.root [..] --bkgd=bkgd.root [...] [options]', help='Write supercuts template',
                                           formatter_class=lambda prog: CustomFormatter(prog, max_help_position=40),
                                           epilog='generate will take in signal, background and generate the supercuts template file for you to edit and use (rather than making it by hand)')
-  generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<filename>', help='output json file to store the generated supercuts template', default='supercuts.json')
-  generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='minimum value when analyzing branch-by-branch.', default=-99.0)
-
+  generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the generated supercuts template', default='supercuts.json')
+  generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='minimum value when analyzing branch-by-branch.', default=-90.0)
+  generate_parser.add_argument('--fixedBranches', type=str, nargs='+', required=False, dest='fixed_branches', metavar='<branch name>', help='branches that should have a fixed cut. can use wildcards', default=[])
+  generate_parser.add_argument('--skipBranches', type=str, nargs='+', required=False, dest='skip_branches', metavar='<branch name>', help='branches that should be skipped. can use wildcards', default=[])
 
   # needs: cuts
   hash_parser = subparsers.add_parser("hash", parents=[main_parser, optimize_hash_parser],
@@ -360,7 +402,7 @@ if __name__ == "__main__":
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=40),
                                       epilog='hash will take in a list of hashes and dump the cuts associated with them')
   hash_parser.add_argument('hash_values', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
-  hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<filename>', help='output directory to store the <hash>.json files', default='outputHash')
+  hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='outputHash')
 
   # set the functions that get called with the given arguments
   optimize_parser.set_defaults(func=do_optimize)

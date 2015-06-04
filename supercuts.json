@@ -12,5 +12,10 @@
     "max": 3,
     "step": 1,
     "signal_direction": ">"
+  },
+  {
+    "branch": "multiplicity_topTag_loose",
+    "pivot": 1,
+    "signal_direction": ">"
   }
 ]
