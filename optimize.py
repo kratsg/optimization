@@ -151,10 +151,6 @@ if __name__ == "__main__":
   __version__ = subprocess.check_output(["git", "describe", "--always"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
   __short_hash__ = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
 
-  parser = argparse.ArgumentParser(description='Become an accountant and cook the books!',
-                                   usage='%(prog)s filename [filename] [options]',
-                                   formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
-
   parser = argparse.ArgumentParser(description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
                                   usage='%(prog)s --signal filename ... --bkgd filename ... [options]',
                                   formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
