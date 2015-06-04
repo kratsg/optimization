@@ -97,7 +97,7 @@ def echo(*echoargs, **echokwargs):
     return echo_wrap(echoargs[0])
   return echo_wrap
 
-@echo(write=logger.debug)
+#@echo(write=logger.debug)
 def apply_cut(arr, pivot, direction):
   """ Given a numpy array of values, apply a cut in the direction of expected signal
 
@@ -111,11 +111,11 @@ def apply_cut(arr, pivot, direction):
   else:
     return np.ones(arr.shape, dtype=bool)
 
-@echo(write=logger.debug)
+#@echo(write=logger.debug)
 def apply_cuts(arr, cuts):
   return reduce(np.bitwise_and, (apply_cut(arr[cut['branch']], cut.get('pivot', None), cut.get('signal_direction', None)) for cut in cuts))
 
-@echo(write=logger.debug)
+#@echo(write=logger.debug)
 def get_cut(superCuts, index=0):
   # reached bottom of iteration, yield what we've done
   if index >= len(superCuts): yield superCuts
@@ -130,14 +130,18 @@ def get_cut(superCuts, index=0):
       # recursively call, yield the result which is the superCuts
       for cut in get_cut(superCuts, index+1): yield cut
 
-@echo(write=logger.debug)
+#@echo(write=logger.debug)
 def get_cut_hash(cut):
   return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
 
-@echo(write=logger.debug)
+#@echo(write=logger.debug)
+def count_events(tree, cuts, eventWeightBranch):
+  return np.sum(tree[apply_cuts(tree, cuts)][eventWeightBranch])
+
+#@echo(write=logger.debug)
 def get_significance(signal, bkgd, cuts):
-  numSignal = np.sum(signal[args.eventWeightBranch][apply_cuts(signal, cuts)])
-  numBkgd   = np.sum(bkgd[args.eventWeightBranch][apply_cuts(bkgd, cuts)])
+  numSignal = np.sum(signal[args.eventWeightBranch].take(apply_cuts(signal, cuts)))
+  numBkgd   = np.sum(bkgd[args.eventWeightBranch].take(apply_cuts(bkgd, cuts)))
   return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, args.bkgdUncertainty)
 
 if __name__ == "__main__":
