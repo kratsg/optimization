@@ -31,6 +31,7 @@ import subprocess
 import json
 import hashlib
 import copy
+import operator
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -136,12 +137,12 @@ def get_cut_hash(cut):
 
 #@echo(write=logger.debug)
 def count_events(tree, cuts, eventWeightBranch):
-  return np.sum(tree[apply_cuts(tree, cuts)][eventWeightBranch])
+  return np.sum(tree[eventWeightBranch][apply_cuts(tree, cuts)])
 
 #@echo(write=logger.debug)
 def get_significance(signal, bkgd, cuts, eventWeightBranch, bkgdUncertainty):
-  numSignal = np.sum(signal[eventWeightBranch].take(apply_cuts(signal, cuts)))
-  numBkgd   = np.sum(bkgd[eventWeightBranch].take(apply_cuts(bkgd, cuts)))
+  numSignal = count_events(signal, cuts, eventWeightBranch)
+  numBkgd   = count_events(bkgd, cuts, eventWeightBranch)
   return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, bkgdUncertainty)
 
 #@echo(write=logger.debug)
@@ -180,6 +181,9 @@ def read_supercuts_file(filename):
 
 #@echo(write=logger.debug)
 def do_optimize(args):
+  if os.path.isfile(args.output_filename):
+    raise IOError("Output file already exists: {0}".format(args.output_filename))
+
   # this is a dict that holds all the trees
   trees = get_ttrees(args.tree_name, args.signal, args.bkgd)
 
@@ -190,16 +194,20 @@ def do_optimize(args):
   # now read the cuts file and start optimizing
   data = read_supercuts_file(args.cuts_filename)
 
-  # hold dictionary of hash as key, and significance as value
-  significances = {}
+  # hold list of dictionaries {'hash': <sha1>, 'significance': <significance>}
+  significances = []
   logger.log(25, "Calculating significance for a variety of cuts")
   for cut in get_cut(copy.deepcopy(data)):
     cut_hash = get_cut_hash(cut)
     cut_significance = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.bkgdUncertainty)
-    significances[cut_hash] = cut_significance
-    logger.info("\t{0:32s}\t{1:4.2f}".format(cut_hash, cut_significance))
+    significances.append({'hash': cut_hash, 'significance': cut_significance})
+    logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
 
   logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
+
+  with open(args.output_filename, 'w+') as f:
+    f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance'), reverse=True), sort_keys=True, indent=4))
+
   return True
 
 #@echo(write=logger.debug)
@@ -286,6 +294,7 @@ if __name__ == "__main__":
                                           description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
                                           usage='%(prog)s ...', help='Find optimal cuts',
                                           formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<filename>', help='Specify the output json file to store the significances computed', default='significances.json')
 
   # needs: signal, bkgd, tree, globalMinVal, eventWeight
   generate_parser = subparsers.add_parser("generate", parents=[main_parser, optimize_generate_parser],
