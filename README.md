@@ -9,7 +9,9 @@
     - [... the code](#-the-code)
   - [How to use](#how-to-use)
     - [Grab some optimization ntuples](#grab-some-optimization-ntuples)
-    - [Running](#running)
+    - [Generate a supercuts template](#generate-a-supercuts-template)
+    - [Running the optimizations](#running-the-optimizations)
+    - [Looking up a cut (or two)](#looking-up-a-cut-or-two)
   - [Profiling Code](#profiling-code)
   - [Authors](#authors)
 
@@ -69,15 +71,31 @@ xrdcp root://faxbox.usatlas.org//user/kratsg/TheAccountant/Optimization/20150602
 tar -xzvf 20150602_1.tar.gz
 ```
 
-### Running
+### Generate a supercuts template
+
+```
+python optimize.py generate --signal 20150602_1/data-optimizationTree/mc14_13TeV.20453* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110*
+```
+
+which will create a `supercuts.json` file for you to edit so that you can run the optimizations.
+
+### Running the optimizations
 
 After that, we just (at a bare minimum) specify the `signal` and `bkgd` ROOT files. Since the script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified for each either as a pattern or just explicitly writing them out.
 
 ```
-python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.204533* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* --cuts=supercuts.json -b
+python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.20453* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* --cuts=supercuts.json -b
 ```
 
-and if you care more about speed, you most likely want to run in batch mode, hence the `-b` option tacked on at the end.
+### Looking up a cut (or two)
+
+When the optimizations have finished running, you'll want to take the given hash(es) and figure out what cut it corresponds to, you can do this with
+
+```
+python optimize.py hash e31dcf5ba4786d9e8ffa9e642729a6b9 4e16fdc03c171913bc309d57739c7225 8fa0e0ab6bf6a957d545df68dba97a53 --cuts=supercuts.json
+```
+
+which will create `outputHash/<hash>.json` files detailing the cuts involved.
 
 ## Profiling Code
 
