@@ -144,6 +144,77 @@ def get_significance(signal, bkgd, cuts):
   numBkgd   = np.sum(bkgd[args.eventWeightBranch].take(apply_cuts(bkgd, cuts)))
   return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, args.bkgdUncertainty)
 
+#@echo(write=logger.debug)
+def do_optimize(args):
+  # this is a dict that holds all the trees
+  trees = {'signal': None, 'bkgd': None}
+
+  for group in ['signal', 'bkgd']:
+    logger.info("Initializing TChain: {0}".format(group))
+    # start by making a TChain
+    trees[group] = ROOT.TChain(args.tree_name)
+    for fname in vars(args).get(group, []):
+      if not os.path.isfile(fname):
+        raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
+      else:
+        logger.info("\tAdding {0}".format(fname))
+        trees[group].Add(fname)
+
+    # Print some information
+    logger.info('Number of input events: %s' % trees[group].GetEntries())
+
+  signalBranches = set(i.GetName() for i in trees['signal'].GetListOfBranches())
+  bkgdBranches = set(i.GetName() for i in trees['bkgd'].GetListOfBranches())
+
+  if not signalBranches == bkgdBranches:
+    raise ValueError('The signal and background trees do not have the same branches!')
+
+  # we have our branches
+  branches = signalBranches
+  # clear our variable
+  signalBranches = bkgdBranches = None
+
+  logger.info("The signal and background trees have the same branches.")
+
+  # get signal and background trees
+  signal = rnp.tree2array(trees['signal'])
+  bkgd = rnp.tree2array(trees['bkgd'])
+
+  for b in sorted(branches):
+    skipSignal = signal[b] < args.globalMinVal
+    skipBkgd = bkgd[b] < args.globalMinVal
+
+    signalPercentile = np.percentile(signal[b][~skipSignal], [0., 25., 50., 75., 100.])
+    bkgdPercentile = np.percentile(bkgd[b][~skipBkgd], [0., 25., 50., 75., 100.])
+    prelimStr = "{0}\n\tSignal ({1:6d} skipped):\t{2[0]:12.2f}\t{2[1]:12.2f}\t{2[2]:12.2f}\t{2[3]:12.2f}\t{2[4]:12.2f}\n\tBkgd   ({3:6d} skipped):\t{4[0]:12.2f}\t{4[1]:12.2f}\t{4[2]:12.2f}\t{4[3]:12.2f}\t{4[4]:12.2f}"
+
+    logger.info(prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
+
+  # now read the cuts file and start optimizing
+  logger.info("Opening {0} for reading".format(args.cuts))
+  with open(args.cuts) as cuts_file:
+    data = json.load(cuts_file)
+
+  # hold dictionary of hash as key, and significance as value
+  significances = {}
+  logger.log(25, "Calculating significance for a variety of cuts")
+  for cut in get_cut(copy.deepcopy(data)):
+    cut_hash = get_cut_hash(cut)
+    cut_significance = get_significance(signal, bkgd, cut)
+    significances[cut_hash] = cut_significance
+    logger.info("\t{0:32s}\t{1:4.2f}".format(cut_hash, cut_significance))
+
+  logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
+  return True
+
+#@echo(write=logger.debug)
+def do_generate(args):
+  return True
+
+#@echo(write=logger.debug)
+def do_hash(args):
+  return True
+
 if __name__ == "__main__":
   class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
     pass
@@ -165,14 +236,17 @@ if __name__ == "__main__":
   optimize_generate_parser = argparse.ArgumentParser(add_help=False)
   main_parser = argparse.ArgumentParser(add_help=False)
 
+  requiredNamed_optimize_hash = optimize_hash_parser.add_argument_group('required named arguments')
+  requiredNamed_optimize_generate = optimize_generate_parser.add_argument_group('required named arguments')
+
   # general arguments for verbosity
   main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug-root to enable ROOT debugging.')
   main_parser.add_argument('--debug-root', dest='root_verbose', action='store_true', help='Enable ROOT debugging/output.')
   main_parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT. ')
   # positional argument, require the first argument to be the input filename
-  optimize_generate_parser.add_argument('--signal', required=True, type=str, nargs='+', metavar='<files>', help='signal ntuples')
-  optimize_generate_parser.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<files>', help='background ntuples')
-  optimize_hash_parser.add_argument('--cuts', required=False, type=str, metavar='<file>', help='json dict of cuts to optimize over', default='supercuts.json')
+  requiredNamed_optimize_generate.add_argument('--signal', required=True, type=str, nargs='+', metavar='<files>', help='signal ntuples')
+  requiredNamed_optimize_generate.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<files>', help='background ntuples')
+  requiredNamed_optimize_hash.add_argument('--cuts', required=True, type=str, metavar='<file>', help='json dict of cuts to optimize over')
   # these are options allowing for various additional configurations in filtering container and types to dump
   optimize_generate_parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='Specify the tree that contains the StoreGate structure.', default='oTree')
   optimize_generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='Specify the minimum value of which to exclude completely when analyzing branch-by-branch.', default=-99.0)
@@ -195,11 +269,18 @@ if __name__ == "__main__":
   # needs: cuts
   hash_parser = subparsers.add_parser("hash", parents=[main_parser, optimize_hash_parser],
                                       description='Given a hash from optimization, dump the cuts associated with it. v.{0}'.format(__version__),
-                                      usage='%(prog)s ...', help='Find a cut from an optimization hash',
+                                      usage='%(prog)s <hash> [<hash> ...] [options]', help='Find a cut from an optimization hash',
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  hash_parser.add_argument('hash', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
+
 
 
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='Specify the background uncertainty for calculating significance using BinomialExpZ', default=0.3)
+
+  # set the functions that get called with the given arguments
+  optimize_parser.set_defaults(func=do_optimize)
+  generate_parser.set_defaults(func=do_generate)
+  hash_parser.set_defaults(func=do_hash)
 
   # parse the arguments, throw errors if missing any
   args = parser.parse_args()
@@ -221,65 +302,8 @@ if __name__ == "__main__":
       # if flag is shown, set batch_mode to true, else false
       ROOT.gROOT.SetBatch(args.batch_mode)
 
-      # this is a dict that holds all the trees
-      trees = {'signal': None, 'bkgd': None}
-
-      for group in ['signal', 'bkgd']:
-        logger.info("Initializing TChain: {0}".format(group))
-        # start by making a TChain
-        trees[group] = ROOT.TChain(args.tree_name)
-        for fname in vars(args).get(group, []):
-          if not os.path.isfile(fname):
-            raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
-          else:
-            logger.info("\tAdding {0}".format(fname))
-            trees[group].Add(fname)
-
-        # Print some information
-        logger.info('Number of input events: %s' % trees[group].GetEntries())
-
-      signalBranches = set(i.GetName() for i in trees['signal'].GetListOfBranches())
-      bkgdBranches = set(i.GetName() for i in trees['bkgd'].GetListOfBranches())
-
-      if not signalBranches == bkgdBranches:
-        raise ValueError('The signal and background trees do not have the same branches!')
-
-      # we have our branches
-      branches = signalBranches
-      # clear our variable
-      signalBranches = bkgdBranches = None
-
-      logger.info("The signal and background trees have the same branches.")
-
-      # get signal and background trees
-      signal = rnp.tree2array(trees['signal'])
-      bkgd = rnp.tree2array(trees['bkgd'])
-
-      for b in sorted(branches):
-        skipSignal = signal[b] < args.globalMinVal
-        skipBkgd = bkgd[b] < args.globalMinVal
-
-        signalPercentile = np.percentile(signal[b][~skipSignal], [0., 25., 50., 75., 100.])
-        bkgdPercentile = np.percentile(bkgd[b][~skipBkgd], [0., 25., 50., 75., 100.])
-        prelimStr = "{0}\n\tSignal ({1:6d} skipped):\t{2[0]:12.2f}\t{2[1]:12.2f}\t{2[2]:12.2f}\t{2[3]:12.2f}\t{2[4]:12.2f}\n\tBkgd   ({3:6d} skipped):\t{4[0]:12.2f}\t{4[1]:12.2f}\t{4[2]:12.2f}\t{4[3]:12.2f}\t{4[4]:12.2f}"
-
-        logger.info(prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
-
-      # now read the cuts file and start optimizing
-      logger.info("Opening {0} for reading".format(args.cuts))
-      with open(args.cuts) as cuts_file:
-        data = json.load(cuts_file)
-
-      # hold dictionary of hash as key, and significance as value
-      significances = {}
-      logger.log(25, "Calculating significance for a variety of cuts")
-      for cut in get_cut(copy.deepcopy(data)):
-        cut_hash = get_cut_hash(cut)
-        cut_significance = get_significance(signal, bkgd, cut)
-        significances[cut_hash] = cut_significance
-        logger.info("\t{0:32s}\t{1:4.2f}".format(cut_hash, cut_significance))
-
-      logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
+      # call the function and do stuff
+      args.func(args)
 
       if not args.root_verbose:
         ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
