@@ -309,7 +309,7 @@ if __name__ == "__main__":
         cut_hash = get_cut_hash(cut)
         cut_significance = get_significance(signal, bkgd, cut)
         significances[cut_hash] = cut_significance
-        logger.info(25, "\t{0:32s}\t{1:4.2f}".format(cut_hash, cut_significance))
+        logger.info("\t{0:32s}\t{1:4.2f}".format(cut_hash, cut_significance))
 
       logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
 
