@@ -35,12 +35,12 @@ import operator
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
-    if not args.root_verbose:
+    if not args.debug:
       ROOT.gSystem.RedirectOutput(tmpFile.name, "w")
 
     # execute code here
 
-    if not args.root_verbose:
+    if not args.debug:
       ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
 '''
 
@@ -195,7 +195,7 @@ def do_optimize(args):
   bkgd = rnp.tree2array(trees['bkgd'])
 
   # now read the cuts file and start optimizing
-  data = read_supercuts_file(args.cuts_filename)
+  data = read_supercuts_file(args.supercuts)
 
   # hold list of dictionaries {'hash': <sha1>, 'significance': <significance>}
   significances = []
@@ -263,7 +263,7 @@ def do_hash(args):
     raise IOError("Output directory already exists: {0}".format(args.output_directory))
 
   # next, read in the supercuts file
-  data = read_supercuts_file(args.cuts_filename)
+  data = read_supercuts_file(args.supercuts)
 
   logger.info("Finding cuts for {0:d} hashes.".format(len(args.hash_values)))
   # now loop over all cuts until we find all the hashes
@@ -286,64 +286,81 @@ if __name__ == "__main__":
       parser.print_help()
       parser.exit()
 
+  class _AllHelpAction(argparse._HelpAction):
+    def __call__(self, parser, namespace, values, option_string=None):
+      parser.print_help()
+      # retrieve subparsers from parser
+      subparsers_actions = [
+        action for action in parser._actions
+        if isinstance(action, argparse._SubParsersAction)]
+      # there will probably only be one subparser_action,
+      # but better save than sorry
+      for subparsers_action in subparsers_actions:
+        # get all subparsers and print help
+        for choice, subparser in subparsers_action.choices.items():
+          print("-"*80)
+          print("Subparser '{}'".format(choice))
+          print(subparser.format_help())
+      parser.exit()
+
   __version__ = subprocess.check_output(["git", "describe", "--always"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
   __short_hash__ = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
 
   parser = argparse.ArgumentParser(add_help=False, description='Author: Giordon Stark. v.{0}'.format(__version__),
                                    formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-                                   epilog='For more options, run -h under a subcommand to see what you can do.')
-
-
+                                   epilog='This is the top-level. You have no power here. If you want to get started, run `%(prog)s optimize -h`.')
   parser.add_argument('-h', '--help', action=_HelpAction, help='show this help message and exit')  # add custom help
+  parser.add_argument('-a', '--allhelp', action=_AllHelpAction, help='show this help message and all subcommand help messages and exit')  # add custom help
 
   ''' subparsers have common parameters '''
+  main_parser = argparse.ArgumentParser(add_help=False)
   optimize_hash_parser = argparse.ArgumentParser(add_help=False)
   optimize_generate_parser = argparse.ArgumentParser(add_help=False)
-  main_parser = argparse.ArgumentParser(add_help=False)
 
   requiredNamed_optimize_hash = optimize_hash_parser.add_argument_group('required named arguments')
   requiredNamed_optimize_generate = optimize_generate_parser.add_argument_group('required named arguments')
 
   # general arguments for all
-  main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug-root to enable ROOT debugging.')
-  main_parser.add_argument('--debug-root', dest='root_verbose', action='store_true', help='Enable ROOT debugging/output.')
-  main_parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT. ')
+  main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug to enable output for debugging.')
+  main_parser.add_argument('--debug', dest='debug', action='store_true', help='Enable ROOT output and full-on debugging. Use this if you need to debug the application.')
+  main_parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT.')
   # positional argument, require the first argument to be the input filename
-  requiredNamed_optimize_generate.add_argument('--signal', required=True, type=str, nargs='+', metavar='<files>', help='signal ntuples')
-  requiredNamed_optimize_generate.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<files>', help='background ntuples')
-  requiredNamed_optimize_hash.add_argument('--cuts', required=True, type=str, dest='cuts_filename', metavar='<file>', help='json dict of cuts to optimize over')
+  requiredNamed_optimize_generate.add_argument('--signal', required=True, type=str, nargs='+', metavar='<files>', help='ROOT files containing the signal ttrees')
+  requiredNamed_optimize_generate.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<files>', help='ROOT files containing the background ttrees')
+  requiredNamed_optimize_hash.add_argument('--supercuts', required=True, type=str, dest='supercuts', metavar='<file>', help='json dict of supercuts to generate optimization cuts over signal and bkgd')
   # these are options allowing for various additional configurations in filtering container and types to dump
-  optimize_generate_parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='Specify the tree that contains the StoreGate structure.', default='oTree')
-  optimize_generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='Specify the minimum value of which to exclude completely when analyzing branch-by-branch.', default=-99.0)
-  optimize_generate_parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='Specify a different branch that contains the event weight', default='event_weight')
+  optimize_generate_parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='name of the tree containing the ntuples', default='oTree')
+  optimize_generate_parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='name of event weight branch in the ntuples. It must exist.', default='event_weight')
 
   ''' add subparsers '''
   subparsers = parser.add_subparsers(dest='command', help='actions available')
-  # needs: signal, bkgd, tree, globalMinVal, eventWeight, bkgdUncertainty, cuts
+  # needs: signal, bkgd, tree, eventWeight, bkgdUncertainty, cuts
   optimize_parser = subparsers.add_parser("optimize", parents=[main_parser, optimize_hash_parser, optimize_generate_parser],
                                           description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
-                                          usage='%(prog)s ...', help='Find optimal cuts',
-                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
-  optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<filename>', help='Specify the output json file to store the significances computed', default='significances.json')
+                                          usage='%(prog)s  --signal=signal.root [..] --bkgd=bkgd.root [...] --supercuts=supercuts.json [options]', help='Find optimal cuts',
+                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=40),
+                                          epilog='optimize will take in signal, background, supercuts and calculate the significances for all cuts possible.')
+  optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<filename>', help='output json file to store the significances computed', default='significances.json')
+  optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
 
   # needs: signal, bkgd, tree, globalMinVal, eventWeight
   generate_parser = subparsers.add_parser("generate", parents=[main_parser, optimize_generate_parser],
                                           description='Given the ROOT ntuples, generate a supercuts.json template. v.{0}'.format(__version__),
-                                          usage='%(prog)s ...', help='Write supercuts template',
-                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
-  generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<filename>', help='Specify the output json file to store the generated supercuts template', default='supercuts.json')
+                                          usage='%(prog)s --signal=signal.root [..] --bkgd=bkgd.root [...] [options]', help='Write supercuts template',
+                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=40),
+                                          epilog='generate will take in signal, background and generate the supercuts template file for you to edit and use (rather than making it by hand)')
+  generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<filename>', help='output json file to store the generated supercuts template', default='supercuts.json')
+  generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='minimum value when analyzing branch-by-branch.', default=-99.0)
+
 
   # needs: cuts
   hash_parser = subparsers.add_parser("hash", parents=[main_parser, optimize_hash_parser],
                                       description='Given a hash from optimization, dump the cuts associated with it. v.{0}'.format(__version__),
-                                      usage='%(prog)s <hash> [<hash> ...] [options]', help='Translate hash to cut',
-                                      formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+                                      usage='%(prog)s <hash> [<hash> ...] --supercuts=supercuts.json [options]', help='Translate hash to cut',
+                                      formatter_class=lambda prog: CustomFormatter(prog, max_help_position=40),
+                                      epilog='hash will take in a list of hashes and dump the cuts associated with them')
   hash_parser.add_argument('hash_values', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
-  hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<filename>', help='Specify the output directory to store the <hash>.json files', default='outputHash')
-
-
-
-  optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='Specify the background uncertainty for calculating significance using BinomialExpZ', default=0.3)
+  hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<filename>', help='output directory to store the <hash>.json files', default='outputHash')
 
   # set the functions that get called with the given arguments
   optimize_parser.set_defaults(func=do_optimize)
@@ -364,7 +381,7 @@ if __name__ == "__main__":
       logger.setLevel(logging.NOTSET + 1)
 
     with tempfile.NamedTemporaryFile() as tmpFile:
-      if not args.root_verbose:
+      if not args.debug:
         ROOT.gSystem.RedirectOutput(tmpFile.name, "w")
 
       # if flag is shown, set batch_mode to true, else false
@@ -373,12 +390,12 @@ if __name__ == "__main__":
       # call the function and do stuff
       args.func(args)
 
-      if not args.root_verbose:
+      if not args.debug:
         ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
 
   except Exception, e:
     # stop redirecting if we crash as well
-    if not args.root_verbose:
+    if not args.debug:
       ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
 
     logger.exception("{0}\nAn exception was caught!".format("-"*20))

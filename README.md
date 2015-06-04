@@ -10,7 +10,6 @@
   - [How to use](#how-to-use)
     - [Grab some optimization ntuples](#grab-some-optimization-ntuples)
     - [Running](#running)
-  - [Features](#features)
   - [Profiling Code](#profiling-code)
   - [Authors](#authors)
 
@@ -79,15 +78,6 @@ python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV
 ```
 
 and if you care more about speed, you most likely want to run in batch mode, hence the `-b` option tacked on at the end.
-
-## Features
-
-This script comes with three main features we use for optimizations.
-
-- the top level does nothing.
-- `optimize` will take in your signal, background, and supercuts -- calculates significance across the board.
-- [**not ready yet**] `generate` will take in your signal, background, --  generate a supercuts template file for you to edit and use (rather than making it by hand)
-- `hash` will take in a list of hashes and dump the cuts associated with them [a planned update is to also take in, instead, a file specifying a list of hashes with the same structure as the one that gets dumped when you run `optimize` to automate this task a little bit more...]
 
 ## Profiling Code
 
