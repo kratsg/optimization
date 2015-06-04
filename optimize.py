@@ -124,7 +124,7 @@ def get_cut(superCuts, index=0):
     # if index == 0: superCuts = copy.deepcopy(superCuts)
     # reference to item
     item = superCuts[index]
-    for pivot in xrange(item['min'], item['max'], item['step']):
+    for pivot in np.arange(item['min'], item['max'], item['step']):
       # set the pivot value
       item['pivot'] = pivot
       # recursively call, yield the result which is the superCuts
@@ -302,8 +302,16 @@ if __name__ == "__main__":
       signal = rnp.tree2array(trees['signal'])
       bkgd = rnp.tree2array(trees['bkgd'])
 
+      # hold dictionary of hash as key, and significance as value
+      significances = {}
+      logger.log(25, "Calculating significance for a variety of cuts")
       for cut in get_cut(copy.deepcopy(data)):
-        logger.log(25, "{0:32s}\t{1:4.2f}".format(get_cut_hash(cut), get_significance(signal, bkgd, cut)))
+        cut_hash = get_cut_hash(cut)
+        cut_significance = get_significance(signal, bkgd, cut)
+        significances[cut_hash] = cut_significance
+        logger.info(25, "\t{0:32s}\t{1:4.2f}".format(cut_hash, cut_significance))
+
+      logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
 
       if not args.root_verbose:
         ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
