@@ -139,20 +139,20 @@ def count_events(tree, cuts, eventWeightBranch):
   return np.sum(tree[apply_cuts(tree, cuts)][eventWeightBranch])
 
 #@echo(write=logger.debug)
-def get_significance(signal, bkgd, cuts):
-  numSignal = np.sum(signal[args.eventWeightBranch].take(apply_cuts(signal, cuts)))
-  numBkgd   = np.sum(bkgd[args.eventWeightBranch].take(apply_cuts(bkgd, cuts)))
-  return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, args.bkgdUncertainty)
+def get_significance(signal, bkgd, cuts, eventWeightBranch, bkgdUncertainty):
+  numSignal = np.sum(signal[eventWeightBranch].take(apply_cuts(signal, cuts)))
+  numBkgd   = np.sum(bkgd[eventWeightBranch].take(apply_cuts(bkgd, cuts)))
+  return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, bkgdUncertainty)
 
 #@echo(write=logger.debug)
-def do_optimize(args):
+def get_ttrees(tree_name, signalFilenames, bkgdFilenames):
   # this is a dict that holds all the trees
   trees = {'signal': None, 'bkgd': None}
 
   for group in ['signal', 'bkgd']:
     logger.info("Initializing TChain: {0}".format(group))
     # start by making a TChain
-    trees[group] = ROOT.TChain(args.tree_name)
+    trees[group] = ROOT.TChain(tree_name)
     for fname in vars(args).get(group, []):
       if not os.path.isfile(fname):
         raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
@@ -163,24 +163,51 @@ def do_optimize(args):
     # Print some information
     logger.info('Number of input events: %s' % trees[group].GetEntries())
 
+  # make sure the branches are compatible between the two
   signalBranches = set(i.GetName() for i in trees['signal'].GetListOfBranches())
   bkgdBranches = set(i.GetName() for i in trees['bkgd'].GetListOfBranches())
-
   if not signalBranches == bkgdBranches:
     raise ValueError('The signal and background trees do not have the same branches!')
 
-  # we have our branches
-  branches = signalBranches
-  # clear our variable
-  signalBranches = bkgdBranches = None
+  return trees
 
-  logger.info("The signal and background trees have the same branches.")
+#@echo(write=logger.debug)
+def read_supercuts_file(filename):
+  logger.info("Opening {0} for reading".format(filename))
+  with open(filename) as f:
+    data = json.load(f)
+  return data
+
+#@echo(write=logger.debug)
+def do_optimize(args):
+  # this is a dict that holds all the trees
+  trees = get_ttrees(args.tree_name, args.signal, args.bkgd)
 
   # get signal and background trees
   signal = rnp.tree2array(trees['signal'])
   bkgd = rnp.tree2array(trees['bkgd'])
 
-  for b in sorted(branches):
+  # now read the cuts file and start optimizing
+  data = read_supercuts_file(args.cuts_filename)
+
+  # hold dictionary of hash as key, and significance as value
+  significances = {}
+  logger.log(25, "Calculating significance for a variety of cuts")
+  for cut in get_cut(copy.deepcopy(data)):
+    cut_hash = get_cut_hash(cut)
+    cut_significance = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.bkgdUncertainty)
+    significances[cut_hash] = cut_significance
+    logger.info("\t{0:32s}\t{1:4.2f}".format(cut_hash, cut_significance))
+
+  logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
+  return True
+
+#@echo(write=logger.debug)
+def do_generate(args):
+  # this is a dict that holds all the trees
+  trees = get_ttrees(args.tree_name, args.signal, args.bkgd)
+
+  for b in sorted(i.GetName() for i in trees['signal'].GetListOfBranches()):
     skipSignal = signal[b] < args.globalMinVal
     skipBkgd = bkgd[b] < args.globalMinVal
 
@@ -190,29 +217,29 @@ def do_optimize(args):
 
     logger.info(prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
 
-  # now read the cuts file and start optimizing
-  logger.info("Opening {0} for reading".format(args.cuts))
-  with open(args.cuts) as cuts_file:
-    data = json.load(cuts_file)
-
-  # hold dictionary of hash as key, and significance as value
-  significances = {}
-  logger.log(25, "Calculating significance for a variety of cuts")
-  for cut in get_cut(copy.deepcopy(data)):
-    cut_hash = get_cut_hash(cut)
-    cut_significance = get_significance(signal, bkgd, cut)
-    significances[cut_hash] = cut_significance
-    logger.info("\t{0:32s}\t{1:4.2f}".format(cut_hash, cut_significance))
-
-  logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
-  return True
-
-#@echo(write=logger.debug)
-def do_generate(args):
   return True
 
 #@echo(write=logger.debug)
 def do_hash(args):
+  # first start by making the output directory
+  if not os.path.exists(args.output_directory):
+    os.makedirs(args.output_directory)
+  else:
+    raise IOError("Output directory already exists: {0}".format(args.output_directory))
+
+  # next, read in the supercuts file
+  data = read_supercuts_file(args.cuts_filename)
+
+  logger.info("Finding cuts for {0:d} hashes.".format(len(args.hash_values)))
+  # now loop over all cuts until we find all the hashes
+  for cut in get_cut(copy.deepcopy(data)):
+    cut_hash = get_cut_hash(cut)
+    if cut_hash in args.hash_values:
+      with open(os.path.join(args.output_directory, "{0}.json".format(cut_hash)), 'w+') as f:
+        f.write(json.dumps([{k: v for k, v in d.iteritems() if k in ['branch', 'pivot', 'signal_direction']} for d in cut], sort_keys=True, indent=4))
+      args.hash_values.remove(cut_hash)
+      logger.info("\tFound cut for hash {0:32s}. {1:d} hashes left.".format(cut_hash, len(args.hash_values)))
+    if not args.hash_values: break
   return True
 
 if __name__ == "__main__":
@@ -239,14 +266,14 @@ if __name__ == "__main__":
   requiredNamed_optimize_hash = optimize_hash_parser.add_argument_group('required named arguments')
   requiredNamed_optimize_generate = optimize_generate_parser.add_argument_group('required named arguments')
 
-  # general arguments for verbosity
+  # general arguments for all
   main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug-root to enable ROOT debugging.')
   main_parser.add_argument('--debug-root', dest='root_verbose', action='store_true', help='Enable ROOT debugging/output.')
   main_parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT. ')
   # positional argument, require the first argument to be the input filename
   requiredNamed_optimize_generate.add_argument('--signal', required=True, type=str, nargs='+', metavar='<files>', help='signal ntuples')
   requiredNamed_optimize_generate.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<files>', help='background ntuples')
-  requiredNamed_optimize_hash.add_argument('--cuts', required=True, type=str, metavar='<file>', help='json dict of cuts to optimize over')
+  requiredNamed_optimize_hash.add_argument('--cuts', required=True, type=str, dest='cuts_filename', metavar='<file>', help='json dict of cuts to optimize over')
   # these are options allowing for various additional configurations in filtering container and types to dump
   optimize_generate_parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='Specify the tree that contains the StoreGate structure.', default='oTree')
   optimize_generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='Specify the minimum value of which to exclude completely when analyzing branch-by-branch.', default=-99.0)
@@ -271,7 +298,8 @@ if __name__ == "__main__":
                                       description='Given a hash from optimization, dump the cuts associated with it. v.{0}'.format(__version__),
                                       usage='%(prog)s <hash> [<hash> ...] [options]', help='Find a cut from an optimization hash',
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
-  hash_parser.add_argument('hash', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
+  hash_parser.add_argument('hash_values', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
+  hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<filename>', help='Specify the output directory to store the <hash>.json files', default='outputHash')
 
 
 
