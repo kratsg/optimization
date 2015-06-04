@@ -148,84 +148,58 @@ if __name__ == "__main__":
   class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
     pass
 
+  class _HelpAction(argparse._HelpAction):
+    def __call__(self, parser, namespace, values, option_string=None):
+      parser.print_help()
+      parser.exit()
+
   __version__ = subprocess.check_output(["git", "describe", "--always"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
   __short_hash__ = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
 
-  parser = argparse.ArgumentParser(description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
-                                  usage='%(prog)s --signal filename ... --bkgd filename ... [options]',
-                                  formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  parser = argparse.ArgumentParser(add_help=False)
 
+  parser.add_argument('-h', '--help', action=_HelpAction, help='help for help if you need some help')  # add custom help
+
+  ''' subparsers have common parameters '''
+  optimize_hash_parser = argparse.ArgumentParser(add_help=False)
+  optimize_generate_parser = argparse.ArgumentParser(add_help=False)
+  main_parser = argparse.ArgumentParser(add_help=False)
+
+  # general arguments for verbosity
+  main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug-root to enable ROOT debugging.')
+  main_parser.add_argument('--debug-root', dest='root_verbose', action='store_true', help='Enable ROOT debugging/output.')
+  main_parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT. ')
   # positional argument, require the first argument to be the input filename
-  parser.add_argument('--signal',
-                      required=True,
-                      type=str,
-                      nargs='+',
-                      metavar='<files>',
-                      help='signal ntuples')
-  parser.add_argument('--bkgd',
-                      required=True,
-                      type=str,
-                      nargs='+',
-                      metavar='<files>',
-                      help='background ntuples')
-  parser.add_argument('--cuts',
-                      required=False,
-                      type=str,
-                      metavar='<file>',
-                      help='json dict of cuts to optimize over',
-                      default='supercuts.json')
+  optimize_generate_parser.add_argument('--signal', required=True, type=str, nargs='+', metavar='<files>', help='signal ntuples')
+  optimize_generate_parser.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<files>', help='background ntuples')
+  optimize_hash_parser.add_argument('--cuts', required=False, type=str, metavar='<file>', help='json dict of cuts to optimize over', default='supercuts.json')
   # these are options allowing for various additional configurations in filtering container and types to dump
-  parser.add_argument('--tree',
-                      type=str,
-                      required=False,
-                      dest='tree_name',
-                      metavar='<tree name>',
-                      help='Specify the tree that contains the StoreGate structure.',
-                      default='oTree')
-  parser.add_argument('--globalMinVal',
-                      type=float,
-                      required=False,
-                      dest='globalMinVal',
-                      metavar='<min val>',
-                      help='Specify the minimum value of which to exclude completely when analyzing branch-by-branch.',
-                      default=-99.0)
-  parser.add_argument('--bkgdUncertainty',
-                      type=float,
-                      required=False,
-                      dest='bkgdUncertainty',
-                      metavar='<sigma>',
-                      help='Specify the background uncertainty for calculating significance using BinomialExpZ',
-                      default=0.3)
-  parser.add_argument('--eventWeight',
-                      type=str,
-                      required=False,
-                      dest='eventWeightBranch',
-                      metavar='<branch name>',
-                      help='Specify a different branch that contains the event weight',
-                      default='event_weight')
+  optimize_generate_parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='Specify the tree that contains the StoreGate structure.', default='oTree')
+  optimize_generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='Specify the minimum value of which to exclude completely when analyzing branch-by-branch.', default=-99.0)
+  optimize_generate_parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='Specify a different branch that contains the event weight', default='event_weight')
 
-  '''general arguments for verbosity'''
-  parser.add_argument('-v',
-                      '--verbose',
-                      dest='verbose',
-                      action='count',
-                      default=0,
-                      help='Enable verbose output of various levels. Use --debug-root to enable ROOT debugging.')
-  parser.add_argument('--debug-root',
-                      dest='root_verbose',
-                      action='store_true',
-                      help='Enable ROOT debugging/output.')
-  parser.add_argument('-b',
-                      '--batch',
-                      dest='batch_mode',
-                      action='store_true',
-                      help='Enable batch mode for ROOT. ')
+  ''' add subparsers '''
+  subparsers = parser.add_subparsers(dest='command', help='actions')
+  # needs: signal, bkgd, tree, globalMinVal, eventWeight, bkgdUncertainty, cuts
+  optimize_parser = subparsers.add_parser("optimize", parents=[main_parser, optimize_hash_parser, optimize_generate_parser],
+                                          description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
+                                          usage='%(prog)s ...', help='Find optimal cuts',
+                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
 
-  parser.add_argument('-i',
-                      '--interactive',
-                      dest='interactive',
-                      action='store_true',
-                      help='(INACTIVE) Flip on/off interactive mode allowing you to navigate through the container types and properties.')
+  # needs: signal, bkgd, tree, globalMinVal, eventWeight
+  generate_parser = subparsers.add_parser("generate", parents=[main_parser, optimize_generate_parser],
+                                          description='Given the ROOT ntuples, generate a supercuts.json template. v.{0}'.format(__version__),
+                                          usage='%(prog)s ...', help='Generate supercuts template',
+                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+
+  # needs: cuts
+  hash_parser = subparsers.add_parser("hash", parents=[main_parser, optimize_hash_parser],
+                                      description='Given a hash from optimization, dump the cuts associated with it. v.{0}'.format(__version__),
+                                      usage='%(prog)s ...', help='Find a cut from an optimization hash',
+                                      formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+
+
+  optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='Specify the background uncertainty for calculating significance using BinomialExpZ', default=0.3)
 
   # parse the arguments, throw errors if missing any
   args = parser.parse_args()
