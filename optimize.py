@@ -277,18 +277,16 @@ if __name__ == "__main__":
 
       logger.info("The signal and background trees have the same branches.")
 
+      # get signal and background trees
+      signal = rnp.tree2array(trees['signal'])
+      bkgd = rnp.tree2array(trees['bkgd'])
+
       for b in sorted(branches):
-        signalArr = rnp.tree2array(trees['signal'], branches=b)
-        bkgdArr = rnp.tree2array(trees['bkgd'], branches=b)
+        skipSignal = signal[b] < args.globalMinVal
+        skipBkgd = bkgd[b] < args.globalMinVal
 
-        skipSignal = signalArr < args.globalMinVal
-        skipBkgd = bkgdArr < args.globalMinVal
-
-        signalArr = signalArr[~skipSignal]
-        bkgdArr = bkgdArr[~skipBkgd]
-
-        signalPercentile = np.percentile(signalArr, [0., 25., 50., 75., 100.])
-        bkgdPercentile = np.percentile(bkgdArr, [0., 25., 50., 75., 100.])
+        signalPercentile = np.percentile(signal[b][~skipSignal], [0., 25., 50., 75., 100.])
+        bkgdPercentile = np.percentile(bkgd[b][~skipBkgd], [0., 25., 50., 75., 100.])
         prelimStr = "{0}\n\tSignal ({1:6d} skipped):\t{2[0]:12.2f}\t{2[1]:12.2f}\t{2[2]:12.2f}\t{2[3]:12.2f}\t{2[4]:12.2f}\n\tBkgd   ({3:6d} skipped):\t{4[0]:12.2f}\t{4[1]:12.2f}\t{4[2]:12.2f}\t{4[3]:12.2f}\t{4[4]:12.2f}"
 
         logger.info(prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
@@ -297,10 +295,6 @@ if __name__ == "__main__":
       logger.info("Opening {0} for reading".format(args.cuts))
       with open(args.cuts) as cuts_file:
         data = json.load(cuts_file)
-
-      # get signal and background trees
-      signal = rnp.tree2array(trees['signal'])
-      bkgd = rnp.tree2array(trees['bkgd'])
 
       # hold dictionary of hash as key, and significance as value
       significances = {}
