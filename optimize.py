@@ -146,7 +146,7 @@ def get_significance(signal, bkgd, cuts, eventWeightBranch, bkgdUncertainty):
   return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, bkgdUncertainty)
 
 #@echo(write=logger.debug)
-def get_ttrees(tree_name, signalFilenames, bkgdFilenames):
+def get_ttrees(tree_name, signalFilenames, bkgdFilenames, eventWeightBranch):
   # this is a dict that holds all the trees
   trees = {'signal': None, 'bkgd': None}
 
@@ -170,6 +170,9 @@ def get_ttrees(tree_name, signalFilenames, bkgdFilenames):
   if not signalBranches == bkgdBranches:
     raise ValueError('The signal and background trees do not have the same branches!')
 
+  if not eventWeightBranch in signalBranches:
+    raise ValueError('The event weight branch does not exist: {0}'.format(eventWeightBranch))
+
   return trees
 
 #@echo(write=logger.debug)
@@ -185,7 +188,7 @@ def do_optimize(args):
     raise IOError("Output file already exists: {0}".format(args.output_filename))
 
   # this is a dict that holds all the trees
-  trees = get_ttrees(args.tree_name, args.signal, args.bkgd)
+  trees = get_ttrees(args.tree_name, args.signal, args.bkgd, args.eventWeightBranch)
 
   # get signal and background trees
   signal = rnp.tree2array(trees['signal'])
@@ -212,10 +215,21 @@ def do_optimize(args):
 
 #@echo(write=logger.debug)
 def do_generate(args):
-  # this is a dict that holds all the trees
-  trees = get_ttrees(args.tree_name, args.signal, args.bkgd)
+  if os.path.isfile(args.output_filename):
+    raise IOError("Output file already exists: {0}".format(args.output_filename))
 
-  for b in sorted(i.GetName() for i in trees['signal'].GetListOfBranches()):
+  # this is a dict that holds all the trees
+  trees = get_ttrees(args.tree_name, args.signal, args.bkgd, args.eventWeightBranch)
+
+  # list of branches to loop over
+  branches=[i.GetName() for i in trees['signal'].GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
+
+  # get signal and background trees
+  signal = rnp.tree2array(trees['signal'], branches=branches)
+  bkgd = rnp.tree2array(trees['bkgd'], branches=branches)
+
+  supercuts = []
+  for b in branches:
     skipSignal = signal[b] < args.globalMinVal
     skipBkgd = bkgd[b] < args.globalMinVal
 
@@ -224,6 +238,19 @@ def do_generate(args):
     prelimStr = "{0}\n\tSignal ({1:6d} skipped):\t{2[0]:12.2f}\t{2[1]:12.2f}\t{2[2]:12.2f}\t{2[3]:12.2f}\t{2[4]:12.2f}\n\tBkgd   ({3:6d} skipped):\t{4[0]:12.2f}\t{4[1]:12.2f}\t{4[2]:12.2f}\t{4[3]:12.2f}\t{4[4]:12.2f}"
 
     logger.info(prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
+
+    if signalPercentile[2] > bkgdPercentile[2]: signal_direction = '>'
+    else: signal_direction = '<'
+
+    supercuts.append({'branch': b,
+                      'min': signalPercentile[0],
+                      'max': signalPercentile[-1],
+                      'step': 1,
+                      'signal_direction': signal_direction})
+
+  with open(args.output_filename, 'w+') as f:
+    f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('branch')), sort_keys=True, indent=4))
+
 
   return True
 
@@ -262,9 +289,12 @@ if __name__ == "__main__":
   __version__ = subprocess.check_output(["git", "describe", "--always"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
   __short_hash__ = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
 
-  parser = argparse.ArgumentParser(add_help=False)
+  parser = argparse.ArgumentParser(add_help=False, description='Author: Giordon Stark. v.{0}'.format(__version__),
+                                   formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
+                                   epilog='For more options, run -h under a subcommand to see what you can do.')
 
-  parser.add_argument('-h', '--help', action=_HelpAction, help='help for help if you need some help')  # add custom help
+
+  parser.add_argument('-h', '--help', action=_HelpAction, help='show this help message and exit')  # add custom help
 
   ''' subparsers have common parameters '''
   optimize_hash_parser = argparse.ArgumentParser(add_help=False)
@@ -288,7 +318,7 @@ if __name__ == "__main__":
   optimize_generate_parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='Specify a different branch that contains the event weight', default='event_weight')
 
   ''' add subparsers '''
-  subparsers = parser.add_subparsers(dest='command', help='actions')
+  subparsers = parser.add_subparsers(dest='command', help='actions available')
   # needs: signal, bkgd, tree, globalMinVal, eventWeight, bkgdUncertainty, cuts
   optimize_parser = subparsers.add_parser("optimize", parents=[main_parser, optimize_hash_parser, optimize_generate_parser],
                                           description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
@@ -299,13 +329,14 @@ if __name__ == "__main__":
   # needs: signal, bkgd, tree, globalMinVal, eventWeight
   generate_parser = subparsers.add_parser("generate", parents=[main_parser, optimize_generate_parser],
                                           description='Given the ROOT ntuples, generate a supercuts.json template. v.{0}'.format(__version__),
-                                          usage='%(prog)s ...', help='Generate supercuts template',
+                                          usage='%(prog)s ...', help='Write supercuts template',
                                           formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<filename>', help='Specify the output json file to store the generated supercuts template', default='supercuts.json')
 
   # needs: cuts
   hash_parser = subparsers.add_parser("hash", parents=[main_parser, optimize_hash_parser],
                                       description='Given a hash from optimization, dump the cuts associated with it. v.{0}'.format(__version__),
-                                      usage='%(prog)s <hash> [<hash> ...] [options]', help='Find a cut from an optimization hash',
+                                      usage='%(prog)s <hash> [<hash> ...] [options]', help='Translate hash to cut',
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
   hash_parser.add_argument('hash_values', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
   hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<filename>', help='Specify the output directory to store the <hash>.json files', default='outputHash')
