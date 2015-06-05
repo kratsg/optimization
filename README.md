@@ -29,12 +29,15 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
   - [Action:Optimize](#actionoptimize)
     - [Required Parameters](#required-parameters)
     - [Optional Parameters](#optional-parameters)
+    - [Output](#output)
   - [Action:Generate](#actiongenerate)
     - [Required Parameters](#required-parameters-1)
     - [Optional Parameters](#optional-parameters-1)
+    - [Output](#output-1)
   - [Action:Hash](#actionhash)
     - [Required Parameters](#required-parameters-2)
     - [Optional Parameters](#optional-parameters-2)
+    - [Output](#output-2)
   - [Supercuts File](#supercuts-file)
     - [Defining a fixed cut](#defining-a-fixed-cut)
     - [Defining a supercut](#defining-a-supercut)
@@ -183,58 +186,140 @@ We also provide an optional argument `-a, --allhelp` which will print all the he
 
 ### Action:Optimize
 
-Optimize helps you find your optimal cuts.
+Optimize helps you find your optimal cuts. Process ROOT ntuples and Optimize Cuts.
 
 ```bash
-python optimize.py optimize -h
+usage: optimize.py optimize  --signal=signal.root [..] --bkgd=bkgd.root [...] --supercuts=supercuts.json [options]
 ```
 
 #### Required Parameters
 
 Variable | Type | Description
 ---------|------|------------
+--signal | filename | path(s) to root files containing signal ntuples
+--bkgd | filename | path(s) to root files containing background ntuples
+--supercuts | filename | path to json dict of supercuts for generating cuts
 
 #### Optional Parameters
 
+Variable | Type | Description | Default
+---------|------|-------------|---------
+-h, --help | bool | display help message for optimize subcommand | False (not set)
+-v, --verbose | count | enable more verbose output | 0
+--debug | bool | enable ROOT output and full-on debugging | False (not set)
+-b, --batch | bool | enable batch mode for ROOT | False (not set)
+--tree | string | ttree name in the ntuples | oTree
+--eventWeight | string | event weight branch name | event_weight
+--o, --output | filename | output json file containing list of significances | significances.json
+--bkgdUncertainty | float | background uncertainty for calculating significance | 0.3
+--insignificance | int | minimum number of events required for non-zero significance | 10
+
+#### Output
+
 Variable | Type | Description
 ---------|------|------------
+hash | 32-bit string | md5 hash of the cut
+significance | float | calculated significance of the cut
+insignificance | string | if set, value tells you which region was insignificant
+
+The output is a json file which will look like
+
+```json
+[
+    ...
+    {
+        "hash": "97abf074c8334f284618899bc1605bce",
+        "significance": 25.12760472644945
+    },
+    ...
+]
+```
+
+if a significance was calculated successfully or
+
+```json
+[
+    ...
+    {
+        "hash": "3aa373b14b6fccb8fb9efc99cccff877",
+        "insignificance": "bkgd",
+        "significance": 0
+    },
+    ...
+]
+```
+
+if the number of events in signal or background did not pass the `--insignificance` minimum threshold set. In the above example, the background did not pass. In all cases where there is insignificance, the significance will always be set to `0`.
 
 ### Action:Generate
 
-Generate helps you quickly start.
+Generate helps you quickly start. Given the ROOT ntuples, generate a supercuts.json template.
 
 ```bash
-python optimize.py optimize -h
+usage: optimize.py generate --signal=signal.root [..] --bkgd=bkgd.root [...] [options]
 ```
 
 #### Required Parameters
 
 Variable | Type | Description
 ---------|------|------------
+--signal | filename | path(s) to root files containing signal ntuples
+--bkgd | filename | path(s) to root files containing background ntuples
 
 #### Optional Parameters
 
 Variable | Type | Description
 ---------|------|------------
+-h, --help | bool | display help message for generate subcommand | False (not set)
+-v, --verbose | count | enable more verbose output | 0
+--debug | bool | enable ROOT output and full-on debugging | False (not set)
+-b, --batch | bool | enable batch mode for ROOT | False (not set)
+--tree | string | ttree name in the ntuples | oTree
+--eventWeight | string | event weight branch name | event_weight
+--o, --output | filename | output json file to store generated supercuts file | supercuts.json
+--globalMinVal | number | if verbose, display skipped events below this value | -90.0
+--fixedBranches | strings | branches that should have a fixed cut | []
+--skipBranches | strings | branches that should not have a cut (skip them) | []
 
+#### Output
+
+This script will generate a supercuts json file. See [Supercuts File](#supercuts-file) for more information.
 
 ### Action:Hash
 
-Generate helps you decode the hash.
+Hash to cut translation. Given a hash from optimization, dump the cuts associated with it.
 
 ```bash
-python optimize.py optimize -h
+usage: optimize.py hash <hash> [<hash> ...] --supercuts=supercuts.json [options]
 ```
 
 #### Required Parameters
 
 Variable | Type | Description
 ---------|------|------------
+hash (positional) | string | 32-bit hash(es) to decode as cuts
+--supercuts | filename | path to json dict of supercuts
 
 #### Optional Parameters
 
 Variable | Type | Description
 ---------|------|------------
+-h, --help | bool | display help message for hash subcommand | False (not set)
+-v, --verbose | count | enable more verbose output | 0
+--debug | bool | enable ROOT output and full-on debugging | False (not set)
+-b, --batch | bool | enable batch mode for ROOT | False (not set)
+--o, --output | directory | output directory to store json files containing cuts | outputHash
+
+#### Output
+
+The hash subcommand will create an output directory with multiple json files, one for each hash, containing details about the cut applied. Unlike a standard supercuts file, the hash will only output dictionaries of **4** elements
+
+Variable | Type | Description
+---------|------|------------
+branch | string | name of branch that cut was applied on
+fixed | bool | whether the cut was from a fixed cut or a supercut
+pivot | number | the value which we cut on, see `signal_direction` for more
+signal_direction | string | `? = >` or `? = <`, cuts obey the rule `value ? pivot`
 
 
 ### Supercuts File
@@ -283,7 +368,7 @@ branch | string | name of branch to apply a selection on
 start | number | (inclusive) starting value for the `pivot`
 stop | number | (exclusive) ending value for the `pivot`
 step | number | (non-zero) increment or decrement to take to go from `start` to `stop`
-signal_direction | string | `?= >, <`. Obeys the rule: `value ? pivot`
+signal_direction | string | `?= >` or `? = <`. Obeys the rule: `value ? pivot`
 
 **Note**: the direction in which cuts are generated can be controlled by running cuts in increasing values (`start < stop`, `step > 0`) or decreasing values (`start > stop`, `step < 0`).
 
