@@ -140,5 +140,228 @@ snakeviz profiler.log
 
 and I'm good to go.
 
+## Documentation
+
+### Top-Level
+
+```bash
+python optimize.py -h
+```
+
+> usage: optimize.py [-h] [-a] {optimize,generate,hash} ...
+>
+> Author: Giordon Stark. v.319abfc
+>
+> positional arguments:
+>   {optimize,generate,hash}  actions available
+>     optimize                Find optimal cuts
+>     generate                Write supercuts template
+>     hash                    Translate hash to cut
+>
+> optional arguments:
+>   -h, --help                show this help message and exit
+>   -a, --allhelp             show this help message and all subcommand help
+>                             messages and exit
+>
+> This is the top-level. You have no power here. If you want to get started, run
+> `optimize.py optimize -h`.
+
+#### Parameters
+
+There is only one required position argument: the `action`. You can choose from
+
+- [optimize](#action:optimize)
+- [generate](#action:generate)
+- [hash](#action:hash)
+
+We also provide an optional argument `-a, --allhelp` which will print all the help documentation at once instead of just the top-level `-h, --help`.
+
+### Action:Optimize
+
+Optimize helps you find your optimal cuts.
+
+```bash
+python optimize.py optimize -h
+```
+
+#### Required Parameters
+
+Variable | Type | Description
+---------|------|------------
+
+#### Optional Parameters
+
+Variable | Type | Description
+---------|------|------------
+
+### Action:Generate
+
+Generate helps you quickly start.
+
+```bash
+python optimize.py optimize -h
+```
+
+#### Required Parameters
+
+Variable | Type | Description
+---------|------|------------
+
+#### Optional Parameters
+
+Variable | Type | Description
+---------|------|------------
+
+
+### Action:Hash
+
+Generate helps you decode the hash.
+
+```bash
+python optimize.py optimize -h
+```
+
+#### Required Parameters
+
+Variable | Type | Description
+---------|------|------------
+
+#### Optional Parameters
+
+Variable | Type | Description
+---------|------|------------
+
+
+### Supercuts File
+
+This is a potentially large [JSON](http://www.json.org/) file that tells the [optimize](#action:optimize), [hash](#action:hash), and [generate](#action:generate) commands the rules of your cuts.
+
+- The `optimize` command uses it to generate a series of cuts to apply to your ntuples, then hash these cuts and store them with their calculated significance.
+- The `hash` command uses it to recompute the hash and find the cuts that match up to the hashes you need to decode.
+- The `generate` command creates this file for you based on your ntuples to help you get started.
+
+The file will always contain a list of objects (dictionaries) for each branch that you care about cutting on.
+
+#### Defining a fixed cut
+
+A fixed cut is a single cut on a single branch. This is like taking a partial derivative where you fix one thing and vary others. In this case, we fix a branch defined by a fixed cut.
+
+Key | Type | Description
+----|------|------------
+branch | string | name of branch to apply a selection on
+pivot | number | the value at which we cut (or *pivot* against)
+signal_direction | string | `?= >, <`. Obeys the rule: `value ? pivot`
+
+The simplest example is when we want to use a single fixed cut on a single branch. Your object will look like
+
+```json
+[
+  ...
+  {
+    "branch": "multiplicity_jet",
+    "pivot": 3,
+    "signal_direction": ">"
+  },
+  ...
+]
+```
+
+This says we would like a fixed cut on `multiplicity_jet` requiring that there are more than 3 jets (eg: the rule we obey is `value > 3`).
+
+#### Defining a supercut
+
+A supercut is our term for an object that generates more than 1 cut on the defined branch. A fixed cut will generate 1 cut, but a supercut can generate a boundless number of cuts.
+
+Key | Type | Description
+----|------|------------
+branch | string | name of branch to apply a selection on
+start | number | (inclusive) starting value for the `pivot`
+stop | number | (exclusive) ending value for the `pivot`
+step | number | (non-zero) increment or decrement to take to go from `start` to `stop`
+signal_direction | string | `?= >, <`. Obeys the rule: `value ? pivot`
+
+**Note**: the direction in which cuts are generated can be controlled by running cuts in increasing values (`start < stop`, `step > 0`) or decreasing values (`start > stop`, `step < 0`).
+
+There are two main examples we will provide to show the different cuts that could be generated.
+
+```json
+[
+  ...
+  {
+    "branch": "multiplicity_jet",
+    "start": 2,
+    "stop": 7,
+    "step": 2,
+    "signal_direction": "<"
+  },
+  ...
+]
+```
+
+This says we would like a supercut on `multiplicity_jet` where the pivot values are `2, 4, 6` obeying the rule that `value < pivot`. This supercut will generate 3 cuts:
+
+- `value < 2`
+- `value < 4`
+- `value < 6`
+
+in that order.
+
+```json
+[
+  ...
+  {
+    "branch": "multiplicity_jet",
+    "start": 3,
+    "stop": 1,
+    "step": -1,
+    "signal_direction": ">"
+  },
+  ...
+]
+```
+
+This says we would like a supercut on `multiplicity_jet` where the pivot values are `3, 2` obeying the rule that `value > pivot`. This supercut will generate 2 cuts:
+
+- `value > 3`
+- `value > 2`
+
+in that order.
+
+#### Example of a supercuts file
+
+Here is an example `supercuts.json` file
+
+```json
+[
+  {
+    "branch": "multiplicity_jet",
+    "start": 2,
+    "stop": 15,
+    "step": 1,
+    "signal_direction": ">"
+  },
+  {
+    "branch": "multiplicity_jet_largeR",
+    "start": 3,
+    "stop": 1,
+    "step": -1,
+    "signal_direction": "<"
+  },
+  {
+    "branch": "multiplicity_topTag_loose",
+    "pivot": 1,
+    "signal_direction": ">"
+  }
+]
+```
+
+How do we interpret this? This file tells the code that there are 3 branches to apply cuts on: `multiplicity_jet`, `multiplicity_jet_largeR`, and `multiplicity_topTag_loose`. Each object `{...}` represents a branch. In order:
+
+- This is a supercut. **13** cuts will be generated for `multiplicity_jet` starting from `2` to `15` in increments of `1`. This means the cut values (`pivot`) used will be `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14` (inclusive start, exclusive end - adhere to python standards). The `signal_direction` specifies where we expect the signal to be. `>` means to cut on the **right** so we only want to keep events with `value > pivot`.
+- This is a supercut.**2** cuts will be generated for `multiplicity_jet_largeR` starting from `3` to `1` in incremenets of `-1`. This means the cut values (`pivot`) used will be `3, 2` (inclusive start, exclusive end - adhere to python standards). The `signal_direction` specifies where we expect the signal to be. `<` means to cut on the **left** so we only want to keep events with `value < pivot`.
+- This is a fixed cut. **1** cut will be used for `multiplicity_topTag_loose` with a `pivot = 1` and `signal_direction = >`. This means we will only select events with `value > 1` always. The `pivot` will be fixed. One could also fix the cut by providing `start`, `stop`, `step` such that it only generates 1 cut, but the script will not identify this as a fixed cut for you when you look up the `cut` using [hash](#action:hash).
+
+This supercuts file will generate **26** total cuts (`13*2*1 = 26`). Each cut will have an associated hash value and an associated significance which will be recorded to an output file when you run [optimize](#action:optimize)
+
 ## Authors
 - [Giordon Stark](https://github.com/kratsg)
