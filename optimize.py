@@ -388,7 +388,7 @@ if __name__ == "__main__":
   optimize_parser = subparsers.add_parser("optimize", parents=[main_parser, optimize_hash_parser, optimize_generate_parser],
                                           description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
                                           usage='%(prog)s  --signal=signal.root [..] --bkgd=bkgd.root [...] --supercuts=supercuts.json [options]', help='Find optimal cuts',
-                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=40),
+                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
                                           epilog='optimize will take in signal, background, supercuts and calculate the significances for all cuts possible.')
   optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the significances computed', default='significances.json')
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
@@ -398,7 +398,7 @@ if __name__ == "__main__":
   generate_parser = subparsers.add_parser("generate", parents=[main_parser, optimize_generate_parser],
                                           description='Given the ROOT ntuples, generate a supercuts.json template. v.{0}'.format(__version__),
                                           usage='%(prog)s --signal=signal.root [..] --bkgd=bkgd.root [...] [options]', help='Write supercuts template',
-                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=40),
+                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
                                           epilog='generate will take in signal, background and generate the supercuts template file for you to edit and use (rather than making it by hand)')
   generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the generated supercuts template', default='supercuts.json')
   generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='minimum value when analyzing branch-by-branch.', default=-90.0)
@@ -409,7 +409,7 @@ if __name__ == "__main__":
   hash_parser = subparsers.add_parser("hash", parents=[main_parser, optimize_hash_parser],
                                       description='Given a hash from optimization, dump the cuts associated with it. v.{0}'.format(__version__),
                                       usage='%(prog)s <hash> [<hash> ...] --supercuts=supercuts.json [options]', help='Translate hash to cut',
-                                      formatter_class=lambda prog: CustomFormatter(prog, max_help_position=40),
+                                      formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
                                       epilog='hash will take in a list of hashes and dump the cuts associated with them')
   hash_parser.add_argument('hash_values', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
   hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='outputHash')
