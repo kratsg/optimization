@@ -149,9 +149,13 @@ def count_events(tree, cuts, eventWeightBranch):
   return np.sum(tree[eventWeightBranch][apply_cuts(tree, cuts)])
 
 #@echo(write=logger.debug)
-def get_significance(signal, bkgd, cuts, eventWeightBranch, bkgdUncertainty):
+def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty):
   numSignal = count_events(signal, cuts, eventWeightBranch)
   numBkgd   = count_events(bkgd, cuts, eventWeightBranch)
+  # if not enough events, return string of which one did not have enough
+  if numSignal < insignificanceThreshold: return "signal"
+  if numBkgd < insignificanceThreshold: return "bkgd"
+  # otherwise, calculate!
   return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, bkgdUncertainty)
 
 #@echo(write=logger.debug)
@@ -226,8 +230,13 @@ def do_optimize(args):
   significances = []
   for cut in get_cut(copy.deepcopy(data)):
     cut_hash = get_cut_hash(cut)
-    cut_significance = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.bkgdUncertainty)
-    significances.append({'hash': cut_hash, 'significance': cut_significance})
+    cut_significance = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty)
+
+    if isinstance(cut_significance, str):
+      significances.append({'hash': cut_hash, 'significance': 0, 'insignificance': cut_significance})
+      cut_significance = 0
+    else:
+      significances.append({'hash': cut_hash, 'significance': cut_significance})
     logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
 
   logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
@@ -375,7 +384,7 @@ if __name__ == "__main__":
 
   ''' add subparsers '''
   subparsers = parser.add_subparsers(dest='command', help='actions available')
-  # needs: signal, bkgd, tree, eventWeight, bkgdUncertainty, cuts
+  # needs: signal, bkgd, tree, eventWeight, bkgdUncertainty, insignificanceThreshold, cuts
   optimize_parser = subparsers.add_parser("optimize", parents=[main_parser, optimize_hash_parser, optimize_generate_parser],
                                           description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
                                           usage='%(prog)s  --signal=signal.root [..] --bkgd=bkgd.root [...] --supercuts=supercuts.json [options]', help='Find optimal cuts',
@@ -383,6 +392,7 @@ if __name__ == "__main__":
                                           epilog='optimize will take in signal, background, supercuts and calculate the significances for all cuts possible.')
   optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the significances computed', default='significances.json')
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
+  optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of events for calculating significance', default=10)
 
   # needs: signal, bkgd, tree, globalMinVal, eventWeight
   generate_parser = subparsers.add_parser("generate", parents=[main_parser, optimize_generate_parser],
