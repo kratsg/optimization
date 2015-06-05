@@ -12,17 +12,17 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-  - [Major Dependencies](#major-dependencies)
-  - [Quick Start](#quick-start)
-    - [Installing](#installing)
-      - [Using virtual environment](#using-virtual-environment)
-      - [Without using virtual environment](#without-using-virtual-environment)
-    - [Using](#using)
-      - [Grab some optimization ntuples](#grab-some-optimization-ntuples)
-      - [Generate a supercuts template](#generate-a-supercuts-template)
-      - [Running the optimizations](#running-the-optimizations)
-      - [Looking up a cut (or two)](#looking-up-a-cut-or-two)
-    - [Profiling Code](#profiling-code)
+- [Major Dependencies](#major-dependencies)
+- [Quick Start](#quick-start)
+  - [Installing](#installing)
+    - [Using virtual environment](#using-virtual-environment)
+    - [Without using virtual environment](#without-using-virtual-environment)
+  - [Using](#using)
+    - [Grab some optimization ntuples](#grab-some-optimization-ntuples)
+    - [Generate a supercuts template](#generate-a-supercuts-template)
+    - [Running the optimizations](#running-the-optimizations)
+    - [Looking up a cut (or two)](#looking-up-a-cut-or-two)
+  - [Profiling Code](#profiling-code)
 - [Authors](#authors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -129,5 +129,5 @@ snakeviz profiler.log
 
 and I'm good to go.
 
-# Authors
+## Authors
 - [Giordon Stark](https://github.com/kratsg)
