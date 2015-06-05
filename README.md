@@ -210,9 +210,9 @@ Variable | Type | Description | Default
 -b, --batch | bool | enable batch mode for ROOT | False (not set)
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
---o, --output | filename | output json file containing list of significances | significances.json
---bkgdUncertainty | float | background uncertainty for calculating significance | 0.3
---insignificance | int | minimum number of events required for non-zero significance | 10
+--o, --output | filename | output list of significances | significances.json
+--bkgdUncertainty | float | bkgd uncertainty for calculating significance | 0.3
+--insignificance | int | min. number of events for non-zero significance | 10
 
 #### Output
 
@@ -346,13 +346,13 @@ The simplest example is when we want to use a single fixed cut on a single branc
 
 ```json
 [
-  ...
-  {
-    "branch": "multiplicity_jet",
-    "pivot": 3,
-    "signal_direction": ">"
-  },
-  ...
+    ...
+    {
+        "branch": "multiplicity_jet",
+        "pivot": 3,
+        "signal_direction": ">"
+    },
+    ...
 ]
 ```
 
@@ -376,15 +376,15 @@ There are two main examples we will provide to show the different cuts that coul
 
 ```json
 [
-  ...
-  {
-    "branch": "multiplicity_jet",
-    "start": 2,
-    "stop": 7,
-    "step": 2,
-    "signal_direction": "<"
-  },
-  ...
+    ...
+    {
+        "branch": "multiplicity_jet",
+        "start": 2,
+        "stop": 7,
+        "step": 2,
+        "signal_direction": "<"
+    },
+    ...
 ]
 ```
 
@@ -398,15 +398,15 @@ in that order.
 
 ```json
 [
-  ...
-  {
-    "branch": "multiplicity_jet",
-    "start": 3,
-    "stop": 1,
-    "step": -1,
-    "signal_direction": ">"
-  },
-  ...
+    ...
+    {
+        "branch": "multiplicity_jet",
+        "start": 3,
+        "stop": 1,
+        "step": -1,
+        "signal_direction": ">"
+    },
+    ...
 ]
 ```
 
@@ -423,25 +423,25 @@ Here is an example `supercuts.json` file
 
 ```json
 [
-  {
-    "branch": "multiplicity_jet",
-    "start": 2,
-    "stop": 15,
-    "step": 1,
-    "signal_direction": ">"
-  },
-  {
-    "branch": "multiplicity_jet_largeR",
-    "start": 3,
-    "stop": 1,
-    "step": -1,
-    "signal_direction": "<"
-  },
-  {
-    "branch": "multiplicity_topTag_loose",
-    "pivot": 1,
-    "signal_direction": ">"
-  }
+    {
+        "branch": "multiplicity_jet",
+        "start": 2,
+        "stop": 15,
+        "step": 1,
+        "signal_direction": ">"
+    },
+    {
+        "branch": "multiplicity_jet_largeR",
+        "start": 3,
+        "stop": 1,
+        "step": -1,
+        "signal_direction": "<"
+    },
+    {
+        "branch": "multiplicity_topTag_loose",
+        "pivot": 1,
+        "signal_direction": ">"
+    }
 ]
 ```
 
