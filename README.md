@@ -203,7 +203,7 @@ Variable | Type | Description
 #### Optional Parameters
 
 Variable | Type | Description | Default
---------------|------|-------------|---------
+---------|------|-------------|---------
 -h, --help | bool | display help message | False
 -v, --verbose | count | enable more verbose output | 0
 --debug | bool | enable full-on debugging | False
@@ -212,7 +212,7 @@ Variable | Type | Description | Default
 --eventWeight | string | event weight branch name | event_weight
 --o, --output | string | output list of significances | significances.json
 --bkgdUncertainty | float | bkgd sigma for calculating sig. | 0.3
---insignificance | int | min. number of events for non-zero significance | 10
+--insignificance | int | min. number of events for non-zero sig. | 10
 
 #### Output
 
