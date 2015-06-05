@@ -129,8 +129,8 @@ def get_cut(superCuts, index=0):
     item = superCuts[index]
     # are we doing a fixed cut? they should specify only pivot
     try:
-      # if they don't want a fixed cut, then they need min, max, step
-      for pivot in np.arange(item['min'], item['max'], item['step']):
+      # if they don't want a fixed cut, then they need start, stop, step
+      for pivot in np.arange(item['start'], item['stop'], item['step']):
         # set the pivot value
         item['pivot'] = pivot
         item['fixed'] = False
@@ -292,11 +292,19 @@ def do_generate(args):
                         'pivot': signalPercentile[2],
                         'signal_direction': signal_direction})
     else:
-      supercuts.append({'branch': b,
-                        'min': signalPercentile[0],
-                        'max': signalPercentile[-1],
-                        'step': 1,
-                        'signal_direction': signal_direction})
+      if signal_direction == '>':
+        supercuts.append({'branch': b,
+                          'start': signalPercentile[0],
+                          'stop': signalPercentile[-1],
+                          'step': 1,
+                          'signal_direction': '>'})
+      else:
+        supercuts.append({'branch': b,
+                          'start': signalPercentile[-1],
+                          'stop': signalPercentile[0],
+                          'step': -1,
+                          'signal_direction': '<'})
+
 
   with open(args.output_filename, 'w+') as f:
     f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('branch')), sort_keys=True, indent=4))
