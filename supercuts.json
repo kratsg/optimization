@@ -8,9 +8,9 @@
   },
   {
     "branch": "multiplicity_jet_largeR",
-    "start": 1,
-    "stop": 3,
-    "step": 1,
+    "start": 3,
+    "stop": 1,
+    "step": -1,
     "signal_direction": ">"
   },
   {
