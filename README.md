@@ -283,13 +283,17 @@ Variable | Type | Description
 
 - `--globalMinVal` is just an aesthetic feature to make it easier to identify the "true" minimum of your ntuples. I often output -99.0 in case there is (for example) no 4th jet, or I could not calculate some substructure information, this allows me to automatically chop off the low end of a branch to get a better calculation of the percentiles
 - `--fixedBranches` and `--skipBranches` can take a series of strings or a series of patterns
+
   ```bash
   --fixedBranches multiplicity_jet multiplicity_topTag_loose multiplicity_topTag_tight
   ```
+
   or
+
   ```bash
   --fixedBranches multiplicity_* pt_jet_rc8_1
   ```
+
   which aims to make life easier for all of us.
 
 #### Output
