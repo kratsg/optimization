@@ -196,9 +196,9 @@ usage: optimize.py optimize  --signal=signal.root [..] --bkgd=bkgd.root [...] --
 
 Variable | Type | Description
 ---------|------|------------
---signal | filename | path(s) to root files containing signal ntuples
---bkgd | filename | path(s) to root files containing background ntuples
---supercuts | filename | path to json dict of supercuts for generating cuts
+--signal | string | path(s) to root files containing signal ntuples
+--bkgd | string | path(s) to root files containing background ntuples
+--supercuts | string | path to json dict of supercuts for generating cuts
 
 #### Optional Parameters
 
@@ -210,7 +210,7 @@ Variable | Type | Description | Default
 -b, --batch | bool | enable batch mode for ROOT | False
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
---o, --output | filename | output list of significances | significances.json
+--o, --output | string | output list of significances | significances.json
 --bkgdUncertainty | float | bkgd sigma for calculating sig. | 0.3
 --insignificance | int | min. number of events for non-zero significance | 10
 
@@ -263,8 +263,8 @@ usage: optimize.py generate --signal=signal.root [..] --bkgd=bkgd.root [...] [op
 
 Variable | Type | Description
 ---------|------|------------
---signal | filename | path(s) to root files containing signal ntuples
---bkgd | filename | path(s) to root files containing background ntuples
+--signal | string | path(s) to root files containing signal ntuples
+--bkgd | string | path(s) to root files containing background ntuples
 
 #### Optional Parameters
 
@@ -276,7 +276,7 @@ Variable | Type | Description
 -b, --batch | bool | enable batch mode for ROOT | False
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
---o, --output | filename | output json file to store generated supercuts file | supercuts.json
+--o, --output | string | output json file to store generated supercuts file | supercuts.json
 --globalMinVal | number | if verbose, display skipped events below this value | -90.0
 --fixedBranches | strings | branches that should have a fixed cut | []
 --skipBranches | strings | branches that should not have a cut (skip them) | []
@@ -298,7 +298,7 @@ usage: optimize.py hash <hash> [<hash> ...] --supercuts=supercuts.json [options]
 Variable | Type | Description
 ---------|------|------------
 hash (positional) | string | 32-bit hash(es) to decode as cuts
---supercuts | filename | path to json dict of supercuts
+--supercuts | string | path to json dict of supercuts
 
 #### Optional Parameters
 
