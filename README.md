@@ -1,9 +1,17 @@
+# Optimization - A PyRoot Codebase
+
+This tool allows you to take a series of ROOT ntuples, signal & background, apply a lot of cuts automatically, and figure out the most optimal selections to maximize significance. It comes packed with a lot of features
+
+- generator script to create, what we call, a supercuts file containing all the rules to tell the script what cuts to apply and on which branches
+- optimization script which will take your signal, background, & supercuts; run them all; and output a sorted list of optimal cuts\*
+- hash look up script to reverse-engineer the cut for a given hash when you supply the supercuts file
+
+\**Note*: as part of making the script run as fast as possible, I try to maintain a low memory profile. It will only pull (load) branches from your ttrees that you plan to make cuts on. It will also not store (or remember) the cut used to create a significance value. Instead, we compute a 32-bit hash which is used to encode the cuts, and a way to "decode" the hash is also provided.
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Optimization - A PyRoot Codebase](#optimization---a-pyroot-codebase)
-  - [Introduction](#introduction)
   - [Major Dependencies](#major-dependencies)
   - [Quick Start](#quick-start)
     - [Installing](#installing)
@@ -19,17 +27,6 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Optimization - A PyRoot Codebase
-
-## Introduction
-
-This tool allows you to take a series of ROOT ntuples, signal & background, apply a lot of cuts automatically, and figure out the most optimal selections to maximize significance. It comes packed with a lot of features
-
-- generator script to create, what we call, a supercuts file containing all the rules to tell the script what cuts to apply and on which branches
-- optimization script which will take your signal, background, & supercuts; run them all; and output a sorted list of optimal cuts\*
-- hash look up script to reverse-engineer the cut for a given hash when you supply the supercuts file
-
-\**Note*: as part of making the script run as fast as possible, I try to maintain a low memory profile. It will only pull (load) branches from your ttrees that you plan to make cuts on. It will also not store (or remember) the cut used to create a significance value. Instead, we compute a 32-bit hash which is used to encode the cuts, and a way to "decode" the hash is also provided.
 
 ## Major Dependencies
  - [PyROOT](https://root.cern.ch/drupal/content/pyroot) (which technically requires ROOT)
