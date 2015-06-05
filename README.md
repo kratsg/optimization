@@ -111,7 +111,7 @@ which will write branches that match `multiplicity_topTag*` to have a fixed cut 
 After that, we just (at a bare minimum) specify the `signal` and `bkgd` ROOT files. Since the script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified for each either as a pattern or just explicitly writing them out.
 
 ```bash
-python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.20453* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* --cuts=supercuts.json -b
+python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.20453* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* --supercuts=supercuts.json -b
 ```
 
 #### Looking up a cut (or two)
@@ -119,7 +119,7 @@ python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV
 When the optimizations have finished running, you'll want to take the given hash(es) and figure out what cut it corresponds to, you can do this with
 
 ```bash
-python optimize.py hash e31dcf5ba4786d9e8ffa9e642729a6b9 4e16fdc03c171913bc309d57739c7225 8fa0e0ab6bf6a957d545df68dba97a53 --cuts=supercuts.json
+python optimize.py hash e31dcf5ba4786d9e8ffa9e642729a6b9 4e16fdc03c171913bc309d57739c7225 8fa0e0ab6bf6a957d545df68dba97a53 --supercuts=supercuts.json
 ```
 
 which will create `outputHash/<hash>.json` files detailing the cuts involved.
@@ -129,7 +129,7 @@ which will create `outputHash/<hash>.json` files detailing the cuts involved.
 This is one of those pieces of python code we always want to run as fast as possible. Optimization should not take long. To figure out those dead-ends, I use [snakeviz](https://jiffyclub.github.io/snakeviz/). The `requirements.txt` file contains this dependency. To run it, I first profile the code by running it:
 
 ```bash
-python -m cProfile -o profiler.log optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.204533* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* --cuts=supercuts.json -b
+python -m cProfile -o profiler.log optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.204533* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* --supercuts=supercuts.json -b
 ```
 
 then I use the `snakeviz` script to help me visualize this
