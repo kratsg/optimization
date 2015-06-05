@@ -293,17 +293,16 @@ def do_generate(args):
                         'signal_direction': signal_direction})
     else:
       if signal_direction == '>':
-        supercuts.append({'branch': b,
-                          'start': signalPercentile[0],
-                          'stop': signalPercentile[-1],
-                          'step': 1,
-                          'signal_direction': '>'})
+        start = signalPercentile[0]
+        stop = signalPercentile[-1]
       else:
-        supercuts.append({'branch': b,
-                          'start': signalPercentile[-1],
-                          'stop': signalPercentile[0],
-                          'step': -1,
-                          'signal_direction': '<'})
+        start = signalPercentile[-1]
+        stop = signalPercentile[0]
+      supercuts.append({'branch': b,
+                        'start': int(start),
+                        'stop': int(stop),
+                        'step': int((stop-start)/10.),
+                        'signal_direction': signal_direction})
 
 
   with open(args.output_filename, 'w+') as f:
