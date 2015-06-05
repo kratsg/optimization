@@ -211,7 +211,7 @@ Variable | Type | Description | Default
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
 --o, --output | filename | output list of significances | significances.json
---bkgdUncertainty | float | bkgd uncertainty for calculating significance | 0.3
+--bkgdUncertainty | float | bkgd sigma for calculating significance | 0.3
 --insignificance | int | min. number of events for non-zero significance | 10
 
 #### Output
