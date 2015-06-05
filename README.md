@@ -204,10 +204,10 @@ Variable | Type | Description
 
 Variable | Type | Description | Default
 ---------|------|-------------|---------
--h, --help | bool | display help message for optimize subcommand | False (not set)
+-h, --help | bool | display help message | False
 -v, --verbose | count | enable more verbose output | 0
---debug | bool | enable ROOT output and full-on debugging | False (not set)
--b, --batch | bool | enable batch mode for ROOT | False (not set)
+--debug | bool | enable ROOT output and full-on debugging | False
+-b, --batch | bool | enable batch mode for ROOT | False
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
 --o, --output | filename | output list of significances | significances.json
@@ -270,10 +270,10 @@ Variable | Type | Description
 
 Variable | Type | Description
 ---------|------|------------
--h, --help | bool | display help message for generate subcommand | False (not set)
+-h, --help | bool | display help message | False
 -v, --verbose | count | enable more verbose output | 0
---debug | bool | enable ROOT output and full-on debugging | False (not set)
--b, --batch | bool | enable batch mode for ROOT | False (not set)
+--debug | bool | enable ROOT output and full-on debugging | False
+-b, --batch | bool | enable batch mode for ROOT | False
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
 --o, --output | filename | output json file to store generated supercuts file | supercuts.json
@@ -304,10 +304,10 @@ hash (positional) | string | 32-bit hash(es) to decode as cuts
 
 Variable | Type | Description
 ---------|------|------------
--h, --help | bool | display help message for hash subcommand | False (not set)
+-h, --help | bool | display help message | False
 -v, --verbose | count | enable more verbose output | 0
---debug | bool | enable ROOT output and full-on debugging | False (not set)
--b, --batch | bool | enable batch mode for ROOT | False (not set)
+--debug | bool | enable ROOT output and full-on debugging | False
+-b, --batch | bool | enable batch mode for ROOT | False
 --o, --output | directory | output directory to store json files containing cuts | outputHash
 
 #### Output
