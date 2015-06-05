@@ -206,7 +206,7 @@ Variable | Type | Description | Default
 ---------|------|-------------|---------
 -h, --help | bool | display help message | False
 -v, --verbose | count | enable more verbose output | 0
---debug | bool | enable ROOT output and full-on debugging | False
+--debug | bool | enable full-on debugging | False
 -b, --batch | bool | enable batch mode for ROOT | False
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
@@ -272,7 +272,7 @@ Variable | Type | Description
 ---------|------|------------
 -h, --help | bool | display help message | False
 -v, --verbose | count | enable more verbose output | 0
---debug | bool | enable ROOT output and full-on debugging | False
+--debug | bool | enable full-on debugging | False
 -b, --batch | bool | enable batch mode for ROOT | False
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
@@ -306,7 +306,7 @@ Variable | Type | Description
 ---------|------|------------
 -h, --help | bool | display help message | False
 -v, --verbose | count | enable more verbose output | 0
---debug | bool | enable ROOT output and full-on debugging | False
+--debug | bool | enable full-on debugging | False
 -b, --batch | bool | enable batch mode for ROOT | False
 --o, --output | directory | output directory to store json files containing cuts | outputHash
 
