@@ -3,19 +3,8 @@
 This tool allows you to take a series of ROOT ntuples, signal & background, apply a lot of cuts automatically, and figure out the most optimal selections to maximize significance. It comes packed with a lot of features
 
 - generator script to create, what we call, a supercuts file containing all the rules to tell the script what cuts to apply and on which branches
-  ```
-  python optimize.py generate -h
-  ```
-
 - optimization script which will take your signal, background, & supercuts; run them all; and output a sorted list of optimal cuts\*
-  ```
-  python optimize.py optimize -h
-  ```
-
 - hash look up script to reverse-engineer the cut for a given hash when you supply the supercuts file
-  ```
-  python optimize.py hash -h
-  ```
 
 \**Note*: as part of making the script run as fast as possible, I try to maintain a low memory profile. It will only pull (load) branches from your ttrees that you plan to make cuts on. It will also not store (or remember) the cut used to create a significance value. Instead, we compute a 32-bit hash which is used to encode the cuts, and a way to "decode" the hash is also provided.
 
@@ -34,6 +23,22 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
     - [Running the optimizations](#running-the-optimizations)
     - [Looking up a cut (or two)](#looking-up-a-cut-or-two)
   - [Profiling Code](#profiling-code)
+- [Documentation](#documentation)
+  - [Top-Level](#top-level)
+    - [Parameters](#parameters)
+  - [Action:Optimize](#actionoptimize)
+    - [Required Parameters](#required-parameters)
+    - [Optional Parameters](#optional-parameters)
+  - [Action:Generate](#actiongenerate)
+    - [Required Parameters](#required-parameters-1)
+    - [Optional Parameters](#optional-parameters-1)
+  - [Action:Hash](#actionhash)
+    - [Required Parameters](#required-parameters-2)
+    - [Optional Parameters](#optional-parameters-2)
+  - [Supercuts File](#supercuts-file)
+    - [Defining a fixed cut](#defining-a-fixed-cut)
+    - [Defining a supercut](#defining-a-supercut)
+    - [Example of a supercuts file](#example-of-a-supercuts-file)
 - [Authors](#authors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
