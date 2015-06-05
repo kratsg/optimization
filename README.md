@@ -175,9 +175,9 @@ python optimize.py -h
 
 There is only one required position argument: the `action`. You can choose from
 
-- [optimize](#action:optimize)
-- [generate](#action:generate)
-- [hash](#action:hash)
+- [optimize](#actionoptimize)
+- [generate](#actiongenerate)
+- [hash](#actionhash)
 
 We also provide an optional argument `-a, --allhelp` which will print all the help documentation at once instead of just the top-level `-h, --help`.
 
@@ -239,7 +239,7 @@ Variable | Type | Description
 
 ### Supercuts File
 
-This is a potentially large [JSON](http://www.json.org/) file that tells the [optimize](#action:optimize), [hash](#action:hash), and [generate](#action:generate) commands the rules of your cuts.
+This is a potentially large [JSON](http://www.json.org/) file that tells the [optimize](#actionoptimize), [hash](#actionhash), and [generate](#actiongenerate) commands the rules of your cuts.
 
 - The `optimize` command uses it to generate a series of cuts to apply to your ntuples, then hash these cuts and store them with their calculated significance.
 - The `hash` command uses it to recompute the hash and find the cuts that match up to the hashes you need to decode.
@@ -364,9 +364,9 @@ How do we interpret this? This file tells the code that there are 3 branches to 
 
 - This is a supercut. **13** cuts will be generated for `multiplicity_jet` starting from `2` to `15` in increments of `1`. This means the cut values (`pivot`) used will be `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14` (inclusive start, exclusive end - adhere to python standards). The `signal_direction` specifies where we expect the signal to be. `>` means to cut on the **right** so we only want to keep events with `value > pivot`.
 - This is a supercut.**2** cuts will be generated for `multiplicity_jet_largeR` starting from `3` to `1` in incremenets of `-1`. This means the cut values (`pivot`) used will be `3, 2` (inclusive start, exclusive end - adhere to python standards). The `signal_direction` specifies where we expect the signal to be. `<` means to cut on the **left** so we only want to keep events with `value < pivot`.
-- This is a fixed cut. **1** cut will be used for `multiplicity_topTag_loose` with a `pivot = 1` and `signal_direction = >`. This means we will only select events with `value > 1` always. The `pivot` will be fixed. One could also fix the cut by providing `start`, `stop`, `step` such that it only generates 1 cut, but the script will not identify this as a fixed cut for you when you look up the `cut` using [hash](#action:hash).
+- This is a fixed cut. **1** cut will be used for `multiplicity_topTag_loose` with a `pivot = 1` and `signal_direction = >`. This means we will only select events with `value > 1` always. The `pivot` will be fixed. One could also fix the cut by providing `start`, `stop`, `step` such that it only generates 1 cut, but the script will not identify this as a fixed cut for you when you look up the `cut` using [hash](#actionhash).
 
-This supercuts file will generate **26** total cuts (`13*2*1 = 26`). Each cut will have an associated hash value and an associated significance which will be recorded to an output file when you run [optimize](#action:optimize)
+This supercuts file will generate **26** total cuts (`13*2*1 = 26`). Each cut will have an associated hash value and an associated significance which will be recorded to an output file when you run [optimize](#actionoptimize).
 
 ## Authors
 - [Giordon Stark](https://github.com/kratsg)
