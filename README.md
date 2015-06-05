@@ -203,7 +203,7 @@ Variable | Type | Description
 #### Optional Parameters
 
 Variable | Type | Description | Default
----------|------|-------------|---------
+--------------|------|-------------|---------
 -h, --help | bool | display help message | False
 -v, --verbose | count | enable more verbose output | 0
 --debug | bool | enable full-on debugging | False
