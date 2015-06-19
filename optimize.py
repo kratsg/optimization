@@ -107,9 +107,16 @@ def apply_cut(arr, pivot, direction):
   >>> apply_cut(np.random.randn(100), 0, '>')  # only positive values (val > cut)
   >>> apply_cut(np.random.randn(100), 0, '<')  # only negative values (val < cut)
   """
-  if direction == '<' and pivot is not None:
+  if pivot is None:
+    return np.ones(arr.shape, dtype=bool)
+
+  if direction == '<=':
+    return arr <= pivot
+  elif direction == '>=':
+    return arr >= pivot
+  elif direction == '<':
     return arr < pivot
-  elif direction == '>' and pivot is not None:
+  elif direction == '>':
     return arr > pivot
   else:
     return np.ones(arr.shape, dtype=bool)
