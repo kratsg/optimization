@@ -169,12 +169,13 @@ def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThresh
 def get_ttrees(tree_name, signalFilenames, bkgdFilenames, eventWeightBranch):
   # this is a dict that holds all the trees
   trees = {'signal': None, 'bkgd': None}
+  fnames = {'signal': signalFilenames, 'bkgd': bkgdFilenames}
 
   for group in ['signal', 'bkgd']:
     logger.info("Initializing TChain: {0}".format(group))
     # start by making a TChain
     trees[group] = ROOT.TChain(tree_name)
-    for fname in vars(args).get(group, []):
+    for fname in fnames.get(group, []):
       if not os.path.isfile(fname):
         raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
       else:
