@@ -34,6 +34,7 @@ import copy
 import operator
 import re
 import fnmatch
+import math
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -153,17 +154,28 @@ def get_cut_hash(cut):
 
 #@echo(write=logger.debug)
 def count_events(tree, cuts, eventWeightBranch):
-  return np.sum(tree[eventWeightBranch][apply_cuts(tree, cuts)])
+  events = tree[eventWeightBranch][apply_cuts(tree, cuts)]
+  return events.size, np.sum(events).astype(float)
 
 #@echo(write=logger.debug)
 def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty):
-  numSignal = count_events(signal, cuts, eventWeightBranch)
-  numBkgd   = count_events(bkgd, cuts, eventWeightBranch)
+  numSignal, weightedSignal = count_events(signal, cuts, eventWeightBranch)
+  numBkgd, weightedBkgd = count_events(bkgd, cuts, eventWeightBranch)
+
+  # dict containing what we want to record in the output
+  sigDetails = {'signal': numSignal, 'signalWeighted': weightedSignal, 'bkgd': numBkgd, 'bkgdWeighted': weightedBkgd}
+
   # if not enough events, return string of which one did not have enough
-  if numSignal < insignificanceThreshold: return "signal"
-  if numBkgd < insignificanceThreshold: return "bkgd"
-  # otherwise, calculate!
-  return ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, bkgdUncertainty)
+  if numSignal < insignificanceThreshold:
+    sigDetails['insignificance'] = "signal"
+    sig = 0
+  elif numBkgd < insignificanceThreshold:
+    sigDetails['insignificance'] = "bkgd"
+    sig = 0
+  else:
+    # otherwise, calculate!
+    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, bkgdUncertainty)
+  return sig, sigDetails
 
 #@echo(write=logger.debug)
 def get_ttrees(tree_name, signalFilenames, bkgdFilenames, eventWeightBranch):
@@ -238,14 +250,10 @@ def do_optimize(args):
   significances = []
   for cut in get_cut(copy.deepcopy(data)):
     cut_hash = get_cut_hash(cut)
-    cut_significance = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty)
+    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty)
 
-    if isinstance(cut_significance, str):
-      significances.append({'hash': cut_hash, 'significance': 0, 'insignificance': cut_significance})
-      cut_significance = 0
-    else:
-      significances.append({'hash': cut_hash, 'significance': cut_significance})
-    logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
+    significances.append({'hash': cut_hash, 'significance': 0 if math.isinf(cut_significance) else round(cut_significance, 4), 'details': sig_details})
+    #logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
 
   logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
 
