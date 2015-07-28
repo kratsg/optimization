@@ -188,24 +188,24 @@ def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThresh
   numBkgd, weightedBkgd = count_events(bkgd, cuts, eventWeightBranch)
   
   # apply scale factors and luminosity
-  numSignal = numSignal * signal_scale
+  numSignal = numSignal
   weightedSignal = weightedSignal * signal_scale
-  numBkgd = numBkgd * bkgd_scale
+  numBkgd = numBkgd
   weightedBkgd = weightedBkgd * bkgd_scale
 
   # dict containing what we want to record in the output
   sigDetails = {'signal': numSignal, 'signalWeighted': weightedSignal, 'bkgd': numBkgd, 'bkgdWeighted': weightedBkgd}
 
   # if not enough events, return string of which one did not have enough
-  if numSignal < insignificanceThreshold:
+  if weightedSignal < insignificanceThreshold:
     sigDetails['insignificance'] = "signal"
     sig = 0
-  elif numBkgd < insignificanceThreshold:
+  elif weightedBkgd < insignificanceThreshold:
     sigDetails['insignificance'] = "bkgd"
     sig = 0
   else:
     # otherwise, calculate!
-    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, bkgdUncertainty)
+    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(weightedSignal, weightedBkgd, bkgdUncertainty)
   return sig, sigDetails
 
 #@echo(write=logger.debug)
