@@ -1,0 +1,35 @@
+---
+# units:
+# ifb for luminosity
+# pb for cross-section
+global_luminosity: 5.0
+
+# default: # here we specify the global defaults, usually used for varying luminosity
+#   cross section: 1.0
+#   filter efficiency: 1.0
+#   k-factor: 1.0
+#   num events: 1.0
+#   luminosity: 0.5
+# <dataset id>: # specify a dataset id
+#   cross section: 27.8
+#   <<: *default_weights # this will fill in defaults for all but cross section
+
+default: &default_weights
+  cross section: 1.0
+  filter efficiency: 1.0
+  k-factor: 1.0
+  num events: 1.0
+
+#Gtt
+"370102":
+  cross section: 0.6774779078 
+  filter efficiency: 1.0
+  k-factor: 1.0
+  num events: 100000
+
+#ttbar
+"410000":
+  cross section: 696.12 
+  k-factor: 1.1949
+  filter efficiency: 0.543
+  num events: 20995765
