@@ -158,9 +158,15 @@ def count_events(tree, cuts, eventWeightBranch):
   return events.size, np.sum(events).astype(float)
 
 #@echo(write=logger.debug)
-def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty):
+def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty, signal_scale, bkgd_scale):
   numSignal, weightedSignal = count_events(signal, cuts, eventWeightBranch)
   numBkgd, weightedBkgd = count_events(bkgd, cuts, eventWeightBranch)
+  
+  # apply scale factors and luminosity
+  numSignal = numSignal * signal_scale
+  weightedSignal = weightedSignal * signal_scale
+  numBkgd = numBkgd * bkgd_scale
+  weightedBkgd = weightedBkgd * bkgd_scale
 
   # dict containing what we want to record in the output
   sigDetails = {'signal': numSignal, 'signalWeighted': weightedSignal, 'bkgd': numBkgd, 'bkgdWeighted': weightedBkgd}
@@ -250,7 +256,9 @@ def do_optimize(args):
   significances = []
   for cut in get_cut(copy.deepcopy(data)):
     cut_hash = get_cut_hash(cut)
-    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty)
+    signal_scale = args.signal_scaleFactor / args.signal_numEvents * args.luminosity * 1000
+    bkgd_scale = args.bkgd_scaleFactor / args.bkgd_numEvents * args.luminosity * 1000
+    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty, signal_scale, bkgd_scale)
 
     significances.append({'hash': cut_hash, 'significance': 0 if math.isinf(cut_significance) else round(cut_significance, 4), 'details': sig_details})
     #logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
@@ -416,6 +424,11 @@ if __name__ == "__main__":
   optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the significances computed', default='significances.json')
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of events for calculating significance', default=10)
+  optimize_parser.add_argument('--signal_scaleFactor', type=float, required=False, dest='signal_scaleFactor', metavar='<signal scaleFactor>', help='Signal scale factor, i.e. cross section [pb] * filter eff * k-factor', default=1.0)
+  optimize_parser.add_argument('--bkgd_scaleFactor', type=float, required=False, dest='bkgd_scaleFactor', metavar='<bkgd scaleFactor>', help='Background scale factor, i.e. cross section [pb] * filter eff * k-factor', default=1.0)
+  optimize_parser.add_argument('--signal_numEvents', type=int, required=False, dest='signal_numEvents', metavar='<signal numEvents>', help='Signal numEvents', default=100000)
+  optimize_parser.add_argument('--bkgd_numEvents', type=int, required=False, dest='bkgd_numEvents', metavar='<bkgd numEvents>', help='Background numEvents', default=100000)
+  optimize_parser.add_argument('--luminosity', type=float, required=False, dest='luminosity', metavar='<luminosity>', help='Luminosity [ifb]', default=5.0)
 
   # needs: signal, bkgd, tree, globalMinVal, eventWeight
   generate_parser = subparsers.add_parser("generate", parents=[main_parser, optimize_generate_parser],
