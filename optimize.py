@@ -35,6 +35,7 @@ import operator
 import re
 import fnmatch
 import math
+import yaml
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -158,23 +159,53 @@ def count_events(tree, cuts, eventWeightBranch):
   return events.size, np.sum(events).astype(float)
 
 #@echo(write=logger.debug)
-def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty):
+def get_did(filename):
+  did_regex = re.compile('(\d{6,8})')
+  m = did_regex.search(filename)
+  if m is None: raise ValueError('Can\'t figure out the DID!')
+  return m.group(1)
+
+
+#@echo(write=logger.debug)
+def get_scaleFactor(filename):
+  did = get_did(filename)
+  weights = yaml.load(file(args.weightsFile))
+  weight = weights.get(did)
+  if weight is None:
+    raise KeyError("Could not find the weights for did=%s" % did)
+  scaleFactor = 1.0
+  scaleFactor /= weight.get('num events')
+  scaleFactor *= weight.get('cross section')
+  scaleFactor *= weight.get('filter efficiency')
+  scaleFactor *= weight.get('k-factor')
+  scaleFactor *= weights.get('global_luminosity') * 1000 #to account for units on luminosity
+  return scaleFactor
+  
+
+#@echo(write=logger.debug)
+def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty, signal_scale, bkgd_scale):
   numSignal, weightedSignal = count_events(signal, cuts, eventWeightBranch)
   numBkgd, weightedBkgd = count_events(bkgd, cuts, eventWeightBranch)
+  
+  # apply scale factors and luminosity
+  numSignal = numSignal
+  weightedSignal = weightedSignal * signal_scale
+  numBkgd = numBkgd
+  weightedBkgd = weightedBkgd * bkgd_scale
 
   # dict containing what we want to record in the output
   sigDetails = {'signal': numSignal, 'signalWeighted': weightedSignal, 'bkgd': numBkgd, 'bkgdWeighted': weightedBkgd}
 
   # if not enough events, return string of which one did not have enough
-  if numSignal < insignificanceThreshold:
+  if weightedSignal < insignificanceThreshold:
     sigDetails['insignificance'] = "signal"
     sig = 0
-  elif numBkgd < insignificanceThreshold:
+  elif weightedBkgd < insignificanceThreshold:
     sigDetails['insignificance'] = "bkgd"
     sig = 0
   else:
     # otherwise, calculate!
-    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(numSignal, numBkgd, bkgdUncertainty)
+    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(weightedSignal, weightedBkgd, bkgdUncertainty)
   return sig, sigDetails
 
 #@echo(write=logger.debug)
@@ -246,11 +277,15 @@ def do_optimize(args):
   # start optimizing
   logger.log(25, "Calculating significance for a variety of cuts")
 
+  # get scale factors
+  signal_scale = get_scaleFactor(args.signal[0])
+  bkgd_scale = get_scaleFactor(args.bkgd[0])
+
   # hold list of dictionaries {'hash': <sha1>, 'significance': <significance>}
   significances = []
   for cut in get_cut(copy.deepcopy(data)):
     cut_hash = get_cut_hash(cut)
-    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty)
+    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty, signal_scale, bkgd_scale)
 
     significances.append({'hash': cut_hash, 'significance': 0 if math.isinf(cut_significance) else round(cut_significance, 4), 'details': sig_details})
     #logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
@@ -416,6 +451,7 @@ if __name__ == "__main__":
   optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the significances computed', default='significances.json')
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of events for calculating significance', default=10)
+  optimize_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
 
   # needs: signal, bkgd, tree, globalMinVal, eventWeight
   generate_parser = subparsers.add_parser("generate", parents=[main_parser, optimize_generate_parser],
