@@ -160,8 +160,9 @@ def count_events(tree, cuts, eventWeightBranch):
 
 #@echo(write=logger.debug)
 def get_did(filename):
-  m=re.match(".*.([0-9]{6}).(Gtt|Gbb|ttbar)..*",filename)
-  if m is None: raise ValueError('Can\'t figure out the did!')
+  did_regex = re.compile('(\d{6,8})')
+  m = did_regex.search(filename)
+  if m is None: raise ValueError('Can\'t figure out the DID!')
   return m.group(1)
 
 
