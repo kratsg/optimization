@@ -32,6 +32,19 @@ default: &default_weights
   filter efficiency: 0.009219475 
   num events: 3995000 
 
+#JZ7W
+"361027":
+  cross section: 16.215
+  k-factor: 1.0
+  filter efficiency: 0.00039282 
+  num events: 1996500
+#JZ8W
+"361028":
+  cross section: 0.62502 
+  k-factor: 1.0
+  filter efficiency: 0.010162 
+  num events: 2000000
+
 #dijet samples
 "361020":
   cross section: 78420000000
