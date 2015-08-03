@@ -165,7 +165,6 @@ def get_did(filename):
   if m is None: raise ValueError('Can\'t figure out the DID!')
   return m.group(1)
 
-
 #@echo(write=logger.debug)
 def get_scaleFactor(filename):
   did = get_did(filename)
@@ -174,33 +173,48 @@ def get_scaleFactor(filename):
   if weight is None:
     raise KeyError("Could not find the weights for did=%s" % did)
   scaleFactor = 1.0
-  scaleFactor /= weight.get('num events')
+  cutflow = weight.get('num events')
+  if args.debug: logger.log(25,"Cutflow: " + str(cutflow))
+  if cutflow == 0:
+    raise ValueError('Num events = 0!')
+  scaleFactor /= cutflow 
+  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
   scaleFactor *= weight.get('cross section')
+  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
+  if args.debug: logger.log(25,"Cross Section: " + str(weight.get('cross section')))
   scaleFactor *= weight.get('filter efficiency')
+  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
+  if args.debug: logger.log(25,"Filter Efficiency: " + str(weight.get('filter efficiency')))
   scaleFactor *= weight.get('k-factor')
+  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
+  if args.debug: logger.log(25,"k-factor: " + str(weight.get('k-factor')))
   scaleFactor *= weights.get('global_luminosity') * 1000 #to account for units on luminosity
+  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
+  if args.debug: logger.log(25,"lumi: " + str(weights.get('global_luminosity')))
   return scaleFactor
   
 
 #@echo(write=logger.debug)
-def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty, signal_scale, bkgd_scale):
+def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty, signal_scale, bkgd_scale):
   numSignal, weightedSignal = count_events(signal, cuts, eventWeightBranch)
   numBkgd, weightedBkgd = count_events(bkgd, cuts, eventWeightBranch)
   
   # apply scale factors and luminosity
-  numSignal = numSignal
-  weightedSignal = weightedSignal * signal_scale
-  numBkgd = numBkgd
-  weightedBkgd = weightedBkgd * bkgd_scale
+  numSignal = numSignal 
+  weightedSignal = weightedSignal
+  scaledSignal = weightedSignal * signal_scale
+  numBkgd = numBkgd 
+  weightedBkgd = weightedBkgd
+  scaledBkgd = weightedBkgd * bkgd_scale
 
   # dict containing what we want to record in the output
-  sigDetails = {'signal': numSignal, 'signalWeighted': weightedSignal, 'bkgd': numBkgd, 'bkgdWeighted': weightedBkgd}
+  sigDetails = {'signal': numSignal, 'signalWeighted': weightedSignal,'signalScaled': scaledSignal, 'bkgd': numBkgd, 'bkgdWeighted': weightedBkgd, 'bkgdScaled': scaledBkgd}
 
   # if not enough events, return string of which one did not have enough
-  if weightedSignal < insignificanceThreshold:
+  if scaledSignal < insignificanceThreshold:
     sigDetails['insignificance'] = "signal"
     sig = 0
-  elif weightedBkgd < insignificanceThreshold:
+  elif numBkgd < 1/(pow(bkgdStatUncertainty,2)): #require sqrt(numBkgd)/numBkgd < bkgdStatUncertainty
     sigDetails['insignificance'] = "bkgd"
     sig = 0
   else:
@@ -285,7 +299,7 @@ def do_optimize(args):
   significances = []
   for cut in get_cut(copy.deepcopy(data)):
     cut_hash = get_cut_hash(cut)
-    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty, signal_scale, bkgd_scale)
+    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty, signal_scale, bkgd_scale)
 
     significances.append({'hash': cut_hash, 'significance': 0 if math.isinf(cut_significance) else round(cut_significance, 4), 'details': sig_details})
     #logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
@@ -450,7 +464,8 @@ if __name__ == "__main__":
                                           epilog='optimize will take in signal, background, supercuts and calculate the significances for all cuts possible.')
   optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the significances computed', default='significances.json')
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
-  optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of events for calculating significance', default=10)
+  optimize_parser.add_argument('--bkgdStatUncertainty', type=float, required=False, dest='bkgdStatUncertainty', metavar='<sigma>', help='background statistical uncertainty for calculating significance', default=0.3)
+  optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=2)
   optimize_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
 
   # needs: signal, bkgd, tree, globalMinVal, eventWeight
