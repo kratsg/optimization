@@ -24,16 +24,16 @@ default: &default_weights
 #from https://twiki.cern.ch/twiki/bin/view/AtlasProtected/MC15TTbarSamplesPMG#ttbar_Powheg_Pythia6_hdamp_mtop
 #tag: s2608_s2183_r6630_r6264
 "410000":
-  cross section: 696.12 
-  k-factor: 1.1949
-  filter efficiency: 0.543
-  num events: 19954442 
+  cross section: 696.1470767202361
+  filter efficiency: 0.5441262081845021
+  k-factor: 1.0
+  num events: 19548779.0
 #tag: e4023_s2608_r6765_r6282
 "407012":
-  cross section: 696.12 
-  k-factor: 129.5822 
-  filter efficiency: 0.009219475 
-  num events: 3954981 
+  cross section: 696.2187196495626
+  filter efficiency: 0.00922237607759699
+  k-factor: 1.0
+  num events: 2.51763415
 
 #JZ7W
 #from https://twiki.cern.ch/twiki/bin/view/AtlasProtected/MC15MultijetPMG
@@ -247,10 +247,10 @@ default: &default_weights
   k-factor: 1.00000000
   num events: 100000
 "370102":
-  cross section: 0.6774779078
-  filter efficiency: 1.00000000
-  k-factor: 1.00000000
-  num events: 100000
+  cross section: 0.49945
+  filter efficiency: 1.0
+  k-factor: 1.0
+  num events: 101355.23061710596
 "370103":
   cross section: 0.6774779078
   filter efficiency: 1.00000000
