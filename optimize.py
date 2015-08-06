@@ -219,7 +219,7 @@ def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThresh
     sig = 0
   else:
     # otherwise, calculate!
-    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(weightedSignal, weightedBkgd, bkgdUncertainty)
+    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(scaledSignal, scaledBkgd, bkgdUncertainty)
   return sig, sigDetails
 
 #@echo(write=logger.debug)
