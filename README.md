@@ -221,7 +221,7 @@ Variable | Type | Description | Default
 Variable | Type | Description
 ---------|------|------------
 hash | 32-bit string | md5 hash of the cut
-base | integer | number of events passing the cut
+raw | integer | number of events passing the cut
 weighted | float | weighted number of events passing the cut
 scaled | float | weighed and scaled number of events passing the cut
 
@@ -234,7 +234,7 @@ The output is a directory of json files which will look like
     ...
     {
         "hash": "97abf074c8334f284618899bc1605bce",
-        "base": 90909,
+        "raw": 90909,
         "weighted": 90909.0,
         "scaled": 2.503
     },

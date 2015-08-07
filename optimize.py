@@ -321,7 +321,7 @@ def do_cuts(args):
         cut_hash = get_cut_hash(cut)
         rawEvents, weightedEvents = apply_selection(canvas, tree, cut, args.eventWeightBranch)
         scaledEvents = weightedEvents*sample_scaleFactor
-        cuts.append({'hash': cut_hash, 'base': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents})
+        cuts.append({'hash': cut_hash, 'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents})
       logger.log(25, "Applied {0:d} cuts".format(len(cuts)))
       with open('{0:s}/{1:s}.json'.format(args.output_directory, did), 'w+') as f:
         f.write(json.dumps(sorted(cuts, key=operator.itemgetter('scaled'), reverse=True), sort_keys=True, indent=4))
