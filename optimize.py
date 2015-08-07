@@ -103,6 +103,25 @@ def echo(*echoargs, **echokwargs):
   return echo_wrap
 
 #@echo(write=logger.debug)
+def apply_selection(tree, cut, eventWeightBranch):
+  # create canvas
+  canvas = ROOT.TCanvas('test', 'test', 200, 10, 100, 100)
+  selection = cut_to_selection(cut)
+  # draw with selection
+  tree.Draw(eventWeightBranch, '{0:s}*{1:s}'.format(eventWeightBranch, selection))
+  # raw and weighted counts
+  rawCount = 0
+  weightedCount = 0
+ # get drawn histogram
+  if 'htemp' in canvas:
+    htemp = canvas.GetPrimitive('htemp')
+    rawCount = htemp.GetEntries()
+    weightedCount = htemp.Integral()
+  canvas.Clear()
+  del canvas
+  return rawCount, weightedCount
+
+#@echo(write=logger.debug)
 def apply_cut(arr, pivot, direction):
   """ Given a numpy array of values, apply a cut in the direction of expected signal
 
@@ -160,7 +179,7 @@ def count_events(tree, cuts, eventWeightBranch):
 
 #@echo(write=logger.debug)
 def get_did(filename):
-  did_regex = re.compile('(\d{6,8})')
+  did_regex = re.compile('\.(\d{6,8})\.')
   m = did_regex.search(filename)
   if m is None: raise ValueError('Can\'t figure out the DID!')
   return m.group(1)
@@ -223,29 +242,29 @@ def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThresh
   return sig, sigDetails
 
 #@echo(write=logger.debug)
-def get_ttrees(tree_name, filenames, eventWeightBranch):
-  # this is a dict that holds all the trees
+def get_ttree(tree_name, filenames, eventWeightBranch):
+  # this is a dict that holds the tree
 
   logger.info("Initializing TChain: {0}".format(tree_name))
   # start by making a TChain
-  trees = ROOT.TChain(tree_name)
+  tree = ROOT.TChain(tree_name)
   for fname in filenames:
     if not os.path.isfile(fname):
       raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
     else:
       logger.info("\tAdding {0}".format(fname))
-      trees.Add(fname)
+      tree.Add(fname)
 
     # Print some information
-    logger.info('\tNumber of input events: %s' % trees.GetEntries())
+    logger.info('\tNumber of input events: %s' % tree.GetEntries())
 
   # make sure the branches are compatible between the two
-  branches = set(i.GetName() for i in trees.GetListOfBranches())
+  branches = set(i.GetName() for i in tree.GetListOfBranches())
 
   if not eventWeightBranch in branches:
     raise ValueError('The event weight branch does not exist: {0}'.format(eventWeightBranch))
 
-  return trees
+  return tree
 
 #@echo(write=logger.debug)
 def read_supercuts_file(filename):
@@ -267,15 +286,21 @@ def read_supercuts_file(filename):
 
 #@echo(write=logger.debug)
 def cut_to_selection(cut):
-  import pdb; pdb.set_trace()
+  return "*".join(["({0:s}{1:s}{2:0.2f})".format(c['branch'], c['signal_direction'], c['pivot']) for c in cut])
 
 #@echo(write=logger.debug)
 def do_cuts(args):
-  if os.path.isfile(args.output_filename):
-    raise IOError("Output file already exists: {0}".format(args.output_filename))
+  dids = [get_did(fname) for fname in args.files]
+  if len(set(dids)) != 1:
+    raise ValueError("You have included more than one DID in your files. We only support one sample at a time.")
+  did = dids[0]
 
-  trees = get_ttrees(args.tree_name, args.files, args.eventWeightBranch)
+  output_filename = 'cuts_{0:s}.json'.format(did) if args.output_filename is None else args.output_filename
 
+  if os.path.isfile(output_filename):
+    raise IOError("Output file already exists: {0}".format(output_filename))
+
+  tree = get_ttree(args.tree_name, args.files, args.eventWeightBranch)
   supercuts = read_supercuts_file(args.supercuts)
 
   if len(set([get_did(fname) for fname in args.files])) > 1:
@@ -285,16 +310,12 @@ def do_cuts(args):
   cuts = []
   for cut in get_cut(copy.deepcopy(supercuts)):
     cut_hash = get_cut_hash(cut)
-    cut_string = cut_to_string(cut)
-    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty, signal_scale, bkgd_scale)
-
-    significances.append({'hash': cut_hash, 'significance': 0 if math.isinf(cut_significance) else round(cut_significance, 4), 'details': sig_details})
-    #logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
-
-  logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
-
-  with open(args.output_filename, 'w+') as f:
-    f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance'), reverse=True), sort_keys=True, indent=4))
+    rawEvents, weightedEvents = apply_selection(tree, cut, args.eventWeightBranch)
+    scaledEvents = weightedEvents*sample_scaleFactor
+    cuts.append({'hash': cut_hash, 'base': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents})
+  logger.log(25, "Applied {0:d} cuts".format(len(cuts)))
+  with open(output_filename, 'w+') as f:
+    f.write(json.dumps(sorted(cuts, key=operator.itemgetter('scaled'), reverse=True), sort_keys=True, indent=4))
 
   return True
 
@@ -306,17 +327,17 @@ def do_optimize(args):
   if os.path.isfile(args.output_filename):
     raise IOError("Output file already exists: {0}".format(args.output_filename))
 
-  # this is a dict that holds all the trees
-  trees = get_ttrees(args.tree_name, args.files, args.eventWeightBranch)
+  # this is a dict that holds the tree
+  tree = get_ttree(args.tree_name, args.files, args.eventWeightBranch)
 
   # read the cuts file
   data = read_supercuts_file(args.supercuts)
   branchesToRead = [args.eventWeightBranch]+[i['branch'] for i in data]
   logger.info("Loading {0:d} branches ({1:d} branches + {2:s}) from the signal and bkgd ttrees".format(len(branchesToRead), len(branchesToRead)-1, args.eventWeightBranch))
 
-  # get signal and background trees, only need some of the branches (not all!)
-  signal = rnp.tree2array(trees['signal'], branches=branchesToRead)
-  bkgd = rnp.tree2array(trees['bkgd'], branches=branchesToRead)
+  # get signal and background tree, only need some of the branches (not all!)
+  signal = rnp.tree2array(tree['signal'], branches=branchesToRead)
+  bkgd = rnp.tree2array(tree['bkgd'], branches=branchesToRead)
 
   # start optimizing
   logger.log(25, "Calculating significance for a variety of cuts")
@@ -353,15 +374,15 @@ def do_generate(args):
   if os.path.isfile(args.output_filename):
     raise IOError("Output file already exists: {0}".format(args.output_filename))
 
-  # this is a dict that holds all the trees
-  trees = get_ttrees(args.tree_name, args.files, args.eventWeightBranch)
+  # this is a dict that holds the tree
+  tree = get_ttree(args.tree_name, args.files, args.eventWeightBranch)
 
   # list of branches to loop over
-  branches=[i.GetName() for i in trees['signal'].GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
+  branches=[i.GetName() for i in tree['signal'].GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
 
-  # get signal and background trees
-  signal = rnp.tree2array(trees['signal'], branches=branches)
-  bkgd = rnp.tree2array(trees['bkgd'], branches=branches)
+  # get signal and background tree
+  signal = rnp.tree2array(tree['signal'], branches=branches)
+  bkgd = rnp.tree2array(tree['bkgd'], branches=branches)
 
   supercuts = []
 
@@ -492,7 +513,8 @@ if __name__ == "__main__":
                                       usage='%(prog)s <file.root> ... [options]', help='Apply the cuts',
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
                                       epilog='cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.')
-  cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the cuts applied', default='cuts.json')
+  cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the cuts applied. Default is cuts_{DID}.json', default=None)
+  cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
 
 
   # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
@@ -507,7 +529,6 @@ if __name__ == "__main__":
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--bkgdStatUncertainty', type=float, required=False, dest='bkgdStatUncertainty', metavar='<sigma>', help='background statistical uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=2)
-  optimize_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
 
   # needs: globalMinVal, files, tree, eventWeight
   generate_parser = subparsers.add_parser("generate", parents=[main_parser, files_parser, tree_parser],
