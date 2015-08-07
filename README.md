@@ -157,26 +157,33 @@ and I'm good to go.
 ### Top-Level
 
 ```bash
+python optimize.py
+```
+
+or
+
+```bash
 python optimize.py -h
 ```
 
-> usage: optimize.py [-h] [-a] {optimize,generate,hash} ...
+> usage: optimize.py [-h] [-a] {cut,optimize,generate,hash} ...
 >
-> Author: Giordon Stark. v.319abfc
+> Author: Giordon Stark. v.866719a
 >
 > positional arguments:
->   {optimize,generate,hash}  actions available
->     optimize                Find optimal cuts
->     generate                Write supercuts template
->     hash                    Translate hash to cut
+>   {cut,optimize,generate,hash}
+>                               actions available
+>     cut                       Apply the cuts
+>     optimize                  Find optimal cuts
+>     generate                  Write supercuts template
+>     hash                      Translate hash to cut
 >
 > optional arguments:
->   -h, --help                show this help message and exit
->   -a, --allhelp             show this help message and all subcommand help
->                             messages and exit
+>   -h, --help                  show this help message and exit
+>   -a, --allhelp               show this help message and all subcommand help
+>                               messages and exit
 >
-> This is the top-level. You have no power here. If you want to get started, run
-> `optimize.py optimize -h`.
+> This is the top-level. You have no power here.
 
 #### Parameters
 
