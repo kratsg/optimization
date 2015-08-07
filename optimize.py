@@ -36,6 +36,7 @@ import re
 import fnmatch
 import math
 import yaml
+from collections import defaultdict
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -103,22 +104,19 @@ def echo(*echoargs, **echokwargs):
   return echo_wrap
 
 #@echo(write=logger.debug)
-def apply_selection(tree, cut, eventWeightBranch):
-  # create canvas
-  canvas = ROOT.TCanvas('test', 'test', 200, 10, 100, 100)
+def apply_selection(canvas, tree, cut, eventWeightBranch):
   selection = cut_to_selection(cut)
   # draw with selection
   tree.Draw(eventWeightBranch, '{0:s}*{1:s}'.format(eventWeightBranch, selection))
   # raw and weighted counts
   rawCount = 0
   weightedCount = 0
- # get drawn histogram
+  # get drawn histogram
   if 'htemp' in canvas:
     htemp = canvas.GetPrimitive('htemp')
     rawCount = htemp.GetEntries()
     weightedCount = htemp.Integral()
   canvas.Clear()
-  del canvas
   return rawCount, weightedCount
 
 #@echo(write=logger.debug)
@@ -185,9 +183,7 @@ def get_did(filename):
   return m.group(1)
 
 #@echo(write=logger.debug)
-def get_scaleFactor(weightsFile, filename):
-  did = get_did(filename)
-  weights = yaml.load(file(weightsFile))
+def get_scaleFactor(weights, did):
   weight = weights.get(did, None)
   if weight is None:
     raise KeyError("Could not find the weights for did=%s" % did)
@@ -197,7 +193,7 @@ def get_scaleFactor(weightsFile, filename):
     raise ValueError('Num events = 0!')
   scaleFactor /= cutflow
   logger.log(25, "___________________________________________________________________")
-  logger.log(25, "      Type of Scaling Applied           |        Scale Factor      ")
+  logger.log(25, " {0:8s} Type of Scaling Applied       |        Scale Factor      ".format(did))
   logger.log(25, "========================================|==========================")
   logger.log(25,"Cutflow:           {0:20.10f} | {0:0.10f}".format(cutflow, scaleFactor))
   scaleFactor *= weight.get('cross section')
@@ -288,32 +284,50 @@ def cut_to_selection(cut):
 
 #@echo(write=logger.debug)
 def do_cuts(args):
-  dids = [get_did(fname) for fname in args.files]
-  if len(set(dids)) != 1:
-    raise ValueError("You have included more than one DID in your files. We only support one sample at a time.")
-  did = dids[0]
+  # before doing anything, let's ensure the directory we make is ok
+  if not os.path.exists(args.output_directory):
+    os.makedirs(args.output_directory)
+  else:
+    raise IOError("Output directory already exists: {0:s}".format(args.output_directory))
 
-  output_filename = 'cuts_{0:s}.json'.format(did) if args.output_filename is None else args.output_filename
+  # first step is to group by the sample DID
+  dids = defaultdict(list)
+  for fname in args.files:
+    dids[get_did(fname)].append(fname)
 
-  if os.path.isfile(output_filename):
-    raise IOError("Output file already exists: {0}".format(output_filename))
-
-  tree = get_ttree(args.tree_name, args.files, args.eventWeightBranch)
+  # load in the supercuts file
   supercuts = read_supercuts_file(args.supercuts)
 
-  if len(set([get_did(fname) for fname in args.files])) > 1:
-    raise ValueError("You have included more than one DID in your files. We only support one sample at a time.")
-  sample_scaleFactor = get_scaleFactor(args.weightsFile, args.files[0])
+  # build the containing canvas for all histograms drawn in `apply_selection`
+  canvas = ROOT.TCanvas('test', 'test', 200, 10, 100, 100)
 
-  cuts = []
-  for cut in get_cut(copy.deepcopy(supercuts)):
-    cut_hash = get_cut_hash(cut)
-    rawEvents, weightedEvents = apply_selection(tree, cut, args.eventWeightBranch)
-    scaledEvents = weightedEvents*sample_scaleFactor
-    cuts.append({'hash': cut_hash, 'base': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents})
-  logger.log(25, "Applied {0:d} cuts".format(len(cuts)))
-  with open(output_filename, 'w+') as f:
-    f.write(json.dumps(sorted(cuts, key=operator.itemgetter('scaled'), reverse=True), sort_keys=True, indent=4))
+  # load up the weights file
+  if not os.path.isfile(args.weightsFile):
+    raise ValueError('The supplied weights file `{0}` does not exist or I cannot find it.'.format(args.weightsFile))
+  else:
+    weights = yaml.load(file(args.weightsFile))
+
+  for did, files in dids.iteritems():
+    try:
+      # load up the tree for the files
+      tree = get_ttree(args.tree_name, files, args.eventWeightBranch)
+
+      # get the scale factor
+      sample_scaleFactor = get_scaleFactor(weights, did)
+
+      # iterate over the cuts available
+      cuts = []
+      for cut in get_cut(copy.deepcopy(supercuts)):
+        cut_hash = get_cut_hash(cut)
+        rawEvents, weightedEvents = apply_selection(canvas, tree, cut, args.eventWeightBranch)
+        scaledEvents = weightedEvents*sample_scaleFactor
+        cuts.append({'hash': cut_hash, 'base': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents})
+      logger.log(25, "Applied {0:d} cuts".format(len(cuts)))
+      with open('{0:s}/{1:s}.json'.format(args.output_directory, did), 'w+') as f:
+        f.write(json.dumps(sorted(cuts, key=operator.itemgetter('scaled'), reverse=True), sort_keys=True, indent=4))
+    except:
+      logger.exception("Caught an error - skipping {0:s}".format(did))
+      continue
 
   return True
 
@@ -341,8 +355,8 @@ def do_optimize(args):
   logger.log(25, "Calculating significance for a variety of cuts")
 
   # get scale factors
-  signal_scale = get_scaleFactor(args.weightsFile, args.signal[0])
-  bkgd_scale = get_scaleFactor(args.weightsFile, args.bkgd[0])
+  signal_scale = get_scaleFactor(args.weightsFile, get_did(args.signal[0]))
+  bkgd_scale = get_scaleFactor(args.weightsFile, get_did(args.bkgd[0]))
 
   # hold list of dictionaries {'hash': <sha1>, 'significance': <significance>}
   significances = []
@@ -511,8 +525,8 @@ if __name__ == "__main__":
                                       usage='%(prog)s <file.root> ... [options]', help='Apply the cuts',
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
                                       epilog='cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.')
-  cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the cuts applied. Default is cuts_{DID}.json', default=None)
   cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
+  cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='cuts')
 
 
   # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
