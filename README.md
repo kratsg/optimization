@@ -227,7 +227,7 @@ scaled | float | weighed and scaled number of events passing the cut
 
 Note that weights are applied in order of prominance and specificity: weighted events are applying the monte-carlo event weights (from the generators themselves). Scaled events are with the mc weights applied but also scaled using the sample weights (the ones that differ from sample to sample).
 
-The output is a json file which will look like
+The output is a directory of json files which will look like
 
 ```json
 [
@@ -241,6 +241,8 @@ The output is a json file which will look like
     ...
 ]
 ```
+
+This code will group your input files by DIDs and will try its best to do its job to group your sample files.
 
 ### Action:Optimize
 
