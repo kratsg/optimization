@@ -221,9 +221,9 @@ Variable | Type | Description | Default
 Variable | Type | Description
 ---------|------|------------
 hash | 32-bit string | md5 hash of the cut
-raw | integer | number of events passing the cut
-weighted | float | weighted number of events passing the cut
-scaled | float | weighed and scaled number of events passing the cut
+raw | integer | raw number of events passing cut
+weighted | float | apply event weights to events passing cut
+scaled | float | apply sample weights and event weights to events passing cut
 
 Note that weights are applied in order of prominance and specificity: weighted events are applying the monte-carlo event weights (from the generators themselves). Scaled events are with the mc weights applied but also scaled using the sample weights (the ones that differ from sample to sample).
 
