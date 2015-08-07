@@ -26,18 +26,22 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
 - [Documentation](#documentation)
   - [Top-Level](#top-level)
     - [Parameters](#parameters)
-  - [Action:Optimize](#actionoptimize)
+  - [Action:Cut](#actioncut)
     - [Required Parameters](#required-parameters)
     - [Optional Parameters](#optional-parameters)
     - [Output](#output)
-  - [Action:Generate](#actiongenerate)
+  - [Action:Optimize](#actionoptimize)
     - [Required Parameters](#required-parameters-1)
     - [Optional Parameters](#optional-parameters-1)
     - [Output](#output-1)
-  - [Action:Hash](#actionhash)
+  - [Action:Generate](#actiongenerate)
     - [Required Parameters](#required-parameters-2)
     - [Optional Parameters](#optional-parameters-2)
     - [Output](#output-2)
+  - [Action:Hash](#actionhash)
+    - [Required Parameters](#required-parameters-3)
+    - [Optional Parameters](#optional-parameters-3)
+    - [Output](#output-3)
   - [Supercuts File](#supercuts-file)
     - [Defining a fixed cut](#defining-a-fixed-cut)
     - [Defining a supercut](#defining-a-supercut)
@@ -210,7 +214,7 @@ Variable | Type | Description | Default
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
 --supercuts | string | path to json dict of supercuts for generating cuts | supercuts.json
---o, --output | string | output list of significances | cuts.json
+--o, --output | directory | output directory to store json files containing cuts | cuts
 
 #### Output
 
