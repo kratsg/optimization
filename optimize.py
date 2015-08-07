@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-,
 # @file:    optimize.py
 # @purpose: read a ROOT file containing ntuples and attempt to find optimal cuts
 # @author:  Giordon Stark <gstark@cern.ch>
@@ -185,33 +185,31 @@ def get_did(filename):
   return m.group(1)
 
 #@echo(write=logger.debug)
-def get_scaleFactor(filename):
+def get_scaleFactor(weightsFile, filename):
   did = get_did(filename)
-  weights = yaml.load(file(args.weightsFile))
-  weight = weights.get(did)
+  weights = yaml.load(file(weightsFile))
+  weight = weights.get(did, None)
   if weight is None:
     raise KeyError("Could not find the weights for did=%s" % did)
   scaleFactor = 1.0
   cutflow = weight.get('num events')
-  if args.debug: logger.log(25,"Cutflow: " + str(cutflow))
   if cutflow == 0:
     raise ValueError('Num events = 0!')
   scaleFactor /= cutflow
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
+  logger.log(25, "___________________________________________________________________")
+  logger.log(25, "      Type of Scaling Applied           |        Scale Factor      ")
+  logger.log(25, "========================================|==========================")
+  logger.log(25,"Cutflow:           {0:20.10f} | {0:0.10f}".format(cutflow, scaleFactor))
   scaleFactor *= weight.get('cross section')
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
-  if args.debug: logger.log(25,"Cross Section: " + str(weight.get('cross section')))
+  logger.log(25,"Cross Section:     {0:20.10f} | {0:0.10f}".format(weight.get('cross section'), scaleFactor))
   scaleFactor *= weight.get('filter efficiency')
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
-  if args.debug: logger.log(25,"Filter Efficiency: " + str(weight.get('filter efficiency')))
+  logger.log(25,"Filter Efficiency: {0:20.10f} | {0:0.10f}".format(weight.get('filter efficiency'), scaleFactor))
   scaleFactor *= weight.get('k-factor')
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
-  if args.debug: logger.log(25,"k-factor: " + str(weight.get('k-factor')))
+  logger.log(25,"k-factor:          {0:20.10f} | {0:0.10f}".format(weight.get('k-factor'), scaleFactor))
   scaleFactor *= weights.get('global_luminosity') * 1000 #to account for units on luminosity
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
-  if args.debug: logger.log(25,"lumi: " + str(weights.get('global_luminosity')))
+  logger.log(25,"lumi:              {0:20.10f} | {0:0.10f}".format(weights.get('global_luminosity'), scaleFactor))
+  logger.log(25, "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
   return scaleFactor
-
 
 #@echo(write=logger.debug)
 def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty, signal_scale, bkgd_scale):
@@ -305,7 +303,7 @@ def do_cuts(args):
 
   if len(set([get_did(fname) for fname in args.files])) > 1:
     raise ValueError("You have included more than one DID in your files. We only support one sample at a time.")
-  sample_scaleFactor = get_scaleFactor(args.files[0])
+  sample_scaleFactor = get_scaleFactor(args.weightsFile, args.files[0])
 
   cuts = []
   for cut in get_cut(copy.deepcopy(supercuts)):
@@ -343,8 +341,8 @@ def do_optimize(args):
   logger.log(25, "Calculating significance for a variety of cuts")
 
   # get scale factors
-  signal_scale = get_scaleFactor(args.signal[0])
-  bkgd_scale = get_scaleFactor(args.bkgd[0])
+  signal_scale = get_scaleFactor(args.weightsFile, args.signal[0])
+  bkgd_scale = get_scaleFactor(args.weightsFile, args.bkgd[0])
 
   # hold list of dictionaries {'hash': <sha1>, 'significance': <significance>}
   significances = []
