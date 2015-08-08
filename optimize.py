@@ -316,15 +316,15 @@ def do_cuts(args):
       sample_scaleFactor = get_scaleFactor(weights, did)
 
       # iterate over the cuts available
-      cuts = []
+      cuts = {}
       for cut in get_cut(copy.deepcopy(supercuts)):
         cut_hash = get_cut_hash(cut)
         rawEvents, weightedEvents = apply_selection(canvas, tree, cut, args.eventWeightBranch)
         scaledEvents = weightedEvents*sample_scaleFactor
-        cuts.append({'hash': cut_hash, 'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents})
+        cuts[cut_hash] = {'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents}
       logger.log(25, "Applied {0:d} cuts".format(len(cuts)))
       with open('{0:s}/{1:s}.json'.format(args.output_directory, did), 'w+') as f:
-        f.write(json.dumps(sorted(cuts, key=operator.itemgetter('scaled'), reverse=True), sort_keys=True, indent=4))
+        f.write(json.dumps(cuts, sort_keys=True, indent=4))
     except:
       logger.exception("Caught an error - skipping {0:s}".format(did))
       continue
@@ -333,30 +333,30 @@ def do_cuts(args):
 
 #@echo(write=logger.debug)
 def do_optimize(args):
-  raise ValueError("Under construction!")
-  return False
 
-  if os.path.isfile(args.output_filename):
-    raise IOError("Output file already exists: {0}".format(args.output_filename))
+  # first, we need to take in signal and background files and group them by DIDs
+  signal = defaultdict(list)
+  bkgd   = defaultdict(list)
+  for fname in args.signal:
+    signal[get_did(fname)].append(fname)
+  for fname in args.bkgd:
+    bkgd[get_did(fname)].append(fname)
 
-  # this is a dict that holds the tree
-  tree = get_ttree(args.tree_name, args.files, args.eventWeightBranch)
+  output_filename = 'signal.{0:s}.bkgd.{1:s}.json'.format('-'.join(signal.keys()), '-'.join(bkgd.keys()))
 
-  # read the cuts file
-  data = read_supercuts_file(args.supercuts)
-  branchesToRead = [args.eventWeightBranch]+[i['branch'] for i in data]
-  logger.info("Loading {0:d} branches ({1:d} branches + {2:s}) from the signal and bkgd ttrees".format(len(branchesToRead), len(branchesToRead)-1, args.eventWeightBranch))
+  if os.path.isfile(output_filename):
+    raise IOError("Output file already exists: {0}".format(output_filename))
+
+  # next, open all json files and create internal dictionaries combining the values by hash
+  signal_cuts = defaultdict(list)
+  bkgd_cuts = defaultdict(list)
 
   # get signal and background tree, only need some of the branches (not all!)
-  signal = rnp.tree2array(tree['signal'], branches=branchesToRead)
-  bkgd = rnp.tree2array(tree['bkgd'], branches=branchesToRead)
+  # signal = rnp.tree2array(tree['signal'], branches=branchesToRead)
+  # bkgd = rnp.tree2array(tree['bkgd'], branches=branchesToRead)
 
   # start optimizing
   logger.log(25, "Calculating significance for a variety of cuts")
-
-  # get scale factors
-  signal_scale = get_scaleFactor(args.weightsFile, get_did(args.signal[0]))
-  bkgd_scale = get_scaleFactor(args.weightsFile, get_did(args.bkgd[0]))
 
   # hold list of dictionaries {'hash': <sha1>, 'significance': <significance>}
   significances = []
@@ -530,14 +530,14 @@ if __name__ == "__main__":
 
 
   # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
-  optimize_parser = subparsers.add_parser("optimize", parents=[main_parser, tree_parser],
+  optimize_parser = subparsers.add_parser("optimize", parents=[main_parser],
                                           description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
-                                          usage='%(prog)s  --signal=signal.root [..] --bkgd=bkgd.root [...] [options]', help='Find optimal cuts',
+                                          usage='%(prog)s  --signal={DID1}.json {DID2}.json [..] --bkgd={DID3}.json {DID4}.json {DID5}.json [...] [options]', help='Calculate significances for a series of computed cuts',
                                           formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-                                          epilog='optimize will take in signal, background, supercuts and calculate the significances for all cuts possible.')
-  optimize_parser.add_argument('--signal', required=True, type=str, nargs='+', metavar='<file.root>', help='ROOT files containing the signal ttrees')
-  optimize_parser.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<file.root>', help='ROOT files containing the background ttrees')
-  optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the significances computed', default='significances.json')
+                                          epilog='optimize will take in signal, background and calculate the significances for all cuts in common.')
+  optimize_parser.add_argument('--signal', required=True, type=str, nargs='+', metavar='{DID}.json', help='ROOT files containing the signal cuts')
+  optimize_parser.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='{DID}.json', help='ROOT files containing the background cuts')
+  optimize_parser.add_argument('--searchDirectory', required=False, type=str, dest='search_directory', help='Directory that contains all the {DID}.json files.', default='cuts')
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--bkgdStatUncertainty', type=float, required=False, dest='bkgdStatUncertainty', metavar='<sigma>', help='background statistical uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=2)

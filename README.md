@@ -237,16 +237,15 @@ Note that weights are applied in order of prominance and specificity: weighted e
 The output is a directory of json files which will look like
 
 ```json
-[
+{
     ...
-    {
-        "hash": "97abf074c8334f284618899bc1605bce",
+    "09a130622e1e6345b83739b3527eccb1": {
         "raw": 90909,
-        "weighted": 90909.0,
-        "scaled": 2.503
+        "scaled": 90909.0,
+        "weighted": 2.503
     },
     ...
-]
+}
 ```
 
 This code will group your input files by DIDs and will try its best to do its job to group your sample files.
