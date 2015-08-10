@@ -300,18 +300,22 @@ This code will group your input files by DIDs and will try its best to do its jo
 
 ### Action:Optimize
 
-Optimize helps you find your optimal cuts. Process ROOT ntuples and Optimize Cuts.
+Optimize helps you find your optimal cuts. Process cuts and determine significance.
 
 ```bash
 usage: optimize.py optimize  --signal=signal.root [..] --bkgd=bkgd.root [...] [options]
 ```
 
+**Note**: You can specify multiple backgrounds and multiple signals. Each signal will be run over separately and each background will be merged and treated as a single background.
+
 #### Required Parameters
 
 Variable | Type | Description
 ---------|------|------------
---signal | string | path(s) to root files containing signal ntuples
---bkgd | string | path(s) to root files containing background ntuples
+--signal | string | path(s) to json files containing signal cuts
+--bkgd | string | path(s) to json files containing background cuts
+
+**Note**: this will search for files under the `search_directory` option, default is `cuts` to search for files produced by `optimize.py cut`.
 
 #### Optional Parameters
 
@@ -335,7 +339,7 @@ hash | 32-bit string | md5 hash of the cut
 significance | float | calculated significance of the cut
 insignificance | string | if set, value tells you which region was insignificant
 
-The output is a json file which will look like
+The output is a directory of json files which will look like
 
 ```json
 [
