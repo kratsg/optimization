@@ -36,6 +36,7 @@ import re
 import fnmatch
 import math
 import yaml
+import glob
 from collections import defaultdict
 
 '''
@@ -208,32 +209,18 @@ def get_scaleFactor(weights, did):
   return scaleFactor
 
 #@echo(write=logger.debug)
-def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty, signal_scale, bkgd_scale):
-  numSignal, weightedSignal = count_events(signal, cuts, eventWeightBranch)
-  numBkgd, weightedBkgd = count_events(bkgd, cuts, eventWeightBranch)
-
-  # apply scale factors and luminosity
-  numSignal = numSignal
-  weightedSignal = weightedSignal
-  scaledSignal = weightedSignal * signal_scale
-  numBkgd = numBkgd
-  weightedBkgd = weightedBkgd
-  scaledBkgd = weightedBkgd * bkgd_scale
-
-  # dict containing what we want to record in the output
-  sigDetails = {'signal': numSignal, 'signalWeighted': weightedSignal,'signalScaled': scaledSignal, 'bkgd': numBkgd, 'bkgdWeighted': weightedBkgd, 'bkgdScaled': scaledBkgd}
-
+def get_significance(signal, bkgd, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty):
   # if not enough events, return string of which one did not have enough
-  if scaledSignal < insignificanceThreshold:
-    sigDetails['insignificance'] = "signal"
-    sig = 0
-  elif numBkgd < 1/(pow(bkgdStatUncertainty,2)): #require sqrt(numBkgd)/numBkgd < bkgdStatUncertainty
-    sigDetails['insignificance'] = "bkgd"
-    sig = 0
+  if signal < insignificanceThreshold:
+    #sigDetails['insignificance'] = "signal"
+    sig = -1
+  elif bkgd < 1/(pow(bkgdStatUncertainty,2)): #require sqrt(numBkgd)/numBkgd < bkgdStatUncertainty
+    #sigDetails['insignificance'] = "bkgd"
+    sig = -2
   else:
     # otherwise, calculate!
     sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(scaledSignal, scaledBkgd, bkgdUncertainty)
-  return sig, sigDetails
+  return sig
 
 #@echo(write=logger.debug)
 def get_ttree(tree_name, filenames, eventWeightBranch):
@@ -334,43 +321,42 @@ def do_cuts(args):
 #@echo(write=logger.debug)
 def do_optimize(args):
 
-  # first, we need to take in signal and background files and group them by DIDs
-  signal = defaultdict(list)
-  bkgd   = defaultdict(list)
-  for fname in args.signal:
-    signal[get_did(fname)].append(fname)
-  for fname in args.bkgd:
-    bkgd[get_did(fname)].append(fname)
+  logger.log(25, 'Reading in all background files to calculate total background')
 
-  output_filename = 'signal.{0:s}.bkgd.{1:s}.json'.format('-'.join(signal.keys()), '-'.join(bkgd.keys()))
+  total_bkgd = defaultdict(lambda: {'raw': 0., 'weighted': 0., 'scaled': 0.})
+  bkgd_dids = []
+  # for each bkgd file, open, read, load, and combine
+  for bkgd in args.bkgd:
+    # expand out patterns if needed
+    for fname in glob.glob(os.path.join(args.search_directory, bkgd)):
+      did = get_did(fname)
+      logger.log(25, '\tLoading {0:s} ({1:s})'.format(did, fname))
+      # generate a list of background dids
+      bkgd_dids.append(did)
+      with open(fname, 'r') as f:
+        bkgd_data = json.load(f)
+        for cuthash, counts_dict in bkgd_data.iteritems():
+          for counts_type, counts in counts_dict.iteritems():
+            total_bkgd[cuthash][counts_type] += counts
 
-  if os.path.isfile(output_filename):
-    raise IOError("Output file already exists: {0}".format(output_filename))
+  logger.log(25, "Calculating significance for each signal file")
 
-  # next, open all json files and create internal dictionaries combining the values by hash
-  signal_cuts = defaultdict(list)
-  bkgd_cuts = defaultdict(list)
-
-  # get signal and background tree, only need some of the branches (not all!)
-  # signal = rnp.tree2array(tree['signal'], branches=branchesToRead)
-  # bkgd = rnp.tree2array(tree['bkgd'], branches=branchesToRead)
-
-  # start optimizing
-  logger.log(25, "Calculating significance for a variety of cuts")
-
-  # hold list of dictionaries {'hash': <sha1>, 'significance': <significance>}
-  significances = []
-  for cut in get_cut(copy.deepcopy(data)):
-    cut_hash = get_cut_hash(cut)
-    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty, signal_scale, bkgd_scale)
-
-    significances.append({'hash': cut_hash, 'significance': 0 if math.isinf(cut_significance) else round(cut_significance, 4), 'details': sig_details})
-    #logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
-
-  logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
-
-  with open(args.output_filename, 'w+') as f:
-    f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance'), reverse=True), sort_keys=True, indent=4))
+  # for each signal file, open, read, load, and divide with the current background
+  for signal in args.signal:
+    # expand out patterns if needed
+    for fname in glob.glob(os.path.join(args.search_directory, signal)):
+      did = get_did(fname)
+      logger.log(25, '\tCalculating significances for {0:s} ({1:s})'.format(did, fname))
+      significances = []
+      with open(fname, 'r') as f:
+        signal_data = json.load(f)
+        for cuthash, counts_dict in signal_data.iteritems():
+          sig_dict = [('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(counts, total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty)) for counts_type, counts in counts_dict.iteritems()]
+          significances.append(sig_dict)
+      logger.log(25, '\t\tCalculated significances for {0:d} cuts'.format(len(significances)))
+      # at this point, we have a list of significances that we can dump to a file
+      with open('significances/s{0:s}.b{1:s}.json'.format(did, '-'.join(sorted(bkgd_dids))), 'w+'):
+        f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance_scaled'), reverse=True), sort_keys=True, indent=4))
 
   return True
 
@@ -534,7 +520,7 @@ if __name__ == "__main__":
                                           description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
                                           usage='%(prog)s  --signal={DID1}.json {DID2}.json [..] --bkgd={DID3}.json {DID4}.json {DID5}.json [...] [options]', help='Calculate significances for a series of computed cuts',
                                           formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-                                          epilog='optimize will take in signal, background and calculate the significances for all cuts in common.')
+                                          epilog='optimize will take in numerous signal, background and calculate the significances for each signal and combine backgrounds automatically.')
   optimize_parser.add_argument('--signal', required=True, type=str, nargs='+', metavar='{DID}.json', help='ROOT files containing the signal cuts')
   optimize_parser.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='{DID}.json', help='ROOT files containing the background cuts')
   optimize_parser.add_argument('--searchDirectory', required=False, type=str, dest='search_directory', help='Directory that contains all the {DID}.json files.', default='cuts')
