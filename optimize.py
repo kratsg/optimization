@@ -37,7 +37,13 @@ import fnmatch
 import math
 import yaml
 import glob
+from time import clock
 from collections import defaultdict
+
+# parallelization (http://blog.dominodatalab.com/simple-parallelization/)
+from joblib import Parallel, delayed, load, dump
+import multiprocessing
+import tempfile
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -196,19 +202,19 @@ def get_scaleFactor(weights, did):
   if cutflow == 0:
     raise ValueError('Num events = 0!')
   scaleFactor /= cutflow
-  logger.log(25, "___________________________________________________________________")
-  logger.log(25, " {0:8s} Type of Scaling Applied       |        Scale Factor      ".format(did))
-  logger.log(25, "========================================|==========================")
-  logger.log(25,"Cutflow:           {0:20.10f} | {0:0.10f}".format(cutflow, scaleFactor))
+  logger.info("___________________________________________________________________")
+  logger.info(" {0:8s} Type of Scaling Applied       |        Scale Factor      ".format(did))
+  logger.info("========================================|==========================")
+  logger.info("Cutflow:           {0:20.10f} | {0:0.10f}".format(cutflow, scaleFactor))
   scaleFactor *= weight.get('cross section')
-  logger.log(25,"Cross Section:     {0:20.10f} | {0:0.10f}".format(weight.get('cross section'), scaleFactor))
+  logger.info("Cross Section:     {0:20.10f} | {0:0.10f}".format(weight.get('cross section'), scaleFactor))
   scaleFactor *= weight.get('filter efficiency')
-  logger.log(25,"Filter Efficiency: {0:20.10f} | {0:0.10f}".format(weight.get('filter efficiency'), scaleFactor))
+  logger.info("Filter Efficiency: {0:20.10f} | {0:0.10f}".format(weight.get('filter efficiency'), scaleFactor))
   scaleFactor *= weight.get('k-factor')
-  logger.log(25,"k-factor:          {0:20.10f} | {0:0.10f}".format(weight.get('k-factor'), scaleFactor))
+  logger.info("k-factor:          {0:20.10f} | {0:0.10f}".format(weight.get('k-factor'), scaleFactor))
   scaleFactor *= weights.get('global_luminosity') * 1000 #to account for units on luminosity
-  logger.log(25,"lumi:              {0:20.10f} | {0:0.10f}".format(weights.get('global_luminosity'), scaleFactor))
-  logger.log(25, "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
+  logger.info("lumi:              {0:20.10f} | {0:0.10f}".format(weights.get('global_luminosity'), scaleFactor))
+  logger.info( "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
   return scaleFactor
 
 #@echo(write=logger.debug)
@@ -273,6 +279,36 @@ def cut_to_selection(cut):
   return "*".join(["({0:s}{1:s}{2:0.2f})".format(c['branch'], c['signal_direction'], c['pivot']) for c in cut])
 
 #@echo(write=logger.debug)
+def do_cut(args, did, files, supercuts, weights):
+  start = clock()
+  try:
+    # load up the tree for the files
+    tree = get_ttree(args.tree_name, files, args.eventWeightBranch)
+    # if using numpy optimization, load the tree as a numpy array to apply_cuts on
+    if args.numpy:
+      tree = rnp.tree2array(tree, branches=[args.eventWeightBranch]+[i['branch'] for i in supercuts])
+
+    # get the scale factor
+    sample_scaleFactor = get_scaleFactor(weights, did)
+
+    # iterate over the cuts available
+    cuts = {}
+    for cut in get_cut(copy.deepcopy(supercuts)):
+      cut_hash = get_cut_hash(cut)
+      rawEvents, weightedEvents = apply_cuts(tree, cut, args.eventWeightBranch, args.numpy)
+      scaledEvents = weightedEvents*sample_scaleFactor
+      cuts[cut_hash] = {'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents}
+    logger.info("Applied {0:d} cuts".format(len(cuts)))
+    with open('{0:s}/{1:s}.json'.format(args.output_directory, did), 'w+') as f:
+      f.write(json.dumps(cuts, sort_keys=True, indent=4))
+      result = True
+  except:
+    logger.exception("Caught an error - skipping {0:s}".format(did))
+    result = False
+  end = clock()
+  return (result, end-start)
+
+#@echo(write=logger.debug)
 def do_cuts(args):
   # make the canvas global
   global canvas
@@ -300,30 +336,14 @@ def do_cuts(args):
   else:
     weights = yaml.load(file(args.weightsFile))
 
-  for did, files in dids.iteritems():
-    try:
-      # load up the tree for the files
-      tree = get_ttree(args.tree_name, files, args.eventWeightBranch)
-      # if using numpy optimization, load the tree as a numpy array to apply_cuts on
-      if args.numpy:
-        tree = rnp.tree2array(tree, branches=[args.eventWeightBranch]+[i['branch'] for i in supercuts])
+  # parallelize
+  num_cores = multiprocessing.cpu_count()
+  results = Parallel(n_jobs=num_cores)(delayed(do_cut)(args, did, files, supercuts, weights) for did, files in dids.iteritems())
 
-      # get the scale factor
-      sample_scaleFactor = get_scaleFactor(weights, did)
+  for did, result in zip(dids, results):
+    logger.log(25, 'DID {0:s}: {1:s}'.format(did, 'ok' if result[0] else 'not ok'))
 
-      # iterate over the cuts available
-      cuts = {}
-      for cut in get_cut(copy.deepcopy(supercuts)):
-        cut_hash = get_cut_hash(cut)
-        rawEvents, weightedEvents = apply_cuts(tree, cut, args.eventWeightBranch, args.numpy)
-        scaledEvents = weightedEvents*sample_scaleFactor
-        cuts[cut_hash] = {'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents}
-      logger.log(25, "Applied {0:d} cuts".format(len(cuts)))
-      with open('{0:s}/{1:s}.json'.format(args.output_directory, did), 'w+') as f:
-        f.write(json.dumps(cuts, sort_keys=True, indent=4))
-    except:
-      logger.exception("Caught an error - skipping {0:s}".format(did))
-      continue
+  logger.log(25, "Total CPU elapsed time: {0}".format(timing.secondsToStr(sum(result[1] for result in results))))
 
   return True
 
