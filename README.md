@@ -358,14 +358,17 @@ if a significance was calculated successfully or
     ...
     {
         "hash": "3aa373b14b6fccb8fb9efc99cccff877",
-        "insignificance": "bkgd",
-        "significance": 0
+        "significance": -1
+    },
+    {
+        "hash": "3aa373b14b6fccb8fb9efc99cccff877",
+        "significance": -2
     },
     ...
 ]
 ```
 
-if the number of events in signal or background did not pass the `--insignificance` minimum threshold set. In the above example, the background did not pass. In all cases where there is insignificance, the significance will always be set to `0`.
+if the number of events in signal or background did not pass the `--insignificance` minimum threshold set. The significance will always be flagged as a negative number (-1) or (-2) depending on the insignificance observed. Signal insignificance is flagged as `-1` and background insignificance is flagged as `-2`.
 
 ### Action:Hash
 
