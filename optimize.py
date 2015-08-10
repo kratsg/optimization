@@ -37,6 +37,7 @@ import fnmatch
 import math
 import yaml
 import glob
+from time import clock
 from collections import defaultdict
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
@@ -279,6 +280,7 @@ def cut_to_selection(cut):
 
 #@echo(write=logger.debug)
 def do_cut(args, did, files, supercuts, weights):
+  start = clock()
   try:
     # load up the tree for the files
     tree = get_ttree(args.tree_name, files, args.eventWeightBranch)
@@ -299,10 +301,12 @@ def do_cut(args, did, files, supercuts, weights):
     logger.info("Applied {0:d} cuts".format(len(cuts)))
     with open('{0:s}/{1:s}.json'.format(args.output_directory, did), 'w+') as f:
       f.write(json.dumps(cuts, sort_keys=True, indent=4))
-    return True
+      result = True
   except:
     logger.exception("Caught an error - skipping {0:s}".format(did))
-    return False
+    result = False
+  end = clock()
+  return (result, end-start)
 
 #@echo(write=logger.debug)
 def do_cuts(args):
@@ -337,7 +341,9 @@ def do_cuts(args):
   results = Parallel(n_jobs=num_cores)(delayed(do_cut)(args, did, files, supercuts, weights) for did, files in dids.iteritems())
 
   for did, result in zip(dids, results):
-    logger.log(25, 'DID {0:s}: {1:s}'.format(did, 'ok' if result else 'not ok'))
+    logger.log(25, 'DID {0:s}: {1:s}'.format(did, 'ok' if result[0] else 'not ok'))
+
+  logger.log(25, "Total CPU elapsed time: {0}".format(timing.secondsToStr(sum(result[1] for result in results))))
 
   return True
 
