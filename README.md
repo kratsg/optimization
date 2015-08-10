@@ -26,18 +26,22 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
 - [Documentation](#documentation)
   - [Top-Level](#top-level)
     - [Parameters](#parameters)
-  - [Action:Optimize](#actionoptimize)
+  - [Action:Cut](#actioncut)
     - [Required Parameters](#required-parameters)
     - [Optional Parameters](#optional-parameters)
     - [Output](#output)
-  - [Action:Generate](#actiongenerate)
+  - [Action:Optimize](#actionoptimize)
     - [Required Parameters](#required-parameters-1)
     - [Optional Parameters](#optional-parameters-1)
     - [Output](#output-1)
-  - [Action:Hash](#actionhash)
+  - [Action:Generate](#actiongenerate)
     - [Required Parameters](#required-parameters-2)
     - [Optional Parameters](#optional-parameters-2)
     - [Output](#output-2)
+  - [Action:Hash](#actionhash)
+    - [Required Parameters](#required-parameters-3)
+    - [Optional Parameters](#optional-parameters-3)
+    - [Output](#output-3)
   - [Supercuts File](#supercuts-file)
     - [Defining a fixed cut](#defining-a-fixed-cut)
     - [Defining a supercut](#defining-a-supercut)
@@ -119,7 +123,7 @@ which will write branches that match `multiplicity_topTag*` to have a fixed cut 
 After that, we just (at a bare minimum) specify the `signal` and `bkgd` ROOT files. Since the script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified for each either as a pattern or just explicitly writing them out.
 
 ```bash
-python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.20453* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* --supercuts=supercuts.json -b
+python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.20453* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* -b
 ```
 
 #### Looking up a cut (or two)
@@ -127,7 +131,7 @@ python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV
 When the optimizations have finished running, you'll want to take the given hash(es) and figure out what cut it corresponds to, you can do this with
 
 ```bash
-python optimize.py hash e31dcf5ba4786d9e8ffa9e642729a6b9 4e16fdc03c171913bc309d57739c7225 8fa0e0ab6bf6a957d545df68dba97a53 --supercuts=supercuts.json
+python optimize.py hash e31dcf5ba4786d9e8ffa9e642729a6b9 4e16fdc03c171913bc309d57739c7225 8fa0e0ab6bf6a957d545df68dba97a53
 ```
 
 which will create `outputHash/<hash>.json` files detailing the cuts involved.
@@ -137,7 +141,7 @@ which will create `outputHash/<hash>.json` files detailing the cuts involved.
 This is one of those pieces of python code we always want to run as fast as possible. Optimization should not take long. To figure out those dead-ends, I use [snakeviz](https://jiffyclub.github.io/snakeviz/). The `requirements.txt` file contains this dependency. To run it, I first profile the code by running it:
 
 ```bash
-python -m cProfile -o profiler.log optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.204533* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* --supercuts=supercuts.json -b
+python -m cProfile -o profiler.log optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.204533* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* -b
 ```
 
 then I use the `snakeviz` script to help me visualize this
@@ -153,103 +157,45 @@ and I'm good to go.
 ### Top-Level
 
 ```bash
+python optimize.py
+```
+
+or
+
+```bash
 python optimize.py -h
 ```
 
-> usage: optimize.py [-h] [-a] {optimize,generate,hash} ...
+> usage: optimize.py [-h] [-a] {generate,cut,optimize,hash} ...
 >
-> Author: Giordon Stark. v.319abfc
+> Author: Giordon Stark. v.eea1e27
 >
 > positional arguments:
->   {optimize,generate,hash}  actions available
->     optimize                Find optimal cuts
->     generate                Write supercuts template
->     hash                    Translate hash to cut
+>   {generate,cut,optimize,hash}
+>                               actions available
+>     generate                  Write supercuts template
+>     cut                       Apply the cuts
+>     optimize                  Calculate significances for a series of computed
+>                               cuts
+>     hash                      Translate hash to cut
 >
 > optional arguments:
->   -h, --help                show this help message and exit
->   -a, --allhelp             show this help message and all subcommand help
->                             messages and exit
+>   -h, --help                  show this help message and exit
+>   -a, --allhelp               show this help message and all subcommand help
+>                               messages and exit
 >
-> This is the top-level. You have no power here. If you want to get started, run
-> `optimize.py optimize -h`.
+> This is the top-level. You have no power here.
 
 #### Parameters
 
 There is only one required position argument: the `action`. You can choose from
 
-- [optimize](#actionoptimize)
 - [generate](#actiongenerate)
+- [cut](#actioncut)
+- [optimize](#actionoptimize)
 - [hash](#actionhash)
 
 We also provide an optional argument `-a, --allhelp` which will print all the help documentation at once instead of just the top-level `-h, --help`.
-
-### Action:Optimize
-
-Optimize helps you find your optimal cuts. Process ROOT ntuples and Optimize Cuts.
-
-```bash
-usage: optimize.py optimize  --signal=signal.root [..] --bkgd=bkgd.root [...] --supercuts=supercuts.json [options]
-```
-
-#### Required Parameters
-
-Variable | Type | Description
----------|------|------------
---signal | string | path(s) to root files containing signal ntuples
---bkgd | string | path(s) to root files containing background ntuples
---supercuts | string | path to json dict of supercuts for generating cuts
-
-#### Optional Parameters
-
-Variable | Type | Description | Default
----------|------|-------------|---------
--h, --help | bool | display help message | False
--v, --verbose | count | enable more verbose output | 0
---debug | bool | enable full-on debugging | False
--b, --batch | bool | enable batch mode for ROOT | False
---tree | string | ttree name in the ntuples | oTree
---eventWeight | string | event weight branch name | event_weight
---o, --output | string | output list of significances | significances.json
---bkgdUncertainty | float | bkgd sigma for calculating sig. | 0.3
---insignificance | int | min. number of events for non-zero sig. | 10
-
-#### Output
-
-Variable | Type | Description
----------|------|------------
-hash | 32-bit string | md5 hash of the cut
-significance | float | calculated significance of the cut
-insignificance | string | if set, value tells you which region was insignificant
-
-The output is a json file which will look like
-
-```json
-[
-    ...
-    {
-        "hash": "97abf074c8334f284618899bc1605bce",
-        "significance": 25.12760472644945
-    },
-    ...
-]
-```
-
-if a significance was calculated successfully or
-
-```json
-[
-    ...
-    {
-        "hash": "3aa373b14b6fccb8fb9efc99cccff877",
-        "insignificance": "bkgd",
-        "significance": 0
-    },
-    ...
-]
-```
-
-if the number of events in signal or background did not pass the `--insignificance` minimum threshold set. In the above example, the background did not pass. In all cases where there is insignificance, the significance will always be set to `0`.
 
 ### Action:Generate
 
@@ -263,8 +209,7 @@ usage: optimize.py generate --signal=signal.root [..] --bkgd=bkgd.root [...] [op
 
 Variable | Type | Description
 ---------|------|------------
---signal | string | path(s) to root files containing signal ntuples
---bkgd | string | path(s) to root files containing background ntuples
+file | string | path to a root file containing an optimization ntuple to use
 
 #### Optional Parameters
 
@@ -277,7 +222,6 @@ Variable | Type | Description
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
 --o, --output | string | output json file to store generated supercuts file | supercuts.json
---globalMinVal | number | if verbose, display skipped events below this value | -90.0
 --fixedBranches | strings | branches that should have a fixed cut | []
 --skipBranches | strings | branches that should not have a cut (skip them) | []
 
@@ -300,12 +244,139 @@ Variable | Type | Description
 
 This script will generate a supercuts json file. See [Supercuts File](#supercuts-file) for more information.
 
+### Action:Cut
+
+Cut helps you by generating the cuts from a supercuts file and applying them to create an output file of counts. Process ROOT ntuples and apply cuts.
+
+```bash
+usage: optimize.py cut <file.root> ... [options]
+```
+
+#### Required Parameters
+
+Variable | Type | Description
+---------|------|------------
+files    | string | path(s) to root files containing ntuples
+
+#### Optional Parameters
+
+Variable | Type | Description | Default
+---------|------|-------------|---------
+-h, --help | bool | display help message | False
+-v, --verbose | count | enable more verbose output | 0
+--debug | bool | enable full-on debugging | False
+-b, --batch | bool | enable batch mode for ROOT | False
+--tree | string | ttree name in the ntuples | oTree
+--eventWeight | string | event weight branch name | event_weight
+--supercuts | string | path to json dict of supercuts for generating cuts | supercuts.json
+--o, --output | directory | output directory to store json files containing cuts | cuts
+
+#### Output
+
+Variable | Type | Description
+---------|------|------------
+hash | 32-bit string | md5 hash of the cut
+raw | integer | raw number of events passing cut
+weighted | float | apply event weights to events passing cut
+scaled | float | apply sample weights and event weights to events passing cut
+
+Note that weights are applied in order of prominance and specificity: weighted events are applying the monte-carlo event weights (from the generators themselves). Scaled events are with the mc weights applied but also scaled using the sample weights (the ones that differ from sample to sample) as well as the luminosity.
+
+The output is a directory of json files which will look like
+
+```json
+{
+    ...
+    "09a130622e1e6345b83739b3527eccb1": {
+        "raw": 90909,
+        "scaled": 90909.0,
+        "weighted": 2.503
+    },
+    ...
+}
+```
+
+This code will group your input files by DIDs and will try its best to do its job to group your sample files.
+
+### Action:Optimize
+
+Optimize helps you find your optimal cuts. Process cuts and determine significance.
+
+```bash
+usage: optimize.py optimize  --signal=signal.root [..] --bkgd=bkgd.root [...] [options]
+```
+
+**Note**: You can specify multiple backgrounds and multiple signals. Each signal will be run over separately and each background will be merged and treated as a single background.
+
+#### Required Parameters
+
+Variable | Type | Description
+---------|------|------------
+--signal | string | path(s) to json files containing signal cuts
+--bkgd | string | path(s) to json files containing background cuts
+
+**Note**: this will search for files under the `search_directory` option, default is `cuts` to search for files produced by `optimize.py cut`.
+
+#### Optional Parameters
+
+Variable | Type | Description | Default
+---------|------|-------------|---------
+-h, --help | bool | display help message | False
+-v, --verbose | count | enable more verbose output | 0
+--debug | bool | enable full-on debugging | False
+-b, --batch | bool | enable batch mode for ROOT | False
+--searchDirectory | string | the directory that contains all cut.json files | 'cuts'
+--bkgdUncertainty | float | bkgd sigma for calculating sig. | 0.3
+--bkgdStatUncertainty | float | bkgd statistical uncertainty for significance | 0.3
+--insignificance | int | min. number of events for non-zero sig. | 10
+--o, --output | string | output directory to store significances calculated | significances
+
+#### Output
+
+Variable | Type | Description
+---------|------|------------
+hash | 32-bit string | md5 hash of the cut
+significance | float | calculated significance of the cut
+insignificance | string | if set, value tells you which region was insignificant
+
+The output is a directory of json files which will look like
+
+```json
+[
+    ...
+    {
+        "hash": "97abf074c8334f284618899bc1605bce",
+        "significance": 25.12760472644945
+    },
+    ...
+]
+```
+
+if a significance was calculated successfully or
+
+```json
+[
+    ...
+    {
+        "hash": "3aa373b14b6fccb8fb9efc99cccff877",
+        "significance": -1
+    },
+    {
+        "hash": "3aa373b14b6fccb8fb9efc99cccff877",
+        "significance": -2
+    },
+    ...
+]
+```
+
+if the number of events in signal or background did not pass the `--insignificance` minimum threshold set. The significance will always be flagged as a negative number (-1) or (-2) depending on the insignificance observed. Signal insignificance is flagged as `-1` and background insignificance is flagged as `-2`.
+
 ### Action:Hash
 
 Hash to cut translation. Given a hash from optimization, dump the cuts associated with it.
 
 ```bash
-usage: optimize.py hash <hash> [<hash> ...] --supercuts=supercuts.json [options]
+usage: optimize.py hash <hash> [<hash> ...] [options]
 ```
 
 #### Required Parameters
@@ -313,7 +384,6 @@ usage: optimize.py hash <hash> [<hash> ...] --supercuts=supercuts.json [options]
 Variable | Type | Description
 ---------|------|------------
 hash (positional) | string | 32-bit hash(es) to decode as cuts
---supercuts | string | path to json dict of supercuts
 
 #### Optional Parameters
 
@@ -323,6 +393,7 @@ Variable | Type | Description
 -v, --verbose | count | enable more verbose output | 0
 --debug | bool | enable full-on debugging | False
 -b, --batch | bool | enable batch mode for ROOT | False
+--supercuts | string | path to json dict of supercuts | supercuts.json
 --o, --output | directory | output directory to store json files containing cuts | outputHash
 
 #### Output

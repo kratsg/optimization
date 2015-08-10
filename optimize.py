@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-,
 # @file:    optimize.py
 # @purpose: read a ROOT file containing ntuples and attempt to find optimal cuts
 # @author:  Giordon Stark <gstark@cern.ch>
@@ -36,6 +36,8 @@ import re
 import fnmatch
 import math
 import yaml
+import glob
+from collections import defaultdict
 
 '''
   with tempfile.NamedTemporaryFile() as tmpFile:
@@ -103,6 +105,24 @@ def echo(*echoargs, **echokwargs):
   return echo_wrap
 
 #@echo(write=logger.debug)
+def apply_selection(tree, cut, eventWeightBranch):
+  # use a global canvas
+  global canvas
+  selection = cut_to_selection(cut)
+  # draw with selection
+  tree.Draw(eventWeightBranch, '{0:s}*{1:s}'.format(eventWeightBranch, selection))
+  # raw and weighted counts
+  rawCount = 0
+  weightedCount = 0
+  # get drawn histogram
+  if 'htemp' in canvas:
+    htemp = canvas.GetPrimitive('htemp')
+    rawCount = htemp.GetEntries()
+    weightedCount = htemp.Integral()
+  canvas.Clear()
+  return rawCount, weightedCount
+
+#@echo(write=logger.debug)
 def apply_cut(arr, pivot, direction):
   """ Given a numpy array of values, apply a cut in the direction of expected signal
 
@@ -124,8 +144,14 @@ def apply_cut(arr, pivot, direction):
     return np.ones(arr.shape, dtype=bool)
 
 #@echo(write=logger.debug)
-def apply_cuts(arr, cuts):
-  return reduce(np.bitwise_and, (apply_cut(arr[cut['branch']], cut.get('pivot', None), cut.get('signal_direction', None)) for cut in cuts))
+def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False):
+  if doNumpy:
+    # here, the tree is an rnp.tree2array() np.array
+    events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree[cut['branch']], cut.get('pivot', None), cut.get('signal_direction', None)) for cut in cuts))]
+    return float(events.size), np.sum(events).astype(float)
+  else:
+    # here, the tree is a ROOT.TTree
+    return apply_selection(tree, cuts, eventWeightBranch)
 
 #@echo(write=logger.debug)
 def get_cut(superCuts, index=0):
@@ -154,104 +180,75 @@ def get_cut_hash(cut):
   return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
 
 #@echo(write=logger.debug)
-def count_events(tree, cuts, eventWeightBranch):
-  events = tree[eventWeightBranch][apply_cuts(tree, cuts)]
-  return events.size, np.sum(events).astype(float)
-
-#@echo(write=logger.debug)
 def get_did(filename):
-  did_regex = re.compile('(\d{6,8})')
+  did_regex = re.compile('\.?(\d{6,8})\.?')
   m = did_regex.search(filename)
   if m is None: raise ValueError('Can\'t figure out the DID!')
   return m.group(1)
 
 #@echo(write=logger.debug)
-def get_scaleFactor(filename):
-  did = get_did(filename)
-  weights = yaml.load(file(args.weightsFile))
-  weight = weights.get(did)
+def get_scaleFactor(weights, did):
+  weight = weights.get(did, None)
   if weight is None:
     raise KeyError("Could not find the weights for did=%s" % did)
   scaleFactor = 1.0
   cutflow = weight.get('num events')
-  if args.debug: logger.log(25,"Cutflow: " + str(cutflow))
   if cutflow == 0:
     raise ValueError('Num events = 0!')
-  scaleFactor /= cutflow 
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
+  scaleFactor /= cutflow
+  logger.log(25, "___________________________________________________________________")
+  logger.log(25, " {0:8s} Type of Scaling Applied       |        Scale Factor      ".format(did))
+  logger.log(25, "========================================|==========================")
+  logger.log(25,"Cutflow:           {0:20.10f} | {0:0.10f}".format(cutflow, scaleFactor))
   scaleFactor *= weight.get('cross section')
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
-  if args.debug: logger.log(25,"Cross Section: " + str(weight.get('cross section')))
+  logger.log(25,"Cross Section:     {0:20.10f} | {0:0.10f}".format(weight.get('cross section'), scaleFactor))
   scaleFactor *= weight.get('filter efficiency')
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
-  if args.debug: logger.log(25,"Filter Efficiency: " + str(weight.get('filter efficiency')))
+  logger.log(25,"Filter Efficiency: {0:20.10f} | {0:0.10f}".format(weight.get('filter efficiency'), scaleFactor))
   scaleFactor *= weight.get('k-factor')
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
-  if args.debug: logger.log(25,"k-factor: " + str(weight.get('k-factor')))
+  logger.log(25,"k-factor:          {0:20.10f} | {0:0.10f}".format(weight.get('k-factor'), scaleFactor))
   scaleFactor *= weights.get('global_luminosity') * 1000 #to account for units on luminosity
-  if args.debug: logger.log(25,"ScaleFactor: " + str(scaleFactor))
-  if args.debug: logger.log(25,"lumi: " + str(weights.get('global_luminosity')))
+  logger.log(25,"lumi:              {0:20.10f} | {0:0.10f}".format(weights.get('global_luminosity'), scaleFactor))
+  logger.log(25, "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
   return scaleFactor
-  
 
 #@echo(write=logger.debug)
-def get_significance(signal, bkgd, cuts, eventWeightBranch, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty, signal_scale, bkgd_scale):
-  numSignal, weightedSignal = count_events(signal, cuts, eventWeightBranch)
-  numBkgd, weightedBkgd = count_events(bkgd, cuts, eventWeightBranch)
-  
-  # apply scale factors and luminosity
-  numSignal = numSignal 
-  weightedSignal = weightedSignal
-  scaledSignal = weightedSignal * signal_scale
-  numBkgd = numBkgd 
-  weightedBkgd = weightedBkgd
-  scaledBkgd = weightedBkgd * bkgd_scale
-
-  # dict containing what we want to record in the output
-  sigDetails = {'signal': numSignal, 'signalWeighted': weightedSignal,'signalScaled': scaledSignal, 'bkgd': numBkgd, 'bkgdWeighted': weightedBkgd, 'bkgdScaled': scaledBkgd}
-
+def get_significance(signal, bkgd, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty):
   # if not enough events, return string of which one did not have enough
-  if scaledSignal < insignificanceThreshold:
-    sigDetails['insignificance'] = "signal"
-    sig = 0
-  elif numBkgd < 1/(pow(bkgdStatUncertainty,2)): #require sqrt(numBkgd)/numBkgd < bkgdStatUncertainty
-    sigDetails['insignificance'] = "bkgd"
-    sig = 0
+  if signal < insignificanceThreshold:
+    #sigDetails['insignificance'] = "signal"
+    sig = -1
+  elif bkgd < 1/(pow(bkgdStatUncertainty,2)): #require sqrt(numBkgd)/numBkgd < bkgdStatUncertainty
+    #sigDetails['insignificance'] = "bkgd"
+    sig = -2
   else:
     # otherwise, calculate!
-    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(scaledSignal, scaledBkgd, bkgdUncertainty)
-  return sig, sigDetails
+    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(signal, bkgd, bkgdUncertainty)
+  return sig
 
 #@echo(write=logger.debug)
-def get_ttrees(tree_name, signalFilenames, bkgdFilenames, eventWeightBranch):
-  # this is a dict that holds all the trees
-  trees = {'signal': None, 'bkgd': None}
-  fnames = {'signal': signalFilenames, 'bkgd': bkgdFilenames}
+def get_ttree(tree_name, filenames, eventWeightBranch):
+  # this is a dict that holds the tree
 
-  for group in ['signal', 'bkgd']:
-    logger.info("Initializing TChain: {0}".format(group))
-    # start by making a TChain
-    trees[group] = ROOT.TChain(tree_name)
-    for fname in fnames.get(group, []):
-      if not os.path.isfile(fname):
-        raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
-      else:
-        logger.info("\tAdding {0}".format(fname))
-        trees[group].Add(fname)
+  logger.info("Initializing TChain: {0}".format(tree_name))
+  # start by making a TChain
+  tree = ROOT.TChain(tree_name)
+  for fname in filenames:
+    if not os.path.isfile(fname):
+      raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
+    else:
+      logger.info("\tAdding {0}".format(fname))
+      tree.Add(fname)
 
     # Print some information
-    logger.info('\tNumber of input events: %s' % trees[group].GetEntries())
+    logger.info('\tNumber of input events: %s' % tree.GetEntries())
 
   # make sure the branches are compatible between the two
-  signalBranches = set(i.GetName() for i in trees['signal'].GetListOfBranches())
-  bkgdBranches = set(i.GetName() for i in trees['bkgd'].GetListOfBranches())
-  if not signalBranches == bkgdBranches:
-    raise ValueError('The signal and background trees do not have the same branches!')
+  branches = set(i.GetName() for i in tree.GetListOfBranches())
 
-  if not eventWeightBranch in signalBranches:
+  if not eventWeightBranch in branches:
     raise ValueError('The event weight branch does not exist: {0}'.format(eventWeightBranch))
 
-  return trees
+  return tree
 
 #@echo(write=logger.debug)
 def read_supercuts_file(filename):
@@ -272,42 +269,109 @@ def read_supercuts_file(filename):
   return supercuts
 
 #@echo(write=logger.debug)
+def cut_to_selection(cut):
+  return "*".join(["({0:s}{1:s}{2:0.2f})".format(c['branch'], c['signal_direction'], c['pivot']) for c in cut])
+
+#@echo(write=logger.debug)
+def do_cuts(args):
+  # make the canvas global
+  global canvas
+
+  # before doing anything, let's ensure the directory we make is ok
+  if not os.path.exists(args.output_directory):
+    os.makedirs(args.output_directory)
+  else:
+    raise IOError("Output directory already exists: {0:s}".format(args.output_directory))
+
+  # first step is to group by the sample DID
+  dids = defaultdict(list)
+  for fname in args.files:
+    dids[get_did(fname)].append(fname)
+
+  # load in the supercuts file
+  supercuts = read_supercuts_file(args.supercuts)
+
+  # build the containing canvas for all histograms drawn in `apply_selection`
+  canvas = ROOT.TCanvas('test', 'test', 200, 10, 100, 100)
+
+  # load up the weights file
+  if not os.path.isfile(args.weightsFile):
+    raise ValueError('The supplied weights file `{0}` does not exist or I cannot find it.'.format(args.weightsFile))
+  else:
+    weights = yaml.load(file(args.weightsFile))
+
+  for did, files in dids.iteritems():
+    try:
+      # load up the tree for the files
+      tree = get_ttree(args.tree_name, files, args.eventWeightBranch)
+      # if using numpy optimization, load the tree as a numpy array to apply_cuts on
+      if args.numpy:
+        tree = rnp.tree2array(tree, branches=[args.eventWeightBranch]+[i['branch'] for i in supercuts])
+
+      # get the scale factor
+      sample_scaleFactor = get_scaleFactor(weights, did)
+
+      # iterate over the cuts available
+      cuts = {}
+      for cut in get_cut(copy.deepcopy(supercuts)):
+        cut_hash = get_cut_hash(cut)
+        rawEvents, weightedEvents = apply_cuts(tree, cut, args.eventWeightBranch, args.numpy)
+        scaledEvents = weightedEvents*sample_scaleFactor
+        cuts[cut_hash] = {'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents}
+      logger.log(25, "Applied {0:d} cuts".format(len(cuts)))
+      with open('{0:s}/{1:s}.json'.format(args.output_directory, did), 'w+') as f:
+        f.write(json.dumps(cuts, sort_keys=True, indent=4))
+    except:
+      logger.exception("Caught an error - skipping {0:s}".format(did))
+      continue
+
+  return True
+
+#@echo(write=logger.debug)
 def do_optimize(args):
-  if os.path.isfile(args.output_filename):
-    raise IOError("Output file already exists: {0}".format(args.output_filename))
 
-  # this is a dict that holds all the trees
-  trees = get_ttrees(args.tree_name, args.signal, args.bkgd, args.eventWeightBranch)
+  # before doing anything, let's ensure the directory we make is ok
+  if not os.path.exists(args.output_directory):
+    os.makedirs(args.output_directory)
+  else:
+    raise IOError("Output directory already exists: {0:s}".format(args.output_directory))
 
-  # read the cuts file
-  data = read_supercuts_file(args.supercuts)
-  branchesToRead = [args.eventWeightBranch]+[i['branch'] for i in data]
-  logger.info("Loading {0:d} branches ({1:d} branches + {2:s}) from the signal and bkgd ttrees".format(len(branchesToRead), len(branchesToRead)-1, args.eventWeightBranch))
+  logger.log(25, 'Reading in all background files to calculate total background')
 
-  # get signal and background trees, only need some of the branches (not all!)
-  signal = rnp.tree2array(trees['signal'], branches=branchesToRead)
-  bkgd = rnp.tree2array(trees['bkgd'], branches=branchesToRead)
+  total_bkgd = defaultdict(lambda: {'raw': 0., 'weighted': 0., 'scaled': 0.})
+  bkgd_dids = []
+  # for each bkgd file, open, read, load, and combine
+  for bkgd in args.bkgd:
+    # expand out patterns if needed
+    for fname in glob.glob(os.path.join(args.search_directory, bkgd)):
+      did = get_did(fname)
+      logger.log(25, '\tLoading {0:s} ({1:s})'.format(did, fname))
+      # generate a list of background dids
+      bkgd_dids.append(did)
+      with open(fname, 'r') as f:
+        bkgd_data = json.load(f)
+        for cuthash, counts_dict in bkgd_data.iteritems():
+          for counts_type, counts in counts_dict.iteritems():
+            total_bkgd[cuthash][counts_type] += counts
 
-  # start optimizing
-  logger.log(25, "Calculating significance for a variety of cuts")
+  logger.log(25, "Calculating significance for each signal file")
 
-  # get scale factors
-  signal_scale = get_scaleFactor(args.signal[0])
-  bkgd_scale = get_scaleFactor(args.bkgd[0])
-
-  # hold list of dictionaries {'hash': <sha1>, 'significance': <significance>}
-  significances = []
-  for cut in get_cut(copy.deepcopy(data)):
-    cut_hash = get_cut_hash(cut)
-    cut_significance, sig_details = get_significance(signal, bkgd, cut, args.eventWeightBranch, args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty, signal_scale, bkgd_scale)
-
-    significances.append({'hash': cut_hash, 'significance': 0 if math.isinf(cut_significance) else round(cut_significance, 4), 'details': sig_details})
-    #logger.info("\t{0:32s}\t{1:10.4f}".format(cut_hash, cut_significance))
-
-  logger.log(25, "Calculated significance for {0:d} cuts".format(len(significances)))
-
-  with open(args.output_filename, 'w+') as f:
-    f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance'), reverse=True), sort_keys=True, indent=4))
+  # for each signal file, open, read, load, and divide with the current background
+  for signal in args.signal:
+    # expand out patterns if needed
+    for fname in glob.glob(os.path.join(args.search_directory, signal)):
+      did = get_did(fname)
+      logger.log(25, '\tCalculating significances for {0:s} ({1:s})'.format(did, fname))
+      significances = []
+      with open(fname, 'r') as f:
+        signal_data = json.load(f)
+        for cuthash, counts_dict in signal_data.iteritems():
+          sig_dict = dict([('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(counts, total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty)) for counts_type, counts in counts_dict.iteritems()])
+          significances.append(sig_dict)
+      logger.log(25, '\t\tCalculated significances for {0:d} cuts'.format(len(significances)))
+      # at this point, we have a list of significances that we can dump to a file
+      with open('{0:s}/s{1:s}.b{2:s}.json'.format(args.output_directory, did, '-'.join(sorted(bkgd_dids))), 'w+') as f:
+        f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance_scaled'), reverse=True), sort_keys=True, indent=4))
 
   return True
 
@@ -323,15 +387,11 @@ def do_generate(args):
   if os.path.isfile(args.output_filename):
     raise IOError("Output file already exists: {0}".format(args.output_filename))
 
-  # this is a dict that holds all the trees
-  trees = get_ttrees(args.tree_name, args.signal, args.bkgd, args.eventWeightBranch)
+  # this is a dict that holds the tree
+  tree = get_ttree(args.tree_name, [args.file], args.eventWeightBranch)
 
   # list of branches to loop over
-  branches=[i.GetName() for i in trees['signal'].GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
-
-  # get signal and background trees
-  signal = rnp.tree2array(trees['signal'], branches=branches)
-  bkgd = rnp.tree2array(trees['bkgd'], branches=branches)
+  branches=[i.GetName() for i in tree.GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
 
   supercuts = []
 
@@ -340,39 +400,21 @@ def do_generate(args):
       logger.log(25, "{0:32s}:\tSkipping as requested".format(b))
       continue
 
-    skipSignal = signal[b] < args.globalMinVal
-    skipBkgd = bkgd[b] < args.globalMinVal
-
-    signalPercentile = np.percentile(signal[b][~skipSignal], [0., 25., 50., 75., 100.])
-    bkgdPercentile = np.percentile(bkgd[b][~skipBkgd], [0., 25., 50., 75., 100.])
-    prelimStr = "{0}\n\tSignal ({1:6d} ignored):\t{2[0]:12.4f}\t{2[1]:12.4f}\t{2[2]:12.4f}\t{2[3]:12.4f}\t{2[4]:12.4f}\n\tBkgd   ({3:6d} ignored):\t{4[0]:12.4f}\t{4[1]:12.4f}\t{4[2]:12.4f}\t{4[3]:12.4f}\t{4[4]:12.4f}"
-
-    logger.info(prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
-
-    if signalPercentile[2] > bkgdPercentile[2]: signal_direction = '>'
-    else: signal_direction = '<'
+    signal_direction = '>'
 
     if match_branch(b, args.fixed_branches):
       supercuts.append({'branch': b,
-                        'pivot': signalPercentile[2],
+                        'pivot': 0,
                         'signal_direction': signal_direction})
     else:
-      if signal_direction == '>':
-        start = signalPercentile[0]
-        stop = signalPercentile[-1]
-      else:
-        start = signalPercentile[-1]
-        stop = signalPercentile[0]
       supercuts.append({'branch': b,
-                        'start': int(start),
-                        'stop': int(stop),
-                        'step': int((stop-start)/10.),
+                        'start': 0,
+                        'stop': 10.0,
+                        'step': 1.0,
                         'signal_direction': signal_direction})
-
 
   with open(args.output_filename, 'w+') as f:
     f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('branch')), sort_keys=True, indent=4))
-
 
   return True
 
@@ -430,69 +472,90 @@ if __name__ == "__main__":
 
   parser = argparse.ArgumentParser(add_help=False, description='Author: Giordon Stark. v.{0}'.format(__version__),
                                    formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-                                   epilog='This is the top-level. You have no power here. If you want to get started, run `%(prog)s optimize -h`.')
+                                   epilog='This is the top-level. You have no power here.')
   parser.add_argument('-h', '--help', action=_HelpAction, help='show this help message and exit')  # add custom help
   parser.add_argument('-a', '--allhelp', action=_AllHelpAction, help='show this help message and all subcommand help messages and exit')  # add custom help
 
   ''' subparsers have common parameters '''
-  main_parser = argparse.ArgumentParser(add_help=False)
-  optimize_hash_parser = argparse.ArgumentParser(add_help=False)
-  optimize_generate_parser = argparse.ArgumentParser(add_help=False)
-
-  requiredNamed_optimize_hash = optimize_hash_parser.add_argument_group('required named arguments')
-  requiredNamed_optimize_generate = optimize_generate_parser.add_argument_group('required named arguments')
+  main_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  files_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  tree_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  supercuts_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
 
   # general arguments for all
   main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug to enable output for debugging.')
   main_parser.add_argument('--debug', dest='debug', action='store_true', help='Enable ROOT output and full-on debugging. Use this if you need to debug the application.')
   main_parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT.')
-  # positional argument, require the first argument to be the input filename
-  requiredNamed_optimize_generate.add_argument('--signal', required=True, type=str, nargs='+', metavar='<file.root>', help='ROOT files containing the signal ttrees')
-  requiredNamed_optimize_generate.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='<file.root>', help='ROOT files containing the background ttrees')
-  requiredNamed_optimize_hash.add_argument('--supercuts', required=True, type=str, dest='supercuts', metavar='<file.json>', help='json dict of supercuts to generate optimization cuts over signal and bkgd')
-  # these are options allowing for various additional configurations in filtering container and types to dump
-  optimize_generate_parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='name of the tree containing the ntuples', default='oTree')
-  optimize_generate_parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='name of event weight branch in the ntuples. It must exist.', default='event_weight')
+  # positional argument, require the first argument to be the input filename (hence adding the argument group)
+  requiredNamed_files = files_parser.add_argument_group('required named arguments')
+  requiredNamed_files.add_argument('files', type=str, nargs='+', metavar='<file.root>', help='ROOT files containing the optimization ntuples')
+
+  # these are options for anything that needs to use the supercuts file
+  supercuts_parser.add_argument('--supercuts', required=False, type=str, dest='supercuts', metavar='<file.json>', help='json dict of supercuts to generate optimization cuts to apply', default='supercuts.json')
+  # these are options allowing for various additional configurations in filtering container and types to dump in the trees
+  tree_parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='name of the tree containing the ntuples', default='oTree')
+  tree_parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='name of event weight branch in the ntuples. It must exist.', default='event_weight')
 
   ''' add subparsers '''
   subparsers = parser.add_subparsers(dest='command', help='actions available')
-  # needs: signal, bkgd, tree, eventWeight, bkgdUncertainty, insignificanceThreshold, cuts
-  optimize_parser = subparsers.add_parser("optimize", parents=[main_parser, optimize_hash_parser, optimize_generate_parser],
-                                          description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
-                                          usage='%(prog)s  --signal=signal.root [..] --bkgd=bkgd.root [...] --supercuts=supercuts.json [options]', help='Find optimal cuts',
+
+  # needs: files, tree, eventWeight
+  generate_parser = subparsers.add_parser("generate", parents=[main_parser, tree_parser],
+                                          description='Given the ROOT ntuples, generate a supercuts.json template. v.{0}'.format(__version__),
+                                          usage='%(prog)s <file.root> ... [options]', help='Write supercuts template',
                                           formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-                                          epilog='optimize will take in signal, background, supercuts and calculate the significances for all cuts possible.')
-  optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the significances computed', default='significances.json')
+                                          epilog='generate will take in signal, background and generate the supercuts template file for you to edit and use (rather than making it by hand)')
+  generate_parser.add_argument('file', type=str, help='A single file that contains the general structure of the optimization tree on which to generate a supercuts file from.')
+  generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the generated supercuts template', default='supercuts.json')
+  generate_parser.add_argument('--fixedBranches', type=str, nargs='+', required=False, dest='fixed_branches', metavar='<branch>', help='branches that should have a fixed cut. can use wildcards', default=[])
+  generate_parser.add_argument('--skipBranches', type=str, nargs='+', required=False, dest='skip_branches', metavar='<branch>', help='branches that should be skipped. can use wildcards', default=[])
+
+  # needs: files, tree, eventWeight, supercuts
+  cuts_parser = subparsers.add_parser("cut", parents=[main_parser, files_parser, tree_parser, supercuts_parser],
+                                      description='Process ROOT ntuples and apply cuts. v.{0}'.format(__version__),
+                                      usage='%(prog)s <file.root> ... [options]', help='Apply the cuts',
+                                      formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
+                                      epilog='cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.')
+  cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
+  cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='cuts')
+  cuts_parser.add_argument('--numpy', required=False, action='store_true', help='Enable numpy optimization to speed up the cuts processing')
+
+
+  # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
+  optimize_parser = subparsers.add_parser("optimize", parents=[main_parser],
+                                          description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
+                                          usage='%(prog)s  --signal={DID1}.json {DID2}.json [..] --bkgd={DID3}.json {DID4}.json {DID5}.json [...] [options]', help='Calculate significances for a series of computed cuts',
+                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
+                                          epilog='optimize will take in numerous signal, background and calculate the significances for each signal and combine backgrounds automatically.')
+  optimize_parser.add_argument('--signal', required=True, type=str, nargs='+', metavar='{DID}.json', help='ROOT files containing the signal cuts')
+  optimize_parser.add_argument('--bkgd', required=True, type=str, nargs='+', metavar='{DID}.json', help='ROOT files containing the background cuts')
+  optimize_parser.add_argument('--searchDirectory', required=False, type=str, dest='search_directory', help='Directory that contains all the {DID}.json files.', default='cuts')
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--bkgdStatUncertainty', type=float, required=False, dest='bkgdStatUncertainty', metavar='<sigma>', help='background statistical uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=2)
-  optimize_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
+  optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='significances')
 
-  # needs: signal, bkgd, tree, globalMinVal, eventWeight
-  generate_parser = subparsers.add_parser("generate", parents=[main_parser, optimize_generate_parser],
-                                          description='Given the ROOT ntuples, generate a supercuts.json template. v.{0}'.format(__version__),
-                                          usage='%(prog)s --signal=signal.root [..] --bkgd=bkgd.root [...] [options]', help='Write supercuts template',
-                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-                                          epilog='generate will take in signal, background and generate the supercuts template file for you to edit and use (rather than making it by hand)')
-  generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the generated supercuts template', default='supercuts.json')
-  generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='minimum value when analyzing branch-by-branch.', default=-90.0)
-  generate_parser.add_argument('--fixedBranches', type=str, nargs='+', required=False, dest='fixed_branches', metavar='<branch name>', help='branches that should have a fixed cut. can use wildcards', default=[])
-  generate_parser.add_argument('--skipBranches', type=str, nargs='+', required=False, dest='skip_branches', metavar='<branch name>', help='branches that should be skipped. can use wildcards', default=[])
 
-  # needs: cuts
-  hash_parser = subparsers.add_parser("hash", parents=[main_parser, optimize_hash_parser],
+  # needs: supercuts
+  hash_parser = subparsers.add_parser("hash", parents=[main_parser, supercuts_parser],
                                       description='Given a hash from optimization, dump the cuts associated with it. v.{0}'.format(__version__),
-                                      usage='%(prog)s <hash> [<hash> ...] --supercuts=supercuts.json [options]', help='Translate hash to cut',
+                                      usage='%(prog)s <hash> [<hash> ...] [options]', help='Translate hash to cut',
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
                                       epilog='hash will take in a list of hashes and dump the cuts associated with them')
   hash_parser.add_argument('hash_values', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
   hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='outputHash')
 
   # set the functions that get called with the given arguments
+  cuts_parser.set_defaults(func=do_cuts)
   optimize_parser.set_defaults(func=do_optimize)
   generate_parser.set_defaults(func=do_generate)
   hash_parser.set_defaults(func=do_hash)
 
+  # print the help if called with no arguments
+  import sys
+  if len(sys.argv) == 1:
+    parser.print_help()
+    sys.exit(1)
   # parse the arguments, throw errors if missing any
   args = parser.parse_args()
 
