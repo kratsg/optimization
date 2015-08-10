@@ -166,16 +166,17 @@ or
 python optimize.py -h
 ```
 
-> usage: optimize.py [-h] [-a] {cut,optimize,generate,hash} ...
+> usage: optimize.py [-h] [-a] {generate,cut,optimize,hash} ...
 >
-> Author: Giordon Stark. v.866719a
+> Author: Giordon Stark. v.eea1e27
 >
 > positional arguments:
->   {cut,optimize,generate,hash}
+>   {generate,cut,optimize,hash}
 >                               actions available
->     cut                       Apply the cuts
->     optimize                  Find optimal cuts
 >     generate                  Write supercuts template
+>     cut                       Apply the cuts
+>     optimize                  Calculate significances for a series of computed
+>                               cuts
 >     hash                      Translate hash to cut
 >
 > optional arguments:
@@ -189,12 +190,61 @@ python optimize.py -h
 
 There is only one required position argument: the `action`. You can choose from
 
+- [generate](#actiongenerate)
 - [cut](#actioncut)
 - [optimize](#actionoptimize)
-- [generate](#actiongenerate)
 - [hash](#actionhash)
 
 We also provide an optional argument `-a, --allhelp` which will print all the help documentation at once instead of just the top-level `-h, --help`.
+
+### Action:Generate
+
+Generate helps you quickly start. Given the ROOT ntuples, generate a supercuts.json template.
+
+```bash
+usage: optimize.py generate --signal=signal.root [..] --bkgd=bkgd.root [...] [options]
+```
+
+#### Required Parameters
+
+Variable | Type | Description
+---------|------|------------
+--signal | string | path(s) to root files containing signal ntuples
+--bkgd | string | path(s) to root files containing background ntuples
+
+#### Optional Parameters
+
+Variable | Type | Description
+---------|------|------------
+-h, --help | bool | display help message | False
+-v, --verbose | count | enable more verbose output | 0
+--debug | bool | enable full-on debugging | False
+-b, --batch | bool | enable batch mode for ROOT | False
+--tree | string | ttree name in the ntuples | oTree
+--eventWeight | string | event weight branch name | event_weight
+--o, --output | string | output json file to store generated supercuts file | supercuts.json
+--globalMinVal | number | if verbose, display skipped events below this value | -90.0
+--fixedBranches | strings | branches that should have a fixed cut | []
+--skipBranches | strings | branches that should not have a cut (skip them) | []
+
+- `--globalMinVal` is just an aesthetic feature to make it easier to identify the "true" minimum of your ntuples. I often output -99.0 in case there is (for example) no 4th jet, or I could not calculate some substructure information, this allows me to automatically chop off the low end of a branch to get a better calculation of the percentiles
+- `--fixedBranches` and `--skipBranches` can take a series of strings or a series of patterns
+
+  ```bash
+  --fixedBranches multiplicity_jet multiplicity_topTag_loose multiplicity_topTag_tight
+  ```
+
+  or
+
+  ```bash
+  --fixedBranches multiplicity_* pt_jet_rc8_1
+  ```
+
+  which aims to make life easier for all of us.
+
+#### Output
+
+This script will generate a supercuts json file. See [Supercuts File](#supercuts-file) for more information.
 
 ### Action:Cut
 
@@ -316,55 +366,6 @@ if a significance was calculated successfully or
 ```
 
 if the number of events in signal or background did not pass the `--insignificance` minimum threshold set. In the above example, the background did not pass. In all cases where there is insignificance, the significance will always be set to `0`.
-
-### Action:Generate
-
-Generate helps you quickly start. Given the ROOT ntuples, generate a supercuts.json template.
-
-```bash
-usage: optimize.py generate --signal=signal.root [..] --bkgd=bkgd.root [...] [options]
-```
-
-#### Required Parameters
-
-Variable | Type | Description
----------|------|------------
---signal | string | path(s) to root files containing signal ntuples
---bkgd | string | path(s) to root files containing background ntuples
-
-#### Optional Parameters
-
-Variable | Type | Description
----------|------|------------
--h, --help | bool | display help message | False
--v, --verbose | count | enable more verbose output | 0
---debug | bool | enable full-on debugging | False
--b, --batch | bool | enable batch mode for ROOT | False
---tree | string | ttree name in the ntuples | oTree
---eventWeight | string | event weight branch name | event_weight
---o, --output | string | output json file to store generated supercuts file | supercuts.json
---globalMinVal | number | if verbose, display skipped events below this value | -90.0
---fixedBranches | strings | branches that should have a fixed cut | []
---skipBranches | strings | branches that should not have a cut (skip them) | []
-
-- `--globalMinVal` is just an aesthetic feature to make it easier to identify the "true" minimum of your ntuples. I often output -99.0 in case there is (for example) no 4th jet, or I could not calculate some substructure information, this allows me to automatically chop off the low end of a branch to get a better calculation of the percentiles
-- `--fixedBranches` and `--skipBranches` can take a series of strings or a series of patterns
-
-  ```bash
-  --fixedBranches multiplicity_jet multiplicity_topTag_loose multiplicity_topTag_tight
-  ```
-
-  or
-
-  ```bash
-  --fixedBranches multiplicity_* pt_jet_rc8_1
-  ```
-
-  which aims to make life easier for all of us.
-
-#### Output
-
-This script will generate a supercuts json file. See [Supercuts File](#supercuts-file) for more information.
 
 ### Action:Hash
 

@@ -492,6 +492,18 @@ if __name__ == "__main__":
 
   ''' add subparsers '''
   subparsers = parser.add_subparsers(dest='command', help='actions available')
+
+  # needs: files, tree, eventWeight
+  generate_parser = subparsers.add_parser("generate", parents=[main_parser, tree_parser],
+                                          description='Given the ROOT ntuples, generate a supercuts.json template. v.{0}'.format(__version__),
+                                          usage='%(prog)s <file.root> ... [options]', help='Write supercuts template',
+                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
+                                          epilog='generate will take in signal, background and generate the supercuts template file for you to edit and use (rather than making it by hand)')
+  generate_parser.add_argument('file', type=str, help='A single file that contains the general structure of the optimization tree on which to generate a supercuts file from.')
+  generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the generated supercuts template', default='supercuts.json')
+  generate_parser.add_argument('--fixedBranches', type=str, nargs='+', required=False, dest='fixed_branches', metavar='<branch>', help='branches that should have a fixed cut. can use wildcards', default=[])
+  generate_parser.add_argument('--skipBranches', type=str, nargs='+', required=False, dest='skip_branches', metavar='<branch>', help='branches that should be skipped. can use wildcards', default=[])
+
   # needs: files, tree, eventWeight, supercuts
   cuts_parser = subparsers.add_parser("cut", parents=[main_parser, files_parser, tree_parser, supercuts_parser],
                                       description='Process ROOT ntuples and apply cuts. v.{0}'.format(__version__),
@@ -515,17 +527,6 @@ if __name__ == "__main__":
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--bkgdStatUncertainty', type=float, required=False, dest='bkgdStatUncertainty', metavar='<sigma>', help='background statistical uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=2)
-
-  # needs: files, tree, eventWeight
-  generate_parser = subparsers.add_parser("generate", parents=[main_parser, tree_parser],
-                                          description='Given the ROOT ntuples, generate a supercuts.json template. v.{0}'.format(__version__),
-                                          usage='%(prog)s <file.root> ... [options]', help='Write supercuts template',
-                                          formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-                                          epilog='generate will take in signal, background and generate the supercuts template file for you to edit and use (rather than making it by hand)')
-  generate_parser.add_argument('file', type=str, help='A single file that contains the general structure of the optimization tree on which to generate a supercuts file from.')
-  generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the generated supercuts template', default='supercuts.json')
-  generate_parser.add_argument('--fixedBranches', type=str, nargs='+', required=False, dest='fixed_branches', metavar='<branch>', help='branches that should have a fixed cut. can use wildcards', default=[])
-  generate_parser.add_argument('--skipBranches', type=str, nargs='+', required=False, dest='skip_branches', metavar='<branch>', help='branches that should be skipped. can use wildcards', default=[])
 
   # needs: supercuts
   hash_parser = subparsers.add_parser("hash", parents=[main_parser, supercuts_parser],
