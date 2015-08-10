@@ -105,7 +105,9 @@ def echo(*echoargs, **echokwargs):
   return echo_wrap
 
 #@echo(write=logger.debug)
-def apply_selection(canvas, tree, cut, eventWeightBranch):
+def apply_selection(tree, cut, eventWeightBranch):
+  # use a global canvas
+  global canvas
   selection = cut_to_selection(cut)
   # draw with selection
   tree.Draw(eventWeightBranch, '{0:s}*{1:s}'.format(eventWeightBranch, selection))
@@ -142,8 +144,14 @@ def apply_cut(arr, pivot, direction):
     return np.ones(arr.shape, dtype=bool)
 
 #@echo(write=logger.debug)
-def apply_cuts(arr, cuts):
-  return reduce(np.bitwise_and, (apply_cut(arr[cut['branch']], cut.get('pivot', None), cut.get('signal_direction', None)) for cut in cuts))
+def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False):
+  if doNumpy:
+    # here, the tree is an rnp.tree2array() np.array
+    events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree[cut['branch']], cut.get('pivot', None), cut.get('signal_direction', None)) for cut in cuts))]
+    return float(events.size), np.sum(events).astype(float)
+  else:
+    # here, the tree is a ROOT.TTree
+    return apply_selection(tree, cuts, eventWeightBranch)
 
 #@echo(write=logger.debug)
 def get_cut(superCuts, index=0):
@@ -170,11 +178,6 @@ def get_cut(superCuts, index=0):
 #@echo(write=logger.debug)
 def get_cut_hash(cut):
   return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
-
-#@echo(write=logger.debug)
-def count_events(tree, cuts, eventWeightBranch):
-  events = tree[eventWeightBranch][apply_cuts(tree, cuts)]
-  return events.size, np.sum(events).astype(float)
 
 #@echo(write=logger.debug)
 def get_did(filename):
@@ -271,6 +274,9 @@ def cut_to_selection(cut):
 
 #@echo(write=logger.debug)
 def do_cuts(args):
+  # make the canvas global
+  global canvas
+
   # before doing anything, let's ensure the directory we make is ok
   if not os.path.exists(args.output_directory):
     os.makedirs(args.output_directory)
@@ -298,6 +304,9 @@ def do_cuts(args):
     try:
       # load up the tree for the files
       tree = get_ttree(args.tree_name, files, args.eventWeightBranch)
+      # if using numpy optimization, load the tree as a numpy array to apply_cuts on
+      if args.numpy:
+        tree = rnp.tree2array(tree, branches=[args.eventWeightBranch]+[i['branch'] for i in supercuts])
 
       # get the scale factor
       sample_scaleFactor = get_scaleFactor(weights, did)
@@ -306,7 +315,7 @@ def do_cuts(args):
       cuts = {}
       for cut in get_cut(copy.deepcopy(supercuts)):
         cut_hash = get_cut_hash(cut)
-        rawEvents, weightedEvents = apply_selection(canvas, tree, cut, args.eventWeightBranch)
+        rawEvents, weightedEvents = apply_cuts(tree, cut, args.eventWeightBranch, args.numpy)
         scaledEvents = weightedEvents*sample_scaleFactor
         cuts[cut_hash] = {'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents}
       logger.log(25, "Applied {0:d} cuts".format(len(cuts)))
@@ -491,6 +500,7 @@ if __name__ == "__main__":
                                       epilog='cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.')
   cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
   cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='cuts')
+  cuts_parser.add_argument('--numpy', required=False, action='store_true', help='Enable numpy optimization to speed up the cuts processing')
 
 
   # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
