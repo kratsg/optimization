@@ -181,7 +181,7 @@ def get_cut_hash(cut):
 
 #@echo(write=logger.debug)
 def get_did(filename):
-  did_regex = re.compile('\.(\d{6,8})\.')
+  did_regex = re.compile('\.?(\d{6,8})\.?')
   m = did_regex.search(filename)
   if m is None: raise ValueError('Can\'t figure out the DID!')
   return m.group(1)
@@ -222,7 +222,7 @@ def get_significance(signal, bkgd, insignificanceThreshold, bkgdUncertainty, bkg
     sig = -2
   else:
     # otherwise, calculate!
-    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(scaledSignal, scaledBkgd, bkgdUncertainty)
+    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(signal, bkgd, bkgdUncertainty)
   return sig
 
 #@echo(write=logger.debug)
@@ -330,6 +330,12 @@ def do_cuts(args):
 #@echo(write=logger.debug)
 def do_optimize(args):
 
+  # before doing anything, let's ensure the directory we make is ok
+  if not os.path.exists(args.output_directory):
+    os.makedirs(args.output_directory)
+  else:
+    raise IOError("Output directory already exists: {0:s}".format(args.output_directory))
+
   logger.log(25, 'Reading in all background files to calculate total background')
 
   total_bkgd = defaultdict(lambda: {'raw': 0., 'weighted': 0., 'scaled': 0.})
@@ -360,11 +366,11 @@ def do_optimize(args):
       with open(fname, 'r') as f:
         signal_data = json.load(f)
         for cuthash, counts_dict in signal_data.iteritems():
-          sig_dict = [('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(counts, total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty)) for counts_type, counts in counts_dict.iteritems()]
+          sig_dict = dict([('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(counts, total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty)) for counts_type, counts in counts_dict.iteritems()])
           significances.append(sig_dict)
       logger.log(25, '\t\tCalculated significances for {0:d} cuts'.format(len(significances)))
       # at this point, we have a list of significances that we can dump to a file
-      with open('significances/s{0:s}.b{1:s}.json'.format(did, '-'.join(sorted(bkgd_dids))), 'w+'):
+      with open('{0:s}/s{1:s}.b{2:s}.json'.format(args.output_directory, did, '-'.join(sorted(bkgd_dids))), 'w+') as f:
         f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance_scaled'), reverse=True), sort_keys=True, indent=4))
 
   return True
@@ -527,6 +533,8 @@ if __name__ == "__main__":
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--bkgdStatUncertainty', type=float, required=False, dest='bkgdStatUncertainty', metavar='<sigma>', help='background statistical uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=2)
+  optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='significances')
+
 
   # needs: supercuts
   hash_parser = subparsers.add_parser("hash", parents=[main_parser, supercuts_parser],
