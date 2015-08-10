@@ -373,14 +373,10 @@ def do_generate(args):
     raise IOError("Output file already exists: {0}".format(args.output_filename))
 
   # this is a dict that holds the tree
-  tree = get_ttree(args.tree_name, args.files, args.eventWeightBranch)
+  tree = get_ttree(args.tree_name, [args.file], args.eventWeightBranch)
 
   # list of branches to loop over
-  branches=[i.GetName() for i in tree['signal'].GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
-
-  # get signal and background tree
-  signal = rnp.tree2array(tree['signal'], branches=branches)
-  bkgd = rnp.tree2array(tree['bkgd'], branches=branches)
+  branches=[i.GetName() for i in tree.GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
 
   supercuts = []
 
@@ -389,39 +385,21 @@ def do_generate(args):
       logger.log(25, "{0:32s}:\tSkipping as requested".format(b))
       continue
 
-    skipSignal = signal[b] < args.globalMinVal
-    skipBkgd = bkgd[b] < args.globalMinVal
-
-    signalPercentile = np.percentile(signal[b][~skipSignal], [0., 25., 50., 75., 100.])
-    bkgdPercentile = np.percentile(bkgd[b][~skipBkgd], [0., 25., 50., 75., 100.])
-    prelimStr = "{0}\n\tSignal ({1:6d} ignored):\t{2[0]:12.4f}\t{2[1]:12.4f}\t{2[2]:12.4f}\t{2[3]:12.4f}\t{2[4]:12.4f}\n\tBkgd   ({3:6d} ignored):\t{4[0]:12.4f}\t{4[1]:12.4f}\t{4[2]:12.4f}\t{4[3]:12.4f}\t{4[4]:12.4f}"
-
-    logger.info(prelimStr.format(b, np.sum(skipSignal), signalPercentile, np.sum(skipBkgd), bkgdPercentile))
-
-    if signalPercentile[2] > bkgdPercentile[2]: signal_direction = '>'
-    else: signal_direction = '<'
+    signal_direction = '>'
 
     if match_branch(b, args.fixed_branches):
       supercuts.append({'branch': b,
-                        'pivot': signalPercentile[2],
+                        'pivot': 0,
                         'signal_direction': signal_direction})
     else:
-      if signal_direction == '>':
-        start = signalPercentile[0]
-        stop = signalPercentile[-1]
-      else:
-        start = signalPercentile[-1]
-        stop = signalPercentile[0]
       supercuts.append({'branch': b,
-                        'start': int(start),
-                        'stop': int(stop),
-                        'step': int((stop-start)/10.),
+                        'start': 0,
+                        'stop': 10.0,
+                        'step': 1.0,
                         'signal_direction': signal_direction})
-
 
   with open(args.output_filename, 'w+') as f:
     f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('branch')), sort_keys=True, indent=4))
-
 
   return True
 
@@ -528,14 +506,14 @@ if __name__ == "__main__":
   optimize_parser.add_argument('--bkgdStatUncertainty', type=float, required=False, dest='bkgdStatUncertainty', metavar='<sigma>', help='background statistical uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=2)
 
-  # needs: globalMinVal, files, tree, eventWeight
-  generate_parser = subparsers.add_parser("generate", parents=[main_parser, files_parser, tree_parser],
+  # needs: files, tree, eventWeight
+  generate_parser = subparsers.add_parser("generate", parents=[main_parser, tree_parser],
                                           description='Given the ROOT ntuples, generate a supercuts.json template. v.{0}'.format(__version__),
                                           usage='%(prog)s <file.root> ... [options]', help='Write supercuts template',
                                           formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
                                           epilog='generate will take in signal, background and generate the supercuts template file for you to edit and use (rather than making it by hand)')
+  generate_parser.add_argument('file', type=str, help='A single file that contains the general structure of the optimization tree on which to generate a supercuts file from.')
   generate_parser.add_argument('-o', '--output', required=False, type=str, dest='output_filename', metavar='<file.json>', help='output json file to store the generated supercuts template', default='supercuts.json')
-  generate_parser.add_argument('--globalMinVal', type=float, required=False, dest='globalMinVal', metavar='<min val>', help='minimum value when analyzing branch-by-branch.', default=-90.0)
   generate_parser.add_argument('--fixedBranches', type=str, nargs='+', required=False, dest='fixed_branches', metavar='<branch>', help='branches that should have a fixed cut. can use wildcards', default=[])
   generate_parser.add_argument('--skipBranches', type=str, nargs='+', required=False, dest='skip_branches', metavar='<branch>', help='branches that should be skipped. can use wildcards', default=[])
 
