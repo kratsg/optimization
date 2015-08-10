@@ -209,8 +209,7 @@ usage: optimize.py generate --signal=signal.root [..] --bkgd=bkgd.root [...] [op
 
 Variable | Type | Description
 ---------|------|------------
---signal | string | path(s) to root files containing signal ntuples
---bkgd | string | path(s) to root files containing background ntuples
+file | string | path to a root file containing an optimization ntuple to use
 
 #### Optional Parameters
 
@@ -223,7 +222,6 @@ Variable | Type | Description
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
 --o, --output | string | output json file to store generated supercuts file | supercuts.json
---globalMinVal | number | if verbose, display skipped events below this value | -90.0
 --fixedBranches | strings | branches that should have a fixed cut | []
 --skipBranches | strings | branches that should not have a cut (skip them) | []
 
@@ -323,12 +321,11 @@ Variable | Type | Description | Default
 -v, --verbose | count | enable more verbose output | 0
 --debug | bool | enable full-on debugging | False
 -b, --batch | bool | enable batch mode for ROOT | False
---tree | string | ttree name in the ntuples | oTree
---eventWeight | string | event weight branch name | event_weight
---supercuts | string | path to json dict of supercuts for generating cuts | supercuts.json
---o, --output | string | output list of significances | significances.json
+--searchDirectory | string | the directory that contains all cut.json files | 'cuts'
 --bkgdUncertainty | float | bkgd sigma for calculating sig. | 0.3
+--bkgdStatUncertainty | float | bkgd statistical uncertainty for significance | 0.3
 --insignificance | int | min. number of events for non-zero sig. | 10
+--o, --output | string | output directory to store significances calculated | significances
 
 #### Output
 
