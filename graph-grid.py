@@ -15,9 +15,10 @@ def parse_argv():
 
     parser = optparse.OptionParser()
     parser.add_option("--lumi", help="luminosity", default=5, type=int)
-    parser.add_option("--z-label", help="z axis title", default="total signal event weights")
+    parser.add_option("--z-label", help="z axis title", default="significance in optimal cut")
     parser.add_option("--text-file", help="text csv file", default=None, type=str)
-    parser.add_option("--out", help="outfile path", default="plots/output_25ns_l5_small.pdf")
+    parser.add_option("--outdir", help="outfile directory", default="plots")
+    parser.add_option("--outfile", help="outfile name", default="output.pdf")
     parser.add_option("--g-min", help="min gluino mass", default=800, type=float)
     parser.add_option("--g-max", help="max gluino mass", default=2000, type=float)
     parser.add_option("--l-min", help="min lsp mass", default=0, type=float)
@@ -63,7 +64,7 @@ def get_significances(opts):
   for did,sig in zip(dids,sigs):
     mgluino,mstop,mlsp = masses(did)
     row = [mgluino,mlsp,sig]
-    plot_array.append(row)
+    if int(mstop) == 5000: plot_array.append(row)
 
   return plot_array
 
@@ -104,17 +105,17 @@ def fill_hist(hist,opts):
       g = int(row[0])
       l = int(row[1])
       z = row[2]
+      b = hist.FindFixBin(g,l)
       if(z>0):
-        #hist.Fill(g,l,z)
-        b = hist.FindFixBin(g,l)
-        hist.SetBinContent(b,z)
-        '''x=Long(0)
-        y=Long(0)
-        z=Long(0)
-        hist.GetBinXYZ(b,x,y,z)
-        print hist.GetBinContent(x,y)'''
+        xx=Long(0)
+        yy=Long(0)
+        zz=Long(0)
+        hist.GetBinXYZ(b,xx,yy,zz)
+        z_old =  hist.GetBinContent(xx,yy)
+        newz = max(z_old,z)
+        hist.SetBinContent(b,newz)
       else:
-        hist.Fill(g,l,0.01)
+        hist.SetBinContent(b,0.01)
 
 def draw_hist(hist):
     hist.SetMarkerSize(1.5)
@@ -182,7 +183,7 @@ if __name__ == '__main__':
     draw_line()
     #p = exclusion()
     #p.Draw()
-    c.SaveAs(opts.out)
+    c.SaveAs(opts.outdir + "/" + opts.outfile)
 
     exit(0)
 
