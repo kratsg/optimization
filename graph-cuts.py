@@ -15,10 +15,8 @@ def parse_argv():
 
     parser = optparse.OptionParser()
     parser.add_option("--lumi", help="luminosity", default=5, type=int)
-    parser.add_option("--z-label", help="z axis title", default="significance in optimal cut")
     parser.add_option("--text-file", help="text csv file", default=None, type=str)
     parser.add_option("--outdir", help="outfile directory", default="plots")
-    parser.add_option("--outfile", help="outfile name", default="output.pdf")
     parser.add_option("--g-min", help="min gluino mass", default=800, type=float)
     parser.add_option("--g-max", help="max gluino mass", default=2000, type=float)
     parser.add_option("--l-min", help="min lsp mass", default=0, type=float)
@@ -27,13 +25,15 @@ def parse_argv():
     parser.add_option("--x-dim", help="x dimension of figure", default=800, type=float)
     parser.add_option("--y-dim", help="y dimension of figure", default=600, type=float)
     parser.add_option("--sigdir", help="directory where significances files are located", default='significances', type=str)
+    parser.add_option("--hashdir", help="directory where hash files are located", default='outputHash', type=str)
+    parser.add_option("--tag", help="tag of supercuts", default="")
 
     (options,args) = parser.parse_args()
 
     return (options)
-
+import pdb
 import csv,glob,re,json
-def get_significances(opts):
+def get_cut_value(opts,cut):
   mdict = {}
   with open('mass_windows.txt', 'r') as f:
     reader = csv.reader(f, delimiter='\t')
@@ -47,23 +47,36 @@ def get_significances(opts):
     mlsp = mlist[2]
     return mglue,mstop,mlsp
 
-  filenames = glob.glob(opts.sigdir+'/s*.b*.json')
-  regex = re.compile(opts.sigdir+'/s(\d{6}).b.*.json')
+  filenames = glob.glob(opts.sigdir+'_'+opts.tag+'/s*.b*.json')
+  regex = re.compile(opts.sigdir+'_'+opts.tag+'/s(\d{6}).b.*.json')
   dids = []
-  sigs = []
+  hashs = []
   for filename in filenames:
     with open(filename) as json_file:
-      sig_dict = json.load(json_file)
-      entry = sig_dict[0]
-      max_sig = entry['significance_scaled']
-      sigs.append(max_sig)
+      hash_dict = json.load(json_file)
+      entry = hash_dict[0]
+      h = entry['hash']
+      hashs.append(h)
       did = regex.search(filename)
       dids.append(did.group(1))
+  
+  def get_value(opts,cut,h):
+    filenames = glob.glob(opts.hashdir+'_'+opts.tag+'/'+h+'.json')
+    filename = filenames[0]
+    val = 0
+    with open(filename) as json_file:
+      cuts_dict = json.load(json_file)
+      for entry in cuts_dict:
+        if entry['branch'] == cut: break
+      val = entry['pivot']
+    return val
+
 
   plot_array=[]
-  for did,sig in zip(dids,sigs):
+  for did,h in zip(dids,hashs):
     mgluino,mstop,mlsp = masses(did)
-    row = [mgluino,mlsp,sig]
+    val = get_value(opts,cut,h)
+    row = [mgluino,mlsp,val]
     if int(mstop) == 5000: plot_array.append(row)
 
   return plot_array
@@ -84,29 +97,29 @@ def init_canvas(opts):
 
     return c
 
-def axis_labels(opts):
+def axis_labels(opts,cut):
 
-    return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % opts.z_label
+    return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % cut
 
-def init_hist(opts):
+def init_hist(opts,cut):
     return TH2F("grid", 
-                axis_labels(opts), 
+                axis_labels(opts,cut), 
                 nbinsx(opts), 
                 opts.g_min, 
                 opts.g_max, 
                 nbinsy(opts), 
                 opts.l_min, 
                 opts.l_max)
+import pdb
+def fill_hist(hist,opts,cut):
 
-def fill_hist(hist,opts):
-
-  plot_array = get_significances(opts)
+  plot_array = get_cut_value(opts,cut)
   for row in plot_array:
       g = int(row[0])
       l = int(row[1])
-      z = row[2]
+      z = int(round(row[2]))
       b = hist.FindFixBin(g,l)
-      if(z>0):
+      if z>0:
         xx=Long(0)
         yy=Long(0)
         zz=Long(0)
@@ -115,13 +128,14 @@ def fill_hist(hist,opts):
         newz = max(z_old,z)
         hist.SetBinContent(b,newz)
       else:
-        hist.SetBinContent(b,0.01)
+        hist.SetBinContent(b,-1)
+
 
 def draw_hist(hist):
-    hist.SetMarkerSize(1.5)
+    hist.SetMarkerSize(1.0)
     hist.SetMarkerColor(kWhite)
     gStyle.SetPalette(51)
-    gStyle.SetPaintTextFormat("1.1f");
+    gStyle.SetPaintTextFormat("1.11g");
     hist.Draw("TEXT COLZ")
 
 def draw_labels(lumi):
@@ -173,17 +187,19 @@ def exclusion():
 
 if __name__ == '__main__':
 
+    cuts = ['m_effective','met','multiplicity_jet','multiplicity_jet_b','multiplicity_topTag_loose']
     opts = parse_argv()
-    c = init_canvas(opts)
-    h = init_hist(opts)
-    fill_hist(h,opts)
-    draw_hist(h)
-    draw_labels(opts.lumi)
-    draw_text(opts.text_file)
-    draw_line()
-    #p = exclusion()
-    #p.Draw()
-    c.SaveAs(opts.outdir + "/" + opts.outfile)
+    for cut in cuts:
+      c = init_canvas(opts)
+      h = init_hist(opts,cut)
+      fill_hist(h,opts,cut)
+      draw_hist(h)
+      draw_labels(opts.lumi)
+      draw_text(opts.text_file)
+      draw_line()
+      #p = exclusion()
+      #p.Draw()
+      c.SaveAs(opts.outdir + '/output_' + opts.tag + '_' + cut + '.pdf')
 
     exit(0)
 
