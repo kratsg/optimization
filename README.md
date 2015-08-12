@@ -118,13 +118,32 @@ python optimize.py generate --signal 20150602_1/data-optimizationTree/mc14_13TeV
 
 which will write branches that match `multiplicity_topTag*` to have a fixed cut when I eventually run `optimize` over it; and will also skip branches that match `*_jet_rc*` so they won't be considered at all for cuts.
 
-#### Running the optimizations
+#### Running the cuts
 
-After that, we just (at a bare minimum) specify the `signal` and `bkgd` ROOT files. Since the script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified for each either as a pattern or just explicitly writing them out.
+After that, we just specify all of our ROOT files. The script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified either as a pattern or just explicitly writing them out. We will group every output by the DID passed in, so please try not to deviate from the default sample names or this breaks the code quite badly.
 
 ```bash
-python optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.20453* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* -b
+python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_0L -b
+python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_1L -b
 ```
+
+By default, we use `TTree::Draw` in order to calculate the number of events passing a given cut. We will also attempt to parallelize the computations as much as possible. In cases where you have a fast computer and the ntuples are reasonably small (can fit in memory), you might benefit from using a `numpy` boost by adding the `--numpy` flag like so
+
+```bash
+python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_0L -b --numpy
+python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_1L -b --numpy
+```
+
+#### Calculating the significances
+
+After that, we just (at a bare minimum) specify the `signal` and `bkgd` json cut files.
+
+```bash
+python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L -b --o=significances_0L --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=2
+python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=cuts_1L -b --o=significances_1L --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=2
+```
+
+and this will automatically combine background and produce a significances file for each signal DID passed in.
 
 #### Looking up a cut (or two)
 
@@ -141,7 +160,7 @@ which will create `outputHash/<hash>.json` files detailing the cuts involved.
 This is one of those pieces of python code we always want to run as fast as possible. Optimization should not take long. To figure out those dead-ends, I use [snakeviz](https://jiffyclub.github.io/snakeviz/). The `requirements.txt` file contains this dependency. To run it, I first profile the code by running it:
 
 ```bash
-python -m cProfile -o profiler.log optimize.py optimize --signal 20150602_1/data-optimizationTree/mc14_13TeV.204533* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* -b
+python -m cProfile -o profiler.log python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_0L -b --numpy
 ```
 
 then I use the `snakeviz` script to help me visualize this
@@ -151,6 +170,10 @@ snakeviz profiler.log
 ```
 
 and I'm good to go.
+
+### Example Script
+
+See [example_script.sh](example_script.sh) for an idea how how to run everything in order to produce a plot of significances.
 
 ## Documentation
 
