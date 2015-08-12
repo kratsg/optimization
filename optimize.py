@@ -186,8 +186,9 @@ def get_cut_hash(cut):
   return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
 
 #@echo(write=logger.debug)
+did_regex = re.compile('\.?(?:00)?(\d{6,8})\.?')
 def get_did(filename):
-  did_regex = re.compile('\.?(\d{6,8})\.?')
+  global did_regex
   m = did_regex.search(filename)
   if m is None: raise ValueError('Can\'t figure out the DID!')
   return m.group(1)
