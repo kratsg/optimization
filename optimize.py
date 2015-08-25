@@ -218,14 +218,17 @@ def get_scaleFactor(weights, did):
   return scaleFactor
 
 #@echo(write=logger.debug)
-def get_significance(signal, bkgd, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty):
+def get_significance(signal, bkgd, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty, rawBkgd):
   # if not enough events, return string of which one did not have enough
   if signal < insignificanceThreshold:
     #sigDetails['insignificance'] = "signal"
     sig = -1
-  elif bkgd < 1/(pow(bkgdStatUncertainty,2)): #require sqrt(numBkgd)/numBkgd < bkgdStatUncertainty
+  if bkgd < insignificanceThreshold:
     #sigDetails['insignificance'] = "bkgd"
     sig = -2
+  elif rawBkgd < 1/(pow(bkgdStatUncertainty,2)): #require sqrt(numBkgd)/numBkgd < bkgdStatUncertainty
+    #sigDetails['insignificance'] = "bkgdstat"
+    sig = -3
   else:
     # otherwise, calculate!
     sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(signal, bkgd, bkgdUncertainty)
@@ -387,7 +390,7 @@ def do_optimize(args):
         signal_data = json.load(f)
         for cuthash, counts_dict in signal_data.iteritems():
           lfactor = args.lumifactor
-          sig_dict = dict([('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(lfactor*counts, lfactor*total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty)) for counts_type, counts in counts_dict.iteritems()])
+          sig_dict = dict([('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(lfactor*counts, lfactor*total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty, total_bkgd[cuthash]['raw'])) for counts_type, counts in counts_dict.iteritems()])
           significances.append(sig_dict)
       logger.log(25, '\t\tCalculated significances for {0:d} cuts'.format(len(significances)))
       # at this point, we have a list of significances that we can dump to a file
