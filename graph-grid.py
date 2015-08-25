@@ -15,10 +15,10 @@ def parse_argv():
 
     parser = optparse.OptionParser()
     parser.add_option("--lumi", help="luminosity", default=5, type=int)
-    parser.add_option("--z-label", help="z axis title", default="significance in optimal cut")
+    #parser.add_option("--z-label", help="z axis title", default="significance in optimal cut")
     parser.add_option("--text-file", help="text csv file", default=None, type=str)
     parser.add_option("--outdir", help="outfile directory", default="plots")
-    parser.add_option("--outfile", help="outfile name", default="output.pdf")
+    parser.add_option("--outfilebase", help="outfile base name", default="output")
     parser.add_option("--g-min", help="min gluino mass", default=800, type=float)
     parser.add_option("--g-max", help="max gluino mass", default=2000, type=float)
     parser.add_option("--l-min", help="min lsp mass", default=0, type=float)
@@ -51,20 +51,30 @@ def get_significances(opts):
   regex = re.compile(opts.sigdir+'/s(\d{6}).b.*.json')
   dids = []
   sigs = []
+  signals = []
+  bkgds = []
   for filename in filenames:
     with open(filename) as json_file:
       sig_dict = json.load(json_file)
       entry = sig_dict[0]
       max_sig = entry['significance_scaled']
+      signal = entry['signal_events_scaled']
+      bkgd = entry['bkgd_events_scaled']
       sigs.append(max_sig)
+      signals.append(signal)
+      bkgds.append(bkgd)
       did = regex.search(filename)
       dids.append(did.group(1))
 
-  plot_array=[]
-  for did,sig in zip(dids,sigs):
+  plot_array={'sig':[],'signal':[],'bkgd':[],'mgluino':[],'mlsp':[]}
+  for did,sig,signal,bkgd in zip(dids,sigs,signals,bkgds):
     mgluino,mstop,mlsp = masses(did)
-    row = [mgluino,mlsp,sig]
-    if int(mstop) == 5000: plot_array.append(row)
+    if int(mstop) == 5000:
+      plot_array['sig'].append(sig)
+      plot_array['signal'].append(signal)
+      plot_array['bkgd'].append(bkgd)
+      plot_array['mgluino'].append(mgluino)
+      plot_array['mlsp'].append(mlsp)
 
   return plot_array
 
@@ -84,13 +94,13 @@ def init_canvas(opts):
 
     return c
 
-def axis_labels(opts):
+def axis_labels(opts,label):
 
-    return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % opts.z_label
+    return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % label
 
-def init_hist(opts):
+def init_hist(opts,label):
     return TH2F("grid", 
-                axis_labels(opts), 
+                axis_labels(opts,label), 
                 nbinsx(opts), 
                 opts.g_min, 
                 opts.g_max, 
@@ -98,21 +108,21 @@ def init_hist(opts):
                 opts.l_min, 
                 opts.l_max)
 
-def fill_hist(hist,opts):
+def fill_hist(hist,opts,plot_array,label):
 
-  plot_array = get_significances(opts)
-  for row in plot_array:
-      g = int(row[0])
-      l = int(row[1])
-      z = row[2]
+  for i in range(len(plot_array[label])):
+      g = int(plot_array['mgluino'][i])
+      l = int(plot_array['mlsp'][i])
+      z = plot_array[label][i]
+      sig = plot_array['sig'][i]
       b = hist.FindFixBin(g,l)
-      if(z>0):
+      if(sig>0):
         xx=Long(0)
         yy=Long(0)
         zz=Long(0)
         hist.GetBinXYZ(b,xx,yy,zz)
         z_old =  hist.GetBinContent(xx,yy)
-        newz = max(z_old,z)
+        newz = max(z_old,z) #for significances this makes sense. For the other quantities not so much. Oh well.
         hist.SetBinContent(b,newz)
       else:
         hist.SetBinContent(b,0.01)
@@ -174,16 +184,21 @@ def exclusion():
 if __name__ == '__main__':
 
     opts = parse_argv()
+    plot_array = get_significances(opts)
     c = init_canvas(opts)
-    h = init_hist(opts)
-    fill_hist(h,opts)
-    draw_hist(h)
-    draw_labels(opts.lumi)
-    draw_text(opts.text_file)
-    draw_line()
-    #p = exclusion()
-    #p.Draw()
-    c.SaveAs(opts.outdir + "/" + opts.outfile)
+    labels = ['sig','signal','bkgd']
+    ylabels = ['Significance in optimal cut','Exp. num. signal in optimal cut','Exp. num. bkgd in optimal cut']
+    for label,ylabel in zip(labels,ylabels):
+      h = init_hist(opts,ylabel)
+      fill_hist(h,opts,plot_array,label)
+      draw_hist(h)
+      draw_labels(opts.lumi)
+      draw_text(opts.text_file)
+      draw_line()
+      #p = exclusion()
+      #p.Draw()
+      c.SaveAs(opts.outdir + "/" + opts.outfilebase + "_" + label + ".png")
+      c.Clear()
 
     exit(0)
 
