@@ -386,7 +386,8 @@ def do_optimize(args):
       with open(fname, 'r') as f:
         signal_data = json.load(f)
         for cuthash, counts_dict in signal_data.iteritems():
-          sig_dict = dict([('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(counts, total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty)) for counts_type, counts in counts_dict.iteritems()])
+          lfactor = args.lumifactor
+          sig_dict = dict([('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(lfactor*counts, lfactor*total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty)) for counts_type, counts in counts_dict.iteritems()])
           significances.append(sig_dict)
       logger.log(25, '\t\tCalculated significances for {0:d} cuts'.format(len(significances)))
       # at this point, we have a list of significances that we can dump to a file
@@ -553,6 +554,7 @@ if __name__ == "__main__":
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--bkgdStatUncertainty', type=float, required=False, dest='bkgdStatUncertainty', metavar='<sigma>', help='background statistical uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=2)
+  optimize_parser.add_argument('--lumifactor', type=float, required=False, dest='lumifactor', metavar='<scaled lumi>', help='Scale luminosity from what it was when you ran cut', default=1.0)
   optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='significances')
 
 
