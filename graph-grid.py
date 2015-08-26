@@ -197,7 +197,9 @@ if __name__ == '__main__':
       draw_line()
       #p = exclusion()
       #p.Draw()
-      c.SaveAs(opts.outdir + "/" + opts.outfilebase + "_" + label + ".png")
+      savefilename = opts.outdir + "/" + opts.outfilebase + "_" + label + ".png"
+      c.SaveAs(savefilename)
+      print "Saving file " + savefilename
       c.Clear()
 
     exit(0)
