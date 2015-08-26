@@ -223,7 +223,7 @@ def get_significance(signal, bkgd, insignificanceThreshold, bkgdUncertainty, bkg
   if signal < insignificanceThreshold:
     #sigDetails['insignificance'] = "signal"
     sig = -1
-  if bkgd < insignificanceThreshold:
+  elif bkgd < insignificanceThreshold:
     #sigDetails['insignificance'] = "bkgd"
     sig = -2
   elif rawBkgd < 1/(pow(bkgdStatUncertainty,2)): #require sqrt(numBkgd)/numBkgd < bkgdStatUncertainty
