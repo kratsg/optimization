@@ -17,6 +17,7 @@ def parse_argv():
     parser.add_option("--lumi", help="luminosity", default=5, type=int)
     parser.add_option("--text-file", help="text csv file", default=None, type=str)
     parser.add_option("--outdir", help="outfile directory", default="plots")
+    parser.add_option("--outfilebase", help="outfile base name", default="output")
     parser.add_option("--g-min", help="min gluino mass", default=800, type=float)
     parser.add_option("--g-max", help="max gluino mass", default=2000, type=float)
     parser.add_option("--l-min", help="min lsp mass", default=0, type=float)
@@ -26,7 +27,6 @@ def parse_argv():
     parser.add_option("--y-dim", help="y dimension of figure", default=600, type=float)
     parser.add_option("--sigdir", help="directory where significances files are located", default='significances', type=str)
     parser.add_option("--hashdir", help="directory where hash files are located", default='outputHash', type=str)
-    parser.add_option("--tag", help="tag of supercuts", default="")
 
     (options,args) = parser.parse_args()
 
@@ -47,8 +47,8 @@ def get_cut_value(opts,cut):
     mlsp = mlist[2]
     return mglue,mstop,mlsp
 
-  filenames = glob.glob(opts.sigdir+'_'+opts.tag+'/s*.b*.json')
-  regex = re.compile(opts.sigdir+'_'+opts.tag+'/s(\d{6}).b.*.json')
+  filenames = glob.glob(opts.sigdir+'/s*.b*.json')
+  regex = re.compile(opts.sigdir+'/s(\d{6}).b.*.json')
   dids = []
   hashs = []
   for filename in filenames:
@@ -61,14 +61,23 @@ def get_cut_value(opts,cut):
       dids.append(did.group(1))
   
   def get_value(opts,cut,h):
-    filenames = glob.glob(opts.hashdir+'_'+opts.tag+'/'+h+'.json')
+    filenames = glob.glob(opts.hashdir+'/'+h+'.json')
+    if len(filenames)==0:
+      return 0
     filename = filenames[0]
     val = 0
     with open(filename) as json_file:
       cuts_dict = json.load(json_file)
+      found_cut = False
       for entry in cuts_dict:
-        if entry['branch'] == cut: break
-      val = entry['pivot']
+        if entry['branch'] == cut:
+          found_cut = True
+          break
+      if found_cut:
+        val = entry['pivot']
+      else:
+        print 'Did not find cut '+cut+' in hash file'
+        val = -1
     return val
 
 
@@ -187,7 +196,9 @@ def exclusion():
 
 if __name__ == '__main__':
 
-    cuts = ['m_effective','met','multiplicity_jet','multiplicity_jet_b','multiplicity_topTag_loose']
+    #cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b','multiplicity_topTag_loose']
+    cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b','multiplicity_jet_largeR']
+    #cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b']
     opts = parse_argv()
     for cut in cuts:
       c = init_canvas(opts)
@@ -199,7 +210,10 @@ if __name__ == '__main__':
       draw_line()
       #p = exclusion()
       #p.Draw()
-      c.SaveAs(opts.outdir + '/output_' + opts.tag + '_' + cut + '.pdf')
+      savefilename = opts.outdir + '/' + opts.outfilebase + '_' + cut + '.png'
+      c.SaveAs(savefilename)
+      print 'Saving file ' + savefilename
+    print 'Done'
 
     exit(0)
 
