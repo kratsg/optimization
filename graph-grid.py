@@ -26,7 +26,12 @@ def parse_argv():
     parser.add_option("--bin-width", help="bin width", default=100, type=float)
     parser.add_option("--x-dim", help="x dimension of figure", default=800, type=float)
     parser.add_option("--y-dim", help="y dimension of figure", default=600, type=float)
+    parser.add_option("--run1_color", help="color of run 1 line", default=46, type=int)
+    parser.add_option("--dorun1", help="add run 1 line to graph", default=True)
+    parser.add_option("--run1_csvfile", help="csv file containing run 1 exclusion points", default="run1_limit.csv", type=str)
+    parser.add_option("--run1_1sigma_csvfile", help="csv file containing run 1 exclusion (+1 sigma) points", default="run1_limit_1sigma.csv", type=str)
     parser.add_option("--sigdir", help="directory where significances files are located", default='significances', type=str)
+    parser.add_option("--cutdir", help="directory where cuts files are located", default='cuts', type=str)
 
     (options,args) = parser.parse_args()
 
@@ -48,7 +53,7 @@ def get_significances(opts):
     return mglue,mstop,mlsp
 
   filenames = glob.glob(opts.sigdir+'/s*.b*.json')
-  regex = re.compile(opts.sigdir+'/s(\d{6}).b.*.json')
+  regex = re.compile(opts.sigdir+'/s(\d+)\.b([0-9\-]+)\.json')
   dids = []
   sigs = []
   signals = []
@@ -58,13 +63,27 @@ def get_significances(opts):
       sig_dict = json.load(json_file)
       entry = sig_dict[0]
       max_sig = entry['significance_scaled']
-      signal = entry['signal_events_scaled']
-      bkgd = entry['bkgd_events_scaled']
+      max_hash = entry['hash']
+
+      did = regex.search(filename)
+      signal_did = did.group(1)
+      with open(opts.cutdir+'/'+signal_did+'.json') as signal_json_file:
+        signal_dict = json.load(signal_json_file)
+        entry = signal_dict[max_hash]
+        signal = entry['scaled']
+      bkgd_dids = did.group(2).split('-')
+      bkgd = 0
+      for bkgd_did in bkgd_dids:
+        with open(opts.cutdir+'/'+bkgd_did+'.json') as bkgd_json_file:
+          bkgd_dict = json.load(bkgd_json_file)
+          entry = bkgd_dict[max_hash]
+          bkgd += entry['scaled']
+
       sigs.append(max_sig)
       signals.append(signal)
       bkgds.append(bkgd)
-      did = regex.search(filename)
-      dids.append(did.group(1))
+      dids.append(signal_did)
+
 
   plot_array={'sig':[],'signal':[],'bkgd':[],'mgluino':[],'mlsp':[]}
   for did,sig,signal,bkgd in zip(dids,sigs,signals,bkgds):
@@ -170,6 +189,31 @@ def draw_line():
   l.DrawLine(opts.g_min,opts.g_min-2*topmass,opts.l_max+2*topmass,opts.l_max)
 
 from array import *
+def get_run1(filename,linestyle,linewidth,linecolor):
+  x = array('f')
+  y = array('f')
+  n = 0
+  with open(filename,'r') as csvfile:
+    reader = csv.reader(csvfile, delimiter = ' ')
+    for row in reader:
+      n += 1
+      x.append(float(row[0]))
+      y.append(float(row[1]))
+
+  gr = TGraph(n,x,y)
+  gr.SetLineColor(linecolor)
+  gr.SetLineWidth(linewidth)
+  gr.SetLineStyle(linestyle)
+  return gr
+
+def draw_run1_text(color):
+    txt = TLatex()
+    txt.SetNDC()
+    txt.SetTextFont(22)
+    txt.SetTextSize(0.04)
+    txt.SetTextColor(color)
+    txt.DrawText(0.2,0.2,"Run 1 Limit")
+
 def exclusion():
   #x = array('d',[opts.g_min,opts.l_max+2*topmass,opts.g_min])
   #y = array('d',[opts.g_min-2*topmass,opts.l_max,opts.l_max])
@@ -195,10 +239,17 @@ if __name__ == '__main__':
       draw_labels(opts.lumi)
       draw_text(opts.text_file)
       draw_line()
+      savefilename = opts.outdir + "/" + opts.outfilebase + "_" + label
+      if opts.dorun1:
+        gr = get_run1(opts.run1_csvfile,1,3,opts.run1_color)
+        gr.Draw("C")
+        gr_1sigma = get_run1(opts.run1_1sigma_csvfile,3,1,opts.run1_color)
+        gr_1sigma.Draw("C")
+        draw_run1_text(opts.run1_color)
+        savefilename += "_wrun1"
       #p = exclusion()
       #p.Draw()
-      savefilename = opts.outdir + "/" + opts.outfilebase + "_" + label + ".png"
-      c.SaveAs(savefilename)
+      c.SaveAs(savefilename + ".pdf")
       print "Saving file " + savefilename
       c.Clear()
 
