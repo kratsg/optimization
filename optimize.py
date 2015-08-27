@@ -390,7 +390,7 @@ def do_optimize(args):
         signal_data = json.load(f)
         for cuthash, counts_dict in signal_data.iteritems():
           lfactor = args.lumifactor
-          sig_dict = dict([('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(lfactor*counts, lfactor*total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty, total_bkgd[cuthash]['raw'])) for counts_type, counts in counts_dict.iteritems()] + [('signal_events_{0:s}'.format(counts_type), lfactor*counts) for counts_type, counts in counts_dict.iteritems()] + [('bkgd_events_{0:s}'.format(counts_type), lfactor*total_bkgd[cuthash][counts_type]) for counts_type, counts in counts_dict.iteritems()])
+          sig_dict = dict([('hash', cuthash)] + [('significance_{0:s}'.format(counts_type), get_significance(lfactor*counts, lfactor*total_bkgd[cuthash][counts_type], args.insignificanceThreshold, args.bkgdUncertainty, args.bkgdStatUncertainty, total_bkgd[cuthash]['raw'])) for counts_type, counts in counts_dict.iteritems()])
           significances.append(sig_dict)
       logger.log(25, '\t\tCalculated significances for {0:d} cuts'.format(len(significances)))
       # at this point, we have a list of significances that we can dump to a file
