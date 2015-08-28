@@ -59,7 +59,7 @@ def get_cut_value(opts,cut):
       hashs.append(h)
       did = regex.search(filename)
       dids.append(did.group(1))
-  
+
   def get_value(opts,cut,h):
     filenames = glob.glob(opts.hashdir+'/'+h+'.json')
     if len(filenames)==0:
@@ -100,7 +100,7 @@ def init_canvas(opts):
 
     gStyle.SetPalette(1);
 
-    c = TCanvas("c", "", 0, 0, opts.x_dim, opts.y_dim) 
+    c = TCanvas("c", "", 0, 0, opts.x_dim, opts.y_dim)
     c.SetRightMargin(0.16)
     c.SetTopMargin(0.07)
 
@@ -111,13 +111,13 @@ def axis_labels(opts,cut):
     return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % cut
 
 def init_hist(opts,cut):
-    return TH2F("grid", 
-                axis_labels(opts,cut), 
-                nbinsx(opts), 
-                opts.g_min, 
-                opts.g_max, 
-                nbinsy(opts), 
-                opts.l_min, 
+    return TH2F("grid",
+                axis_labels(opts,cut),
+                nbinsx(opts),
+                opts.g_min,
+                opts.g_max,
+                nbinsy(opts),
+                opts.l_min,
                 opts.l_max)
 import pdb
 def fill_hist(hist,opts,cut):
