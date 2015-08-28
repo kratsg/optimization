@@ -48,6 +48,7 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
     - [Defining a fixed cut](#defining-a-fixed-cut)
     - [Defining a supercut](#defining-a-supercut)
     - [Example of a supercuts file](#example-of-a-supercuts-file)
+    - [More Complicated Selections](#more-complicated-selections)
 - [Authors](#authors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -449,9 +450,8 @@ A fixed cut is a single cut on a single branch. This is like taking a partial de
 
 Key | Type | Description
 ----|------|------------
-branch | string | name of branch to apply a selection on
+selections | string | the various selections to apply for the cut
 pivot | number | the value at which we cut (or *pivot* against)
-signal_direction | string | `?= >, <`. Obeys the rule: `value ? pivot`
 
 The simplest example is when we want to use a single fixed cut on a single branch. Your object will look like
 
@@ -459,9 +459,8 @@ The simplest example is when we want to use a single fixed cut on a single branc
 [
     ...
     {
-        "branch": "multiplicity_jet",
+        "selections": "multiplicity_jet > {0}",
         "pivot": 3,
-        "signal_direction": ">"
     },
     ...
 ]
@@ -475,11 +474,8 @@ A supercut is our term for an object that generates more than 1 cut on the defin
 
 Key | Type | Description
 ----|------|------------
-branch | string | name of branch to apply a selection on
-start | number | (inclusive) starting value for the `pivot`
-stop | number | (exclusive) ending value for the `pivot`
-step | number | (non-zero) increment or decrement to take to go from `start` to `stop`
-signal_direction | string | `?= >` or `? = <`. Obeys the rule: `value ? pivot`
+selections | string | the various selections to apply for the cut
+st3 | list | a list of [start, stop, step] values for each set of pivots
 
 **Note**: the direction in which cuts are generated can be controlled by running cuts in increasing values (`start < stop`, `step > 0`) or decreasing values (`start > stop`, `step < 0`).
 
@@ -489,11 +485,10 @@ There are two main examples we will provide to show the different cuts that coul
 [
     ...
     {
-        "branch": "multiplicity_jet",
-        "start": 2,
-        "stop": 7,
-        "step": 2,
-        "signal_direction": "<"
+        "selections": "multiplicity_jet < {0}",
+        "st3": [
+            [2, 7, 2]
+        ]
     },
     ...
 ]
@@ -511,11 +506,10 @@ in that order.
 [
     ...
     {
-        "branch": "multiplicity_jet",
-        "start": 3,
-        "stop": 1,
-        "step": -1,
-        "signal_direction": ">"
+        "selections": "multiplicity_jet > {0}",
+        "st3": [
+            [3, 1, -1]
+        ]
     },
     ...
 ]
@@ -535,23 +529,20 @@ Here is an example `supercuts.json` file
 ```json
 [
     {
-        "branch": "multiplicity_jet",
-        "start": 2,
-        "stop": 15,
-        "step": 1,
-        "signal_direction": ">"
+        "selections": "multiplicity_jet > {0}",
+        "st3": [
+            [2, 15, 1]
+        ]
     },
     {
-        "branch": "multiplicity_jet_largeR",
-        "start": 3,
-        "stop": 1,
-        "step": -1,
-        "signal_direction": "<"
+        "selections": "multiplicity_jet_largeR > {0}",
+        "st3": [
+            [3, 1, -1]
+        ]
     },
     {
-        "branch": "multiplicity_topTag_loose",
-        "pivot": 1,
-        "signal_direction": ">"
+        "selections": "multiplicity_topTag_loose > {0}",
+        "pivot": [1]
     }
 ]
 ```
@@ -563,6 +554,49 @@ How do we interpret this? This file tells the code that there are 3 branches to 
 - This is a fixed cut. **1** cut will be used for `multiplicity_topTag_loose` with a `pivot = 1` and `signal_direction = >`. This means we will only select events with `value > 1` always. The `pivot` will be fixed. One could also fix the cut by providing `start`, `stop`, `step` such that it only generates 1 cut, but the script will not identify this as a fixed cut for you when you look up the `cut` using [hash](#actionhash).
 
 This supercuts file will generate **26** total cuts (`13*2*1 = 26`). Each cut will have an associated hash value and an associated significance which will be recorded to an output file when you run [optimize](#actionoptimize).
+
+If you wish to provide a fixed cut (the pivot does not change), you simply need to specify the pivot instead. Taking the example shown above, you might have something like
+
+```json
+[
+    {
+        "selections": "multiplicity_jet >= {0}",
+        "pivot": [4]
+    },
+    {
+        "selections": "multiplicity_jet_largeR > {0}",
+        "st3": [
+            [3, 1, -1]
+        ]
+    },
+    {
+        "selections": "multiplicity_topTag_loose > {0}",
+        "pivot": [1]
+    }
+]
+```
+
+which tells the code to always apply a cut of `multiplicity_jet >= 4` always.
+
+#### More Complicated Selections
+
+One can certainly provide more complicated selections involving multiple pivots and multiple branches. In fact, this makes our optimization increasingly more flexible and faster than any other code in existence. If you use `--numpy`, we use the [numexpr](https://github.com/pydata/numexpr/) package to provide the parsing of the more complicated selection strings (they have examples of what you can do). If you do not use `--numpy`, we default to use `ROOT` and `TTree::Draw` to make the cuts, which means a standard `TCut` or `TFormula` can be used for your selection. Either way, you still need to specify placeholders for your pivots.
+
+```json
+[
+    ...
+    {
+        "selections": "(mass_jets_largeR_1 > {0} & mass_jets_largeR_2 > {0} & mass_jets_largeR_3 > {0}) >= {1}",
+        "st3": [
+            [50, 2000, 50],
+            [0, 4, 1],
+        ]
+    },
+    ...
+]
+```
+
+is an example of a perhaps more complicated selection that can be done. In this case, we are determining how many of the 3 leading jets pass a mass cut, but also applying a cut on that count. In this case, the `{0}` pivot placeholder refers to the first `st^3` option: `[50, 2000, 50]` which is to vary the first pivot `{0}` from 50 GeV to 2 TeV in 50 GeV steps. The `{1}` pivot placeholder refers to the second `st^3` option: `[0, 4, 1]` which is to vary the second pivot `{1}` from 0 to 4 in steps of 1. This will allow us to iterate over all possible values of pivots (the product of `[50, 2000, 50] X [0, 4, 1]`).
 
 ## Authors
 - [Giordon Stark](https://github.com/kratsg)
