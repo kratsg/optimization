@@ -41,6 +41,7 @@ import glob
 import itertools
 from time import clock
 from collections import defaultdict
+import numexpr as ne
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
 from joblib import Parallel, delayed, load, dump
@@ -327,7 +328,7 @@ def do_cut(args, did, files, supercuts, weights):
         totalSelections = list(set(totalSelections))
       '''
       alphachars = re.compile('\W+')
-      branchesSpecified = list(set(itertools.chain.from_iterable(filter(None, p.sub(' ', supercut['selections'].format(*['-']*10)).split(' ')) for supercut in supercuts)))
+      branchesSpecified = list(set(itertools.chain.from_iterable(filter(None, alphachars.sub(' ', supercut['selections'].format(*['-']*10)).split(' ')) for supercut in supercuts)))
       # get actual list of branches in the file
       availableBranches = [i.GetName() for i in tree.GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
       # remove anything that doesn't exist
@@ -503,7 +504,7 @@ def do_hash(args):
     cut_hash = get_cut_hash(cut)
     if cut_hash in args.hash_values:
       with open(os.path.join(args.output_directory, "{0}.json".format(cut_hash)), 'w+') as f:
-        f.write(json.dumps([{k: v for k, v in d.iteritems() if k in ['selections', 'pivot', 'fixed']} for d in cut], sort_keys=True, indent=4))
+        f.write(json.dumps([{k: (NoIndent(v) if k == 'pivot' else v)  for k, v in d.iteritems() if k in ['selections', 'pivot', 'fixed']} for d in cut], sort_keys=True, indent=4, cls=NoIndentEncoder))
       args.hash_values.remove(cut_hash)
       logger.info("\tFound cut for hash {0:32s}. {1:d} hashes left.".format(cut_hash, len(args.hash_values)))
     if not args.hash_values: break
