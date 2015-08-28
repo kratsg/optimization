@@ -3,10 +3,11 @@
 This tool allows you to take a series of ROOT ntuples, signal & background, apply a lot of cuts automatically, and figure out the most optimal selections to maximize significance. It comes packed with a lot of features
 
 - generator script to create, what we call, a supercuts file containing all the rules to tell the script what cuts to apply and on which branches
-- optimization script which will take your signal, background, & supercuts; run them all; and output a sorted list of optimal cuts\*
+- cut script which will take your signal, background, and supercuts; run them all; and output a series of files with the appropriate event counts for all cuts provided
+- optimization script which will take your signal counts and background counts; run them all; and output a sorted list of optimal cuts
 - hash look up script to reverse-engineer the cut for a given hash when you supply the supercuts file
 
-\**Note*: as part of making the script run as fast as possible, I try to maintain a low memory profile. It will only pull (load) branches from your ttrees that you plan to make cuts on. It will also not store (or remember) the cut used to create a significance value. Instead, we compute a 32-bit hash which is used to encode the cuts, and a way to "decode" the hash is also provided.
+*Note*: as part of making the script run as fast as possible, I try to maintain a low memory profile. It will not store (or remember) the cut used to create a significance value. Instead, we compute a 32-bit hash which is used to encode the cuts, and a way to "decode" the hash is also provided.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -371,8 +372,10 @@ The output is a directory of json files which will look like
 [
     ...
     {
-        "hash": "97abf074c8334f284618899bc1605bce",
-        "significance": 25.12760472644945
+        "hash": "7595976a84303a003f6a4a7458f12b8d",
+        "significance_raw": 7.643122000999725,
+        "significance_scaled": 4.382066929290212,
+        "significance_weighted": 18.34212454602254
     },
     ...
 ]
@@ -384,18 +387,34 @@ if a significance was calculated successfully or
 [
     ...
     {
-        "hash": "3aa373b14b6fccb8fb9efc99cccff877",
-        "significance": -1
+        "hash": "c911af35708dcdc51380ebbde81c9b1e",
+        "significance_raw": -3,
+        "significance_scaled": -1,
+        "significance_weighted": -3
     },
     {
-        "hash": "3aa373b14b6fccb8fb9efc99cccff877",
-        "significance": -2
+        "hash": "b383cea24037667ffb6136d670a33468",
+        "significance_raw": -2,
+        "significance_scaled": -1,
+        "significance_weighted": -2
+    },
+    {
+        "hash": "095414bacf1022f2c941cc6164b175a1",
+        "significance_raw": 9.421795580339449,
+        "significance_scaled": -2,
+        "significance_weighted": 20.37611073465684
     },
     ...
 ]
 ```
 
-if the number of events in signal or background did not pass the `--insignificance` minimum threshold set. The significance will always be flagged as a negative number (-1) or (-2) depending on the insignificance observed. Signal insignificance is flagged as `-1` and background insignificance is flagged as `-2`.
+if the number of events in signal or background did not pass the `--insignificance` minimum threshold set. The significance will always be flagged as a negative number depending on the insignificance observed. The table below summarizes these cases:
+
+Sig. Value | What Happened
+----------:|:-------------
+-1         | The signal was insignificant
+-2         | The background was insignificant
+-3         | The raw number of background events was too small for statistics
 
 ### Action:Hash
 
