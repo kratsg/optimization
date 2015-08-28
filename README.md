@@ -357,6 +357,7 @@ Variable | Type | Description | Default
 --bkgdStatUncertainty | float | bkgd statistical uncertainty for significance | 0.3
 --insignificance | int | min. number of events for non-zero sig. | 10
 --o, --output | string | output directory to store significances calculated | significances
+--lumifactor | float | multiply the luminosity given in the weightsFile in the cut step by some factor, to avoid having to redo all the cuts | 1.0
 
 #### Output
 
