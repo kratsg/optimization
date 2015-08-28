@@ -297,6 +297,7 @@ Variable | Type | Description | Default
 --eventWeight | string | event weight branch name | event_weight
 --supercuts | string | path to json dict of supercuts for generating cuts | supercuts.json
 --o, --output | directory | output directory to store json files containing cuts | cuts
+--weightsFile | string | .yml file containing weights in proper formatting - see SampleWeights
 
 #### Output
 
@@ -415,7 +416,7 @@ Sig. Value | What Happened
 ----------:|:-------------
 -1         | The signal was insignificant
 -2         | The background was insignificant
--3         | The raw number of background events was too small for statistics
+-3         | There were not enough statistics in the background events
 
 ### Action:Hash
 
