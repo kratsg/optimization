@@ -282,16 +282,16 @@ def read_supercuts_file(filename):
   selections= set([supercut['selections'] for supercut in supercuts])
   try:
     for supercut in supercuts:
-      selections.remove(supercut['selection'])
+      selections.remove(supercut['selections'])
   except KeyError:
-    raise KeyError("Found more than one supercut definition on {0}".format(supercut['selection']))
+    raise KeyError("Found more than one supercut definition on {0}".format(supercut['selections']))
 
   logger.info("\tFound {1:d} supercut definitions".format(filename, len(supercuts)))
   return supercuts
 
 #@echo(write=logger.debug)
 def cut_to_selection(cut):
-  return cut['selection'].format(*cut['pivot'])
+  return cut['selections'].format(*cut['pivot'])
 
 #@echo(write=logger.debug)
 def cuts_to_selection(cuts):
@@ -312,7 +312,7 @@ def do_cut(args, did, files, supercuts, weights):
       '''
         totalSelections = []
         for supercut in supercuts:
-          selection = supercut['selection']
+          selection = supercut['selections']
           # filter out non-alphanumeric
           selection = p.sub(' ', selection.format("-", "-", "-", "-", "-", "-", "-", "-", "-", "-"))
           # split on spaces, since we substituted non alphanumeric with spaces
@@ -327,7 +327,7 @@ def do_cut(args, did, files, supercuts, weights):
         totalSelections = list(set(totalSelections))
       '''
       alphachars = re.compile('\W+')
-      branchesSpecified = list(set(itertools.chain.from_iterable(filter(None, p.sub(' ', supercut['selection'].format(*['-']*10)).split(' ')) for supercut in supercuts)))
+      branchesSpecified = list(set(itertools.chain.from_iterable(filter(None, p.sub(' ', supercut['selections'].format(*['-']*10)).split(' ')) for supercut in supercuts)))
       # get actual list of branches in the file
       availableBranches = [i.GetName() for i in tree.GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
       # remove anything that doesn't exist
@@ -475,14 +475,14 @@ def do_generate(args):
     signal_direction = '>'
 
     if match_branch(b, args.fixed_branches):
-      supercuts.append({'selection': "{0:s} > {{0}}".format(b),
+      supercuts.append({'selections': "{0:s} > {{0}}".format(b),
                         'pivot': 0})
     else:
-      supercuts.append({'selection': "{0:s} > {{0}}".format(b),
+      supercuts.append({'selections': "{0:s} > {{0}}".format(b),
                         'st3': [NoIndent([0.0, 10.0, 1.0])]})
 
   with open(args.output_filename, 'w+') as f:
-    f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('selection')), sort_keys=True, indent=4, cls=NoIndentEncoder))
+    f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('selections')), sort_keys=True, indent=4, cls=NoIndentEncoder))
 
   return True
 
@@ -503,7 +503,7 @@ def do_hash(args):
     cut_hash = get_cut_hash(cut)
     if cut_hash in args.hash_values:
       with open(os.path.join(args.output_directory, "{0}.json".format(cut_hash)), 'w+') as f:
-        f.write(json.dumps([{k: v for k, v in d.iteritems() if k in ['selection', 'pivot', 'fixed']} for d in cut], sort_keys=True, indent=4))
+        f.write(json.dumps([{k: v for k, v in d.iteritems() if k in ['selections', 'pivot', 'fixed']} for d in cut], sort_keys=True, indent=4))
       args.hash_values.remove(cut_hash)
       logger.info("\tFound cut for hash {0:32s}. {1:d} hashes left.".format(cut_hash, len(args.hash_values)))
     if not args.hash_values: break
