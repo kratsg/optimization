@@ -29,6 +29,7 @@ logger = logging.getLogger("optimize")
 import argparse
 import subprocess
 import json
+import uuid  # for custom json output in do_generate
 import hashlib
 import copy
 import operator
@@ -37,8 +38,10 @@ import fnmatch
 import math
 import yaml
 import glob
+import itertools
 from time import clock
 from collections import defaultdict
+import numexpr as ne
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
 from joblib import Parallel, delayed, load, dump
@@ -110,11 +113,37 @@ def echo(*echoargs, **echokwargs):
     return echo_wrap(echoargs[0])
   return echo_wrap
 
+# http://stackoverflow.com/a/25935321/1532974
+class NoIndent(object):
+  def __init__(self, value):
+    self.value = value
+
+class NoIndentEncoder(json.JSONEncoder):
+  def __init__(self, *args, **kwargs):
+    super(NoIndentEncoder, self).__init__(*args, **kwargs)
+    self.kwargs = dict(kwargs)
+    del self.kwargs['indent']
+    self._replacement_map = {}
+
+  def default(self, o):
+    if isinstance(o, NoIndent):
+      key = uuid.uuid4().hex
+      self._replacement_map[key] = json.dumps(o.value, **self.kwargs)
+      return "@@%s@@" % (key,)
+    else:
+      return super(NoIndentEncoder, self).default(o)
+
+  def encode(self, o):
+    result = super(NoIndentEncoder, self).encode(o)
+    for k, v in self._replacement_map.iteritems():
+      result = result.replace('"@@%s@@"' % (k,), v)
+    return result
+
 #@echo(write=logger.debug)
-def apply_selection(tree, cut, eventWeightBranch):
+def apply_selection(tree, cuts, eventWeightBranch):
   # use a global canvas
   global canvas
-  selection = cut_to_selection(cut)
+  selection = cuts_to_selection(cuts)
   # draw with selection
   tree.Draw(eventWeightBranch, '{0:s}*{1:s}'.format(eventWeightBranch, selection))
   # raw and weighted counts
@@ -129,31 +158,14 @@ def apply_selection(tree, cut, eventWeightBranch):
   return rawCount, weightedCount
 
 #@echo(write=logger.debug)
-def apply_cut(arr, pivot, direction):
-  """ Given a numpy array of values, apply a cut in the direction of expected signal
-
-  >>> apply_cut(np.random.randn(100), 0, '>')  # only positive values (val > cut)
-  >>> apply_cut(np.random.randn(100), 0, '<')  # only negative values (val < cut)
-  """
-  if pivot is None:
-    return np.ones(arr.shape, dtype=bool)
-
-  if direction == '<=':
-    return arr <= pivot
-  elif direction == '>=':
-    return arr >= pivot
-  elif direction == '<':
-    return arr < pivot
-  elif direction == '>':
-    return arr > pivot
-  else:
-    return np.ones(arr.shape, dtype=bool)
+def apply_cut(arr, cut):
+  return ne.evaluate(cut_to_selection(cut), local_dict=arr)
 
 #@echo(write=logger.debug)
 def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False):
   if doNumpy:
     # here, the tree is an rnp.tree2array() np.array
-    events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree[cut['branch']], cut.get('pivot', None), cut.get('signal_direction', None)) for cut in cuts))]
+    events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree, cut) for cut in cuts))]
     return float(events.size), np.sum(events).astype(float)
   else:
     # here, the tree is a ROOT.TTree
@@ -170,8 +182,8 @@ def get_cut(superCuts, index=0):
     item = superCuts[index]
     # are we doing a fixed cut? they should specify only pivot
     try:
-      # if they don't want a fixed cut, then they need start, stop, step
-      for pivot in np.arange(item['start'], item['stop'], item['step']):
+      # if they don't want a fixed cut, then they need start, stop, step in st3
+      for pivot in itertools.product(*(np.arange(*st3) for st3 in item['st3'])):
         # set the pivot value
         item['pivot'] = pivot
         item['fixed'] = False
@@ -268,19 +280,23 @@ def read_supercuts_file(filename):
     supercuts = json.load(f)
 
   logger.info("\tLoaded")
-  branches = set([supercut['branch'] for supercut in supercuts])
+  selections= set([supercut['selections'] for supercut in supercuts])
   try:
     for supercut in supercuts:
-      branches.remove(supercut['branch'])
+      selections.remove(supercut['selections'])
   except KeyError:
-    raise KeyError("Found more than one supercut definition on {0}".format(supercut['branch']))
+    raise KeyError("Found more than one supercut definition on {0}".format(supercut['selections']))
 
   logger.info("\tFound {1:d} supercut definitions".format(filename, len(supercuts)))
   return supercuts
 
 #@echo(write=logger.debug)
 def cut_to_selection(cut):
-  return "*".join(["({0:s}{1:s}{2:0.2f})".format(c['branch'], c['signal_direction'], c['pivot']) for c in cut])
+  return cut['selections'].format(*cut['pivot'])
+
+#@echo(write=logger.debug)
+def cuts_to_selection(cuts):
+  return "({})".format(")*(".join(map(cut_to_selection, cuts)))
 
 #@echo(write=logger.debug)
 def do_cut(args, did, files, supercuts, weights):
@@ -290,7 +306,39 @@ def do_cut(args, did, files, supercuts, weights):
     tree = get_ttree(args.tree_name, files, args.eventWeightBranch)
     # if using numpy optimization, load the tree as a numpy array to apply_cuts on
     if args.numpy:
-      tree = rnp.tree2array(tree, branches=[args.eventWeightBranch]+[i['branch'] for i in supercuts])
+      # this part is tricky, a user might specify multiple branches
+      #   in their selection string, so we will remove non-alphanumeric characters (underscores are safe)
+      #   and remove anything else that is an empty string (hence the filter)
+      #   and then flatten the entire list, removing duplicate branch names
+      '''
+        totalSelections = []
+        for supercut in supercuts:
+          selection = supercut['selections']
+          # filter out non-alphanumeric
+          selection = p.sub(' ', selection.format("-", "-", "-", "-", "-", "-", "-", "-", "-", "-"))
+          # split on spaces, since we substituted non alphanumeric with spaces
+          selections = selection.split(' ')
+          # remove empty elements
+          filter(None, selections)
+          totalSelections.append(selections)
+
+        # flatten the thing
+        totalSelections = itertools.chain.from_iterable(totalSelections)
+        # remove duplicates
+        totalSelections = list(set(totalSelections))
+      '''
+      alphachars = re.compile('\W+')
+      branchesSpecified = list(set(itertools.chain.from_iterable(filter(None, alphachars.sub(' ', supercut['selections'].format(*['-']*10)).split(' ')) for supercut in supercuts)))
+      # get actual list of branches in the file
+      availableBranches = [i.GetName() for i in tree.GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
+      # remove anything that doesn't exist
+      branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
+      branchesSkipped = list(set(branchesSpecified) - set(branchesToUse))
+      if branchesSkipped:
+        logger.info("The following branches have been skipped...")
+        for branch in branchesSkipped:
+          logger.info("\t{0:s}".format(branch))
+      tree = rnp.tree2array(tree, branches=[args.eventWeightBranch]+branchesToUse)
 
     # get the scale factor
     sample_scaleFactor = get_scaleFactor(weights, did)
@@ -428,18 +476,14 @@ def do_generate(args):
     signal_direction = '>'
 
     if match_branch(b, args.fixed_branches):
-      supercuts.append({'branch': b,
-                        'pivot': 0,
-                        'signal_direction': signal_direction})
+      supercuts.append({'selections': "{0:s} > {{0}}".format(b),
+                        'pivot': 0})
     else:
-      supercuts.append({'branch': b,
-                        'start': 0,
-                        'stop': 10.0,
-                        'step': 1.0,
-                        'signal_direction': signal_direction})
+      supercuts.append({'selections': "{0:s} > {{0}}".format(b),
+                        'st3': [NoIndent([0.0, 10.0, 1.0])]})
 
   with open(args.output_filename, 'w+') as f:
-    f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('branch')), sort_keys=True, indent=4))
+    f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('selections')), sort_keys=True, indent=4, cls=NoIndentEncoder))
 
   return True
 
@@ -460,7 +504,7 @@ def do_hash(args):
     cut_hash = get_cut_hash(cut)
     if cut_hash in args.hash_values:
       with open(os.path.join(args.output_directory, "{0}.json".format(cut_hash)), 'w+') as f:
-        f.write(json.dumps([{k: v for k, v in d.iteritems() if k in ['branch', 'pivot', 'signal_direction', 'fixed']} for d in cut], sort_keys=True, indent=4))
+        f.write(json.dumps([{k: (NoIndent(v) if k == 'pivot' else v)  for k, v in d.iteritems() if k in ['selections', 'pivot', 'fixed']} for d in cut], sort_keys=True, indent=4, cls=NoIndentEncoder))
       args.hash_values.remove(cut_hash)
       logger.info("\tFound cut for hash {0:32s}. {1:d} hashes left.".format(cut_hash, len(args.hash_values)))
     if not args.hash_values: break
