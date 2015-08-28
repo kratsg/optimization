@@ -29,6 +29,7 @@ logger = logging.getLogger("optimize")
 import argparse
 import subprocess
 import json
+import uuid  # for custom json output in do_generate
 import hashlib
 import copy
 import operator
@@ -110,6 +111,32 @@ def echo(*echoargs, **echokwargs):
   if len(echoargs) == 1 and callable(echoargs[0]):
     return echo_wrap(echoargs[0])
   return echo_wrap
+
+# http://stackoverflow.com/a/25935321/1532974
+class NoIndent(object):
+  def __init__(self, value):
+    self.value = value
+
+class NoIndentEncoder(json.JSONEncoder):
+  def __init__(self, *args, **kwargs):
+    super(NoIndentEncoder, self).__init__(*args, **kwargs)
+    self.kwargs = dict(kwargs)
+    del self.kwargs['indent']
+    self._replacement_map = {}
+
+  def default(self, o):
+    if isinstance(o, NoIndent):
+      key = uuid.uuid4().hex
+      self._replacement_map[key] = json.dumps(o.value, **self.kwargs)
+      return "@@%s@@" % (key,)
+    else:
+      return super(NoIndentEncoder, self).default(o)
+
+  def encode(self, o):
+    result = super(NoIndentEncoder, self).encode(o)
+    for k, v in self._replacement_map.iteritems():
+      result = result.replace('"@@%s@@"' % (k,), v)
+    return result
 
 #@echo(write=logger.debug)
 def apply_selection(tree, cuts, eventWeightBranch):
@@ -452,10 +479,10 @@ def do_generate(args):
                         'pivot': 0})
     else:
       supercuts.append({'selection': "{0:s} > {{0}}".format(b),
-                        'st3': [[0.0, 10.0, 1.0]]})
+                        'st3': [NoIndent([0.0, 10.0, 1.0])]})
 
   with open(args.output_filename, 'w+') as f:
-    f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('selection')), sort_keys=True, indent=4))
+    f.write(json.dumps(sorted(supercuts, key=operator.itemgetter('selection')), sort_keys=True, indent=4, cls=NoIndentEncoder))
 
   return True
 
