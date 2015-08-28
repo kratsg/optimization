@@ -296,7 +296,7 @@ def cut_to_selection(cut):
 
 #@echo(write=logger.debug)
 def cuts_to_selection(cuts):
-  return "*".join(map(cut_to_selection, cuts))
+  return "({})".format(")*(".join(map(cut_to_selection, cuts)))
 
 #@echo(write=logger.debug)
 def do_cut(args, did, files, supercuts, weights):
