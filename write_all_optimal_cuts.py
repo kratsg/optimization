@@ -1,6 +1,10 @@
-tag = 'small_extended'
-supercuts_file = 'supercuts_'+tag+'.json'
-output_dir = 'outputHash_'+tag
+sctag = 'small_extended_largeR'
+supercuts_file = 'supercuts_'+sctag+'.json'
+sample_tag = '_l5_signallepton'
+tag = sctag + sample_tag
+output_dir = 'output_MBJ08/'
+hash_dir = output_dir + 'hash/outputHash_'+tag
+sig_dir = output_dir + 'significances/significances_' + tag
 
 import csv,glob,re,json
 def get_hashes():
@@ -17,9 +21,8 @@ def get_hashes():
     mlsp = mlist[2]
     return mglue,mstop,mlsp
 
-  sigdir = 'significances_' + tag
-  filenames = glob.glob(sigdir+'/s*.b*.json')
-  regex = re.compile(sigdir+'/s(\d{6}).b.*.json')
+  filenames = glob.glob(sig_dir+'/s*.b*.json')
+  regex = re.compile(sig_dir+'/s(\d{6}).b.*.json')
   dids = []
   sigs = []
   for filename in filenames:
@@ -46,10 +49,11 @@ for row in array:
   h = row[3]
   bashCommand += h + ' '
 bashCommand += '--supercuts ' + supercuts_file + ' -b'
-bashCommand += ' -o ' + output_dir
+bashCommand += ' -o ' + hash_dir
+print bashCommand
 subprocess.call(bashCommand,shell=True)
 
 import numpy
 nparray = numpy.array(array)
 import pdb
-numpy.savetxt('output/mass_windows_hashes_'+tag+'.txt',nparray,delimiter='\t',fmt='%s')
+numpy.savetxt(hash_dir+'/mass_windows_hashes.txt',nparray,delimiter='\t',fmt='%s')
