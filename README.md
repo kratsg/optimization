@@ -194,25 +194,27 @@ or
 python optimize.py -h
 ```
 
-> usage: optimize.py [-h] [-a] {generate,cut,optimize,hash} ...
->
-> Author: Giordon Stark. v.eea1e27
->
-> positional arguments:
->   {generate,cut,optimize,hash}
->                               actions available
->     generate                  Write supercuts template
->     cut                       Apply the cuts
->     optimize                  Calculate significances for a series of computed
->                               cuts
->     hash                      Translate hash to cut
->
-> optional arguments:
->   -h, --help                  show this help message and exit
->   -a, --allhelp               show this help message and all subcommand help
->                               messages and exit
->
-> This is the top-level. You have no power here.
+```
+usage: optimize.py [-h] [-a] {generate,cut,optimize,hash} ...
+
+Author: Giordon Stark. v.eea1e27
+
+positional arguments:
+  {generate,cut,optimize,hash}
+                              actions available
+    generate                  Write supercuts template
+    cut                       Apply the cuts
+    optimize                  Calculate significances for a series of computed
+                              cuts
+    hash                      Translate hash to cut
+
+optional arguments:
+  -h, --help                  show this help message and exit
+  -a, --allhelp               show this help message and all subcommand help
+                              messages and exit
+
+This is the top-level. You have no power here.
+```
 
 #### Parameters
 
