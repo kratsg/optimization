@@ -1,10 +1,6 @@
-sctag = 'small_extended_largeR'
-supercuts_file = 'supercuts_'+sctag+'.json'
-sample_tag = '_l5_signallepton'
-tag = sctag + sample_tag
-output_dir = 'output_MBJ08/'
-hash_dir = output_dir + 'hash/outputHash_'+tag
-sig_dir = output_dir + 'significances/significances_' + tag
+supercuts_file = 'supercuts_small.json'
+hash_dir = 'outputHash'
+sig_dir = 'significances_0L_a_lumi1/'
 
 import csv,glob,re,json
 def get_hashes():
@@ -22,15 +18,12 @@ def get_hashes():
     return mglue,mstop,mlsp
 
   filenames = glob.glob(sig_dir+'/s*.b*.json')
-  regex = re.compile(sig_dir+'/s(\d{6}).b.*.json')
+  regex = re.compile('s(\d{6})\.b.*\.json')
   dids = []
   sigs = []
   for filename in filenames:
-    with open(filename) as json_file:
-      sig_dict = json.load(json_file)
-      entry = sig_dict[0]
-      max_sig = entry['hash']
-      sigs.append(max_sig)
+    with open(filename) as f:
+      sigs.append(json.load(f)[0]['hash'])
       did = regex.search(filename)
       dids.append(did.group(1))
 

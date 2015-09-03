@@ -27,6 +27,7 @@ def parse_argv():
     parser.add_option("--y-dim", help="y dimension of figure", default=600, type=float)
     parser.add_option("--sigdir", help="directory where significances files are located", default='significances', type=str)
     parser.add_option("--hashdir", help="directory where hash files are located", default='outputHash', type=str)
+    parser.add_option("--supercuts", help="supercuts file detailing all selections used", default="supercuts.json", type=str)
 
     (options,args) = parser.parse_args()
 
@@ -70,11 +71,11 @@ def get_cut_value(opts,cut):
       cuts_dict = json.load(json_file)
       found_cut = False
       for entry in cuts_dict:
-        if entry['branch'] == cut:
+        if entry['selections'] == cut:
           found_cut = True
           break
       if found_cut:
-        val = entry['pivot']
+        val = entry['pivot'][0]
       else:
         print 'Did not find cut '+cut+' in hash file'
         val = -1
@@ -197,10 +198,19 @@ def exclusion():
 if __name__ == '__main__':
 
     #cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b','multiplicity_topTag_loose']
-    cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b','multiplicity_jet_largeR']
+    #cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b','multiplicity_jet_largeR']
     #cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b']
+
     opts = parse_argv()
+
+    # load in supercuts
+    with open(opts.supercuts) as f:
+      supercuts = json.load(f)
+    cuts = [supercut['selections'] for supercut in supercuts if supercut.get('pivot') is None]
+
+    i = 0
     for cut in cuts:
+      print(i, cut)
       c = init_canvas(opts)
       h = init_hist(opts,cut)
       fill_hist(h,opts,cut)
@@ -210,9 +220,10 @@ if __name__ == '__main__':
       draw_line()
       #p = exclusion()
       #p.Draw()
-      savefilename = opts.outdir + '/' + opts.outfilebase + '_' + cut + '.png'
+      savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i) + '.png'
       c.SaveAs(savefilename)
       print 'Saving file ' + savefilename
+      i += 1
     print 'Done'
 
     exit(0)
