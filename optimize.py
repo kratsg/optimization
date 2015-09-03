@@ -601,7 +601,7 @@ if __name__ == "__main__":
   optimize_parser.add_argument('--searchDirectory', required=False, type=str, dest='search_directory', help='Directory that contains all the {DID}.json files.', default='cuts')
   optimize_parser.add_argument('--bkgdUncertainty', type=float, required=False, dest='bkgdUncertainty', metavar='<sigma>', help='background uncertainty for calculating significance', default=0.3)
   optimize_parser.add_argument('--bkgdStatUncertainty', type=float, required=False, dest='bkgdStatUncertainty', metavar='<sigma>', help='background statistical uncertainty for calculating significance', default=0.3)
-  optimize_parser.add_argument('--insignificance', type=int, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=2)
+  optimize_parser.add_argument('--insignificance', type=float, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=0.5)
   optimize_parser.add_argument('--lumifactor', type=float, required=False, dest='lumifactor', metavar='<scaled lumi>', help='Scale luminosity from what it was when you ran cut', default=1.0)
   optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='significances')
 
