@@ -99,11 +99,10 @@ python optimize.py -h
 
 #### Grab some optimization ntuples
 
-I grab a set of optimization ntuples from [faxbox:TheAccountant/Optimizations](http://faxbox.usatlas.org/user/kratsg/TheAccountant/Optimizations) using `xrdcp`
+I grab a set of optimization ntuples from [dropbox](https://www.dropbox.com/sh/s2f5n1oaojnxonn/AABnajIwGGGqMz2RlVO2zjkka?dl=0) and extract them
 
 ```bash
-xrdcp root://faxbox.usatlas.org//user/kratsg/TheAccountant/Optimization/20150602_1.tar.gz 20150602_1.tar.gz
-tar -xzvf 20150602_1.tar.gz
+tar -xzvf TA07_MBJ10V1.tar.gz
 ```
 
 #### Generate a supercuts template
@@ -111,13 +110,13 @@ tar -xzvf 20150602_1.tar.gz
 A straightforward example is simply just
 
 ```bash
-python optimize.py generate --signal 20150602_1/data-optimizationTree/mc14_13TeV.20453* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110*
+python optimize.py generate "Gtt_0L_a/fetch/data-optimizationTree/user.lgagnon:user.lgagnon.370101.Gtt.DAOD_SUSY10.e4049_s2608_r6765_r6282_p2411_tag_10_v1_output_xAOD.root-0.root"
 ```
 
 which will create a `supercuts.json` file for you to edit so that you can run the optimizations. As a more advanced example, I only wanted to generate a file using a subset of the branches in my file as well as setting some of them to be a fixed cut that I would configure, so I ran
 
 ```bash
-python optimize.py generate --signal 20150602_1/data-optimizationTree/mc14_13TeV.20453* --bkgd 20150602_1/data-optimizationTree/mc14_13TeV.110* --fixedBranches multiplicity_topTag* -o dump.json -b -vv --skipBranches *_jet_rc*
+python optimize.py generate "Gtt_0L_a/fetch/data-optimizationTree/user.lgagnon:user.lgagnon.370101.Gtt.DAOD_SUSY10.e4049_s2608_r6765_r6282_p2411_tag_10_v1_output_xAOD.root-0.root" --fixedBranches multiplicity_topTag* -o dump.json -b -vv --skipBranches *_jet_rc*
 ```
 
 which will write branches that match `multiplicity_topTag*` to have a fixed cut when I eventually run `optimize` over it; and will also skip branches that match `*_jet_rc*` so they won't be considered at all for cuts.
@@ -127,24 +126,26 @@ which will write branches that match `multiplicity_topTag*` to have a fixed cut 
 After that, we just specify all of our ROOT files. The script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified either as a pattern or just explicitly writing them out. We will group every output by the DID passed in, so please try not to deviate from the default sample names or this breaks the code quite badly.
 
 ```bash
-python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_0L -b
-python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_1L -b
+python optimize.py cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_a -b
+python optimize.py cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_b -b
+python optimize.py cut TA07_MBJ10V1/*_1L/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_1L -b
 ```
 
 By default, we use `TTree::Draw` in order to calculate the number of events passing a given cut. We will also attempt to parallelize the computations as much as possible. In cases where you have a fast computer and the ntuples are reasonably small (can fit in memory), you might benefit from using a `numpy` boost by adding the `--numpy` flag like so
 
 ```bash
-python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_0L -b --numpy
-python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_1L -b --numpy
+python optimize.py cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_a -b --numpy
+python optimize.py cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_b -b --numpy
+python optimize.py cut TA07_MBJ10V1/*_1L/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_1L -b --numpy
 ```
 
 #### Calculating the significances
 
-After that, we just (at a bare minimum) specify the `signal` and `bkgd` json cut files.
+After that, we just (at a bare minimum) specify the `signal` and `bkgd` json cut files. The following example takes the `0L_a` files and calculates significances for two different values of luminosity
 
 ```bash
-python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L -b --o=significances_0L --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=2
-python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=cuts_1L -b --o=significances_1L --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=2
+python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a_lumi1 --lumi=1
+python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a_lumi2 --lumi=2
 ```
 
 and this will automatically combine background and produce a significances file for each signal DID passed in.
@@ -154,7 +155,7 @@ and this will automatically combine background and produce a significances file 
 When the optimizations have finished running, you'll want to take the given hash(es) and figure out what cut it corresponds to, you can do this with
 
 ```bash
-python optimize.py hash e31dcf5ba4786d9e8ffa9e642729a6b9 4e16fdc03c171913bc309d57739c7225 8fa0e0ab6bf6a957d545df68dba97a53
+python optimize.py hash e31dcf5ba4786d9e8ffa9e642729a6b9 4e16fdc03c171913bc309d57739c7225 8fa0e0ab6bf6a957d545df68dba97a53 --supercuts=supercuts_small.json
 ```
 
 which will create `outputHash/<hash>.json` files detailing the cuts involved.
@@ -308,7 +309,7 @@ raw | integer | raw number of events passing cut
 weighted | float | apply event weights to events passing cut
 scaled | float | apply sample weights and event weights to events passing cut
 
-Note that weights are applied in order of prominance and specificity: weighted events are applying the monte-carlo event weights (from the generators themselves). Scaled events are with the mc weights applied but also scaled using the sample weights (the ones that differ from sample to sample) as well as the luminosity.
+Note that weights are applied in order of prominance and specificity: weighted events are applying the monte-carlo event weights (from the generators themselves). Scaled events are with the mc weights applied but also scaled using the sample weights (the ones that differ from sample to sample) and this does not include luminosity at this stage. The calculation of significance includes the luminosity scale factor.
 
 The output is a directory of json files which will look like
 
@@ -356,9 +357,9 @@ Variable | Type | Description | Default
 --searchDirectory | string | the directory that contains all cut.json files | 'cuts'
 --bkgdUncertainty | float | bkgd sigma for calculating sig. | 0.3
 --bkgdStatUncertainty | float | bkgd statistical uncertainty for significance | 0.3
---insignificance | int | min. number of events for non-zero sig. | 10
+--insignificance | int | min. number of events for non-zero sig. | 0.5
 --o, --output | string | output directory to store significances calculated | significances
---lumifactor | float | multiply the luminosity given in the weightsFile in the cut step by some factor, to avoid having to redo all the cuts | 1.0
+--lumi | float | apply the luminosity when calculating significances, to avoid having to redo all the cuts | 1.0
 
 #### Output
 
