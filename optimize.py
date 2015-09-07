@@ -218,13 +218,13 @@ def get_scaleFactor(weights, did):
   logger.info("___________________________________________________________________")
   logger.info(" {0:8s} Type of Scaling Applied       |        Scale Factor      ".format(did))
   logger.info("========================================|==========================")
-  logger.info("Cutflow:           {0:20.10f} | {0:0.10f}".format(cutflow, scaleFactor))
+  logger.info("Cutflow:           {0:20.10f} | {1:0.10f}".format(cutflow, scaleFactor))
   scaleFactor *= weight.get('cross section')
-  logger.info("Cross Section:     {0:20.10f} | {0:0.10f}".format(weight.get('cross section'), scaleFactor))
+  logger.info("Cross Section:     {0:20.10f} | {1:0.10f}".format(weight.get('cross section'), scaleFactor))
   scaleFactor *= weight.get('filter efficiency')
-  logger.info("Filter Efficiency: {0:20.10f} | {0:0.10f}".format(weight.get('filter efficiency'), scaleFactor))
+  logger.info("Filter Efficiency: {0:20.10f} | {1:0.10f}".format(weight.get('filter efficiency'), scaleFactor))
   scaleFactor *= weight.get('k-factor')
-  logger.info("k-factor:          {0:20.10f} | {0:0.10f}".format(weight.get('k-factor'), scaleFactor))
+  logger.info("k-factor:          {0:20.10f} | {1:0.10f}".format(weight.get('k-factor'), scaleFactor))
   logger.info( "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
   return scaleFactor
 
