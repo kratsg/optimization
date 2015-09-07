@@ -14,7 +14,7 @@
     {
         "selections": "multiplicity_jet > {0}",
         "st3": [
-            [3, 11, 1]
+            [5, 11, 1]
         ]
     },
     {
