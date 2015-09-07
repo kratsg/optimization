@@ -40,5 +40,11 @@
     {
         "selections": "multiplicity_topTag_tight > {0}",
         "pivot": [-1]
+    },
+    {
+        "selections": "mTb > {0}",
+        "st3": [
+          [120, 240, 40]
+        ]
     }
 ]
