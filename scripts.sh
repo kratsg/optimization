@@ -8,7 +8,7 @@ python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/*_0L_a/fet
 
 
 # next, we want to compute significances for it all
-python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=njetMaxCuts -b --o=njetMaxSignificances --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=1
+python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=baselineCuts -b --o=baselineSignificances --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=1
 
 python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=njetMaxCuts -b --o=njetMaxSignificances --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=1
 
