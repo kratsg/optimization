@@ -70,14 +70,14 @@ def get_significances(opts):
       with open(opts.cutdir+'/'+signal_did+'.json') as signal_json_file:
         signal_dict = json.load(signal_json_file)
         entry = signal_dict[max_hash]
-        signal = entry['scaled']
+        signal = entry['scaled']*opts.lumi*1000
       bkgd_dids = did.group(2).split('-')
       bkgd = 0
       for bkgd_did in bkgd_dids:
         with open(opts.cutdir+'/'+bkgd_did+'.json') as bkgd_json_file:
           bkgd_dict = json.load(bkgd_json_file)
           entry = bkgd_dict[max_hash]
-          bkgd += entry['scaled']
+          bkgd += entry['scaled']*opts.lumi*1000
 
       sigs.append(max_sig)
       signals.append(signal)
@@ -107,7 +107,7 @@ def init_canvas(opts):
 
     gStyle.SetPalette(1);
 
-    c = TCanvas("c", "", 0, 0, opts.x_dim, opts.y_dim) 
+    c = TCanvas("c", "", 0, 0, opts.x_dim, opts.y_dim)
     c.SetRightMargin(0.16)
     c.SetTopMargin(0.07)
 
@@ -118,13 +118,13 @@ def axis_labels(opts,label):
     return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % label
 
 def init_hist(opts,label):
-    return TH2F("grid", 
-                axis_labels(opts,label), 
-                nbinsx(opts), 
-                opts.g_min, 
-                opts.g_max, 
-                nbinsy(opts), 
-                opts.l_min, 
+    return TH2F("grid",
+                axis_labels(opts,label),
+                nbinsx(opts),
+                opts.g_min,
+                opts.g_max,
+                nbinsy(opts),
+                opts.l_min,
                 opts.l_max)
 
 def fill_hist(hist,opts,plot_array,label):
