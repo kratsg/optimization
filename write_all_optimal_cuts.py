@@ -22,6 +22,10 @@ hash_dir = 'outputHash_fixedMassScan_1'
 sig_dir = 'fixedMassScanSignificances_1'
 '''
 
+supercuts_file = 'supercuts_noTagger.json'
+hash_dir = 'outputHash_noTagger_1'
+sig_dir = 'noTaggerSignificances_1'
+
 import csv,glob,re,json
 def get_hashes():
   mdict = {}
