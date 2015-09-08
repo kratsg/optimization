@@ -4,6 +4,8 @@ python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/f
 
 python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts_no_mTb.json -o nomTbCuts --numpy -v -b
 
+python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts_fixedMassScan.json -o fixedMassScanCuts --numpy -v -b
+
 # next, we want to compute significances for it all
 python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=baselineCuts -b --o=baselineSignificances_1 --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=1
 python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=baselineCuts -b --o=baselineSignificances_2 --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=2
@@ -20,6 +22,10 @@ python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=nomTbCuts -
 python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=nomTbCuts -b --o=nomTbSignificances_4 --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=4
 python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=nomTbCuts -b --o=nomTbSignificances_10 --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=10
 
+python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=fixedMassScanCuts -b --o=fixedMassScanSignificances_1 --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=1
+python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=fixedMassScanCuts -b --o=fixedMassScanSignificances_2 --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=2
+python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=fixedMassScanCuts -b --o=fixedMassScanSignificances_4 --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=4
+python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=fixedMassScanCuts -b --o=fixedMassScanSignificances_10 --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=10
 
 # next, find all optimal hashes by running
 python write_all_optimal_cuts.py
@@ -41,6 +47,11 @@ python graph-grid.py --lumi 2 --outfile nomTb2 --sigdir nomTbSignificances_2 --c
 python graph-grid.py --lumi 4 --outfile nomTb4 --sigdir nomTbSignificances_4 --cutdir nomTbCuts
 python graph-grid.py --lumi 10 --outfile nomTb10 --sigdir nomTbSignificances_10 --cutdir nomTbCuts
 
+python graph-grid.py --lumi 1 --outfile fixedMassScan1 --sigdir fixedMassScanSignificances_1 --cutdir fixedMassScanCuts
+python graph-grid.py --lumi 2 --outfile fixedMassScan2 --sigdir fixedMassScanSignificances_2 --cutdir fixedMassScanCuts
+python graph-grid.py --lumi 4 --outfile fixedMassScan4 --sigdir fixedMassScanSignificances_4 --cutdir fixedMassScanCuts
+python graph-grid.py --lumi 10 --outfile fixedMassScan10 --sigdir fixedMassScanSignificances_10 --cutdir fixedMassScanCuts
+
 python graph-cuts.py --lumi 1 --outfile baseline1 --sigdir baselineSignificances_1 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_1
 python graph-cuts.py --lumi 2 --outfile baseline2 --sigdir baselineSignificances_2 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_2
 python graph-cuts.py --lumi 4 --outfile baseline4 --sigdir baselineSignificances_4 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_4
@@ -55,3 +66,10 @@ python graph-cuts.py --lumi 1 --outfile nomTb1 --sigdir nomTbSignificances_1 --s
 python graph-cuts.py --lumi 2 --outfile nomTb2 --sigdir nomTbSignificances_2 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_2
 python graph-cuts.py --lumi 4 --outfile nomTb4 --sigdir nomTbSignificances_4 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_4
 python graph-cuts.py --lumi 10 --outfile nomTb10 --sigdir nomTbSignificances_10 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_10
+
+python graph-cuts.py --lumi 1 --outfile fixedMassScan1 --sigdir fixedMassScanSignificances_1 --supercuts supercuts_fixedMassScan.json --hashdir outputHash_fixedMassScan_1
+python graph-cuts.py --lumi 2 --outfile fixedMassScan2 --sigdir fixedMassScanSignificances_2 --supercuts supercuts_fixedMassScan.json --hashdir outputHash_fixedMassScan_2
+python graph-cuts.py --lumi 4 --outfile fixedMassScan4 --sigdir fixedMassScanSignificances_4 --supercuts supercuts_fixedMassScan.json --hashdir outputHash_fixedMassScan_4
+python graph-cuts.py --lumi 10 --outfile fixedMassScan10 --sigdir fixedMassScanSignificances_10 --supercuts supercuts_fixedMassScan.json --hashdir outputHash_fixedMassScan_10
+
+

@@ -1,17 +1,25 @@
+'''
 supercuts_file = 'supercuts_baseline.json'
 hash_dir = 'outputHash_baseline_1'
 sig_dir = 'baselineSignificances_1'
+'''
 
 '''
 supercuts_file = 'supercuts_massScan.json'
-hash_dir = 'outputHash_massScan_10'
-sig_dir = 'massScanSignificances_10'
+hash_dir = 'outputHash_massScan_1'
+sig_dir = 'massScanSignificances_1'
 '''
 
 '''
 supercuts_file = 'supercuts_no_mTb.json'
 hash_dir = 'outputHash_nomTb_10'
 sig_dir = 'nomTbSignificances_10'
+'''
+
+'''
+supercuts_file = 'supercuts_fixedMassScan.json'
+hash_dir = 'outputHash_fixedMassScan_1'
+sig_dir = 'fixedMassScanSignificances_1'
 '''
 
 import csv,glob,re,json
