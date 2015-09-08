@@ -134,7 +134,7 @@ def fill_hist(hist, opts, cut, pivotIndex = 0):
       l = int(row[1])
       z = int(round(row[2]))
       b = hist.FindFixBin(g,l)
-      if z>0:
+      if z>=0:
         xx=Long(0)
         yy=Long(0)
         zz=Long(0)
@@ -211,20 +211,26 @@ if __name__ == '__main__':
     # load in supercuts
     with open(opts.supercuts) as f:
       supercuts = json.load(f)
-    cuts = [supercut['selections'] for supercut in supercuts if supercut.get('pivot') is None]
 
     p = re.compile('{(\d+)}')
 
     i = 0
-    for cut in cuts:
+    for supercut in supercuts:
+      if supercut.get('pivot') is not None: continue
+      cut = supercut['selections']
       # a cut string can have multiple pivots, need to draw a histogram for each pivot subsection
+      numPivots = len(supercut['st3'])
+      '''
       # this is where it gets tricky, need to know how many actual format entries there are...
       numPivots = len(set(p.findall(cut)))
+      '''
       for pivotIndex in range(numPivots):
         print(i, cut)
         c = init_canvas(opts)
         h = init_hist(opts, cut, pivotIndex)
         fill_hist(h, opts, cut, pivotIndex)
+        st3 = supercut['st3'][pivotIndex]
+        h.GetZaxis().SetRangeUser(st3[0], st3[1] - st3[2])
         draw_hist(h)
         draw_labels(opts.lumi)
         draw_text(opts.text_file)
