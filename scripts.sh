@@ -40,3 +40,18 @@ python graph-grid.py --lumi 1 --outfile nomTb1 --sigdir nomTbSignificances_1 --c
 python graph-grid.py --lumi 2 --outfile nomTb2 --sigdir nomTbSignificances_2 --cutdir nomTbCuts
 python graph-grid.py --lumi 4 --outfile nomTb4 --sigdir nomTbSignificances_4 --cutdir nomTbCuts
 python graph-grid.py --lumi 10 --outfile nomTb10 --sigdir nomTbSignificances_10 --cutdir nomTbCuts
+
+python graph-cuts.py --lumi 1 --outfile baseline1 --sigdir baselineSignificances_1 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_1
+python graph-cuts.py --lumi 2 --outfile baseline2 --sigdir baselineSignificances_2 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_2
+python graph-cuts.py --lumi 4 --outfile baseline4 --sigdir baselineSignificances_4 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_4
+python graph-cuts.py --lumi 10 --outfile baseline10 --sigdir baselineSignificances_10 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_10
+
+python graph-cuts.py --lumi 1 --outfile massScan1 --sigdir massScanSignificances_1 --supercuts supercuts_massScan.json --hashdir outputHash_massScan_1
+python graph-cuts.py --lumi 2 --outfile massScan2 --sigdir massScanSignificances_2 --supercuts supercuts_massScan.json --hashdir outputHash_massScan_2
+python graph-cuts.py --lumi 4 --outfile massScan4 --sigdir massScanSignificances_4 --supercuts supercuts_massScan.json --hashdir outputHash_massScan_4
+python graph-cuts.py --lumi 10 --outfile massScan10 --sigdir massScanSignificances_10 --supercuts supercuts_massScan.json --hashdir outputHash_massScan_10
+
+python graph-cuts.py --lumi 1 --outfile nomTb1 --sigdir nomTbSignificances_1 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_1
+python graph-cuts.py --lumi 2 --outfile nomTb2 --sigdir nomTbSignificances_2 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_2
+python graph-cuts.py --lumi 4 --outfile nomTb4 --sigdir nomTbSignificances_4 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_4
+python graph-cuts.py --lumi 10 --outfile nomTb10 --sigdir nomTbSignificances_10 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_10
