@@ -20,7 +20,7 @@
     {
         "selections": "multiplicity_jet_b >= {0}",
         "st3": [
-            [2, 7, 1]
+            [3, 7, 1]
         ]
     },
     {
