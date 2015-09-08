@@ -1,6 +1,18 @@
-supercuts_file = 'supercuts_small.json'
-hash_dir = 'outputHash'
-sig_dir = 'significances_0L_a_lumi1/'
+supercuts_file = 'supercuts_baseline.json'
+hash_dir = 'outputHash_baseline_1'
+sig_dir = 'baselineSignificances_1'
+
+'''
+supercuts_file = 'supercuts_massScan.json'
+hash_dir = 'outputHash_massScan_10'
+sig_dir = 'massScanSignificances_10'
+'''
+
+'''
+supercuts_file = 'supercuts_no_mTb.json'
+hash_dir = 'outputHash_nomTb_10'
+sig_dir = 'nomTbSignificances_10'
+'''
 
 import csv,glob,re,json
 def get_hashes():
