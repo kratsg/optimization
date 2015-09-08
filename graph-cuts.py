@@ -6,6 +6,8 @@ from ROOT import *
 import rootpy as rpy
 from rootpy.plotting.style import set_style, get_style
 
+import re
+
 set_style('ATLAS')
 sys.argv = sys.argv[:-1]
 
@@ -34,7 +36,7 @@ def parse_argv():
     return (options)
 import pdb
 import csv,glob,re,json
-def get_cut_value(opts,cut):
+def get_cut_value(opts, cut, pivotIndex = 0):
   mdict = {}
   with open('mass_windows.txt', 'r') as f:
     reader = csv.reader(f, delimiter='\t')
@@ -61,7 +63,7 @@ def get_cut_value(opts,cut):
       did = regex.search(filename)
       dids.append(did.group(1))
 
-  def get_value(opts,cut,h):
+  def get_value(opts, cut, h, pivotIndex = 0):
     filenames = glob.glob(opts.hashdir+'/'+h+'.json')
     if len(filenames)==0:
       return 0
@@ -75,7 +77,7 @@ def get_cut_value(opts,cut):
           found_cut = True
           break
       if found_cut:
-        val = entry['pivot'][0]
+        val = entry['pivot'][pivotIndex]
       else:
         print 'Did not find cut '+cut+' in hash file'
         val = -1
@@ -85,9 +87,10 @@ def get_cut_value(opts,cut):
   plot_array=[]
   for did,h in zip(dids,hashs):
     mgluino,mstop,mlsp = masses(did)
-    val = get_value(opts,cut,h)
+    val = get_value(opts, cut, h, pivotIndex)
     row = [mgluino,mlsp,val]
-    if int(mstop) == 5000: plot_array.append(row)
+    if int(mstop) == 5000:
+      plot_array.append(row)
 
   return plot_array
 
@@ -111,9 +114,11 @@ def axis_labels(opts,cut):
 
     return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % cut
 
-def init_hist(opts,cut):
+def init_hist(opts, cut, pivotIndex = 0):
+    numPivots = len(set(p.findall(cut)))
+    formattedCut = cut.format(*(['#']*pivotIndex + [pivotIndex] + ['#']*(numPivots - 1 - pivotIndex)))
     return TH2F("grid",
-                axis_labels(opts,cut),
+                axis_labels(opts,formattedCut),
                 nbinsx(opts),
                 opts.g_min,
                 opts.g_max,
@@ -121,9 +126,9 @@ def init_hist(opts,cut):
                 opts.l_min,
                 opts.l_max)
 import pdb
-def fill_hist(hist,opts,cut):
+def fill_hist(hist, opts, cut, pivotIndex = 0):
 
-  plot_array = get_cut_value(opts,cut)
+  plot_array = get_cut_value(opts, cut, pivotIndex)
   for row in plot_array:
       g = int(row[0])
       l = int(row[1])
@@ -208,21 +213,32 @@ if __name__ == '__main__':
       supercuts = json.load(f)
     cuts = [supercut['selections'] for supercut in supercuts if supercut.get('pivot') is None]
 
+    p = re.compile('{(\d+)}')
+
     i = 0
     for cut in cuts:
-      print(i, cut)
-      c = init_canvas(opts)
-      h = init_hist(opts,cut)
-      fill_hist(h,opts,cut)
-      draw_hist(h)
-      draw_labels(opts.lumi)
-      draw_text(opts.text_file)
-      draw_line()
-      #p = exclusion()
-      #p.Draw()
-      savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i) + '.png'
-      c.SaveAs(savefilename)
-      print 'Saving file ' + savefilename
+      # a cut string can have multiple pivots, need to draw a histogram for each pivot subsection
+      # this is where it gets tricky, need to know how many actual format entries there are...
+      numPivots = len(set(p.findall(cut)))
+      for pivotIndex in range(numPivots):
+        print(i, cut)
+        c = init_canvas(opts)
+        h = init_hist(opts, cut, pivotIndex)
+        fill_hist(h, opts, cut, pivotIndex)
+        draw_hist(h)
+        draw_labels(opts.lumi)
+        draw_text(opts.text_file)
+        draw_line()
+        #p = exclusion()
+        #p.Draw()
+
+        if numPivots == 1:
+          savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i) + '.png'
+        else:
+          savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i) + '-' + str(pivotIndex) + '.png'
+
+        c.SaveAs(savefilename)
+        print 'Saving file ' + savefilename
       i += 1
     print 'Done'
 
