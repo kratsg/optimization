@@ -134,23 +134,21 @@ def fill_hist(hist, opts, cut, pivotIndex = 0):
       l = int(row[1])
       z = int(round(row[2]))
       b = hist.FindFixBin(g,l)
-      if z>=0:
-        xx=Long(0)
-        yy=Long(0)
-        zz=Long(0)
-        hist.GetBinXYZ(b,xx,yy,zz)
-        z_old =  hist.GetBinContent(xx,yy)
-        newz = max(z_old,z)
-        hist.SetBinContent(b,newz)
-      else:
-        hist.SetBinContent(b,-1)
-
+      xx=Long(0)
+      yy=Long(0)
+      zz=Long(0)
+      hist.GetBinXYZ(b,xx,yy,zz)
+      z_old =  hist.GetBinContent(xx,yy)
+      newz = max(z_old,z)
+      hist.SetBinContent(b,newz)
+      if newz == 0:
+        hist.SetBinContent(b, 0.001)
 
 def draw_hist(hist):
     hist.SetMarkerSize(1.0)
     hist.SetMarkerColor(kWhite)
     gStyle.SetPalette(51)
-    gStyle.SetPaintTextFormat("1.11g");
+    gStyle.SetPaintTextFormat("0.0f");
     hist.Draw("TEXT COLZ")
 
 def draw_labels(lumi):
@@ -160,7 +158,7 @@ def draw_labels(lumi):
     txt.DrawText(0.2,0.82,"Simulation")
     txt.SetTextSize(0.030)
     txt.DrawLatex(0.16,0.95,"#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}")
-    txt.DrawLatex(0.62,0.95,"#int L dt = %d fb^{-1}, #sqrt{s} = 13 TeV"% lumi)
+    txt.DrawLatex(0.62,0.95,"L_{int} = %d fb^{-1}, #sqrt{s} = 13 TeV"% lumi)
     txt.SetTextFont(72)
     txt.SetTextSize(0.05)
     txt.DrawText(0.2,0.87,"ATLAS")
@@ -230,7 +228,12 @@ if __name__ == '__main__':
         h = init_hist(opts, cut, pivotIndex)
         fill_hist(h, opts, cut, pivotIndex)
         st3 = supercut['st3'][pivotIndex]
+        # number of steps
+        nSteps = len(range(*st3))
         h.GetZaxis().SetRangeUser(st3[0], st3[1] - st3[2])
+        h.SetContour(nSteps)
+        h.GetZaxis().SetNdivisions(nSteps-1, False)
+
         draw_hist(h)
         draw_labels(opts.lumi)
         draw_text(opts.text_file)

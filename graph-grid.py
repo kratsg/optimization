@@ -160,7 +160,7 @@ def draw_labels(lumi):
     txt.DrawText(0.2,0.82,"Simulation")
     txt.SetTextSize(0.030)
     txt.DrawLatex(0.16,0.95,"#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}")
-    txt.DrawLatex(0.62,0.95,"#int L dt = %d fb^{-1}, #sqrt{s} = 13 TeV"% lumi)
+    txt.DrawLatex(0.62,0.95,"L_{int} = %d fb^{-1}, #sqrt{s} = 13 TeV"% lumi)
     txt.SetTextFont(72)
     txt.SetTextSize(0.05)
     txt.DrawText(0.2,0.87,"ATLAS")
