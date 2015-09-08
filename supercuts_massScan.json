@@ -24,7 +24,7 @@
         ]
     },
     {
-        "selections": "((m_jet_largeR_0 > {0})*1 + (m_jet_largeR_1 > {0})*1 + (m_jet_largeR_2 > {0})*1 + (m_jet_largeR_3 > {0})*1) > {1}",
+        "selections": "((m_jet_largeR_0 > {0})*1 + (m_jet_largeR_1 > {0})*1 + (m_jet_largeR_2 > {0})*1 + (m_jet_largeR_3 > {0})*1) >= {1}",
         "st3": [
             [100, 250, 50],
             [0, 3, 1]
