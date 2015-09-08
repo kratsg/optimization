@@ -23,12 +23,12 @@ python write_all_optimal_cuts.py
 # after editing the top few lines for appropriate directories
 
 # finally, make plots
-python graph-grid.py --lumi 1 --outfile baseline --sigdir baselineSignificances_1 --cutdir baselineCuts
-python graph-grid.py --lumi 2 --outfile baseline --sigdir baselineSignificances_2 --cutdir baselineCuts
-python graph-grid.py --lumi 4 --outfile baseline --sigdir baselineSignificances_4 --cutdir baselineCuts
-python graph-grid.py --lumi 10 --outfile baseline --sigdir baselineSignificances_10 --cutdir baselineCuts
+python graph-grid.py --lumi 1 --outfile baseline1 --sigdir baselineSignificances_1 --cutdir baselineCuts
+python graph-grid.py --lumi 2 --outfile baseline2 --sigdir baselineSignificances_2 --cutdir baselineCuts
+python graph-grid.py --lumi 4 --outfile baseline4 --sigdir baselineSignificances_4 --cutdir baselineCuts
+python graph-grid.py --lumi 10 --outfile baseline10 --sigdir baselineSignificances_10 --cutdir baselineCuts
 
-python graph-grid.py --lumi 1 --outfile massScan --sigdir massScanSignificances_1 --cutdir massScanCuts
-python graph-grid.py --lumi 2 --outfile massScan --sigdir massScanSignificances_2 --cutdir massScanCuts
-python graph-grid.py --lumi 4 --outfile massScan --sigdir massScanSignificances_4 --cutdir massScanCuts
-python graph-grid.py --lumi 10 --outfile massScan --sigdir massScanSignificances_10 --cutdir massScanCuts
+python graph-grid.py --lumi 1 --outfile massScan1 --sigdir massScanSignificances_1 --cutdir massScanCuts
+python graph-grid.py --lumi 2 --outfile massScan2 --sigdir massScanSignificances_2 --cutdir massScanCuts
+python graph-grid.py --lumi 4 --outfile massScan4 --sigdir massScanSignificances_4 --cutdir massScanCuts
+python graph-grid.py --lumi 10 --outfile massScan10 --sigdir massScanSignificances_10 --cutdir massScanCuts
