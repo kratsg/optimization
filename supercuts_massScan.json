@@ -14,7 +14,7 @@
     {
         "selections": "multiplicity_jet >= {0}",
         "st3": [
-            [5, 8, 1]
+            [5, 11, 1]
         ]
     },
     {
@@ -24,22 +24,11 @@
         ]
     },
     {
-        "selections": "multiplicity_topTag_loose >= {0}",
+        "selections": "((m_jet_largeR_0 > {0})*1 + (m_jet_largeR_1 > {0})*1 + (m_jet_largeR_2 > {0})*1 + (m_jet_largeR_3 > {0})*1) > {1}",
         "st3": [
+            [100, 250, 50],
             [0, 3, 1]
         ]
-    },
-    {
-        "selections": "multiplicity_topTag_smoothloose >= {0}",
-        "pivot": [0]
-    },
-    {
-        "selections": "multiplicity_topTag_smoothtight >= {0}",
-        "pivot": [0]
-    },
-    {
-        "selections": "multiplicity_topTag_tight >= {0}",
-        "pivot": [0]
     },
     {
         "selections": "mTb > {0}",
