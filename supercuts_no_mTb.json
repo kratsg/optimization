@@ -1,0 +1,44 @@
+[
+    {
+        "selections": "m_effective > {0}",
+        "st3": [
+            [600, 2000, 200]
+        ]
+    },
+    {
+        "selections": "met > {0}",
+        "st3": [
+            [100, 900, 100]
+        ]
+    },
+    {
+        "selections": "multiplicity_jet >= {0}",
+        "st3": [
+            [5, 11, 1]
+        ]
+    },
+    {
+        "selections": "multiplicity_jet_b >= {0}",
+        "st3": [
+            [2, 7, 1]
+        ]
+    },
+    {
+        "selections": "multiplicity_topTag_loose >= {0}",
+        "st3": [
+            [0, 3, 1]
+        ]
+    },
+    {
+        "selections": "multiplicity_topTag_smoothloose >= {0}",
+        "pivot": [0]
+    },
+    {
+        "selections": "multiplicity_topTag_smoothtight >= {0}",
+        "pivot": [0]
+    },
+    {
+        "selections": "multiplicity_topTag_tight >= {0}",
+        "pivot": [0]
+    }
+]
