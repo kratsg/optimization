@@ -1,12 +1,12 @@
-python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts_baseline.json -o baselineCuts --numpy -v -b
+python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts/baseline.json -o baselineCuts --numpy -v -b
 
-python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts_massScan.json -o massScanCuts --numpy -v -b
+python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts/massScan.json -o massScanCuts --numpy -v -b
 
-python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts_no_mTb.json -o nomTbCuts --numpy -v -b
+python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts/no_mTb.json -o nomTbCuts --numpy -v -b
 
-python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts_fixedMassScan.json -o fixedMassScanCuts --numpy -v -b
+python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts/fixedMassScan.json -o fixedMassScanCuts --numpy -v -b
 
-python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts_noTagger.json -o noTaggerCuts --numpy -v -b
+python optimize.py cut ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root ~/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root --supercuts=supercuts/noTagger.json -o noTaggerCuts --numpy -v -b
 
 # next, we want to compute significances for it all
 python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=baselineCuts -b --o=baselineSignificances_1 --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi=1
@@ -64,28 +64,28 @@ python graph-grid.py --lumi 2 --outfile noTagger2 --sigdir noTaggerSignificances
 python graph-grid.py --lumi 4 --outfile noTagger4 --sigdir noTaggerSignificances_4 --cutdir noTaggerCuts
 python graph-grid.py --lumi 10 --outfile noTagger10 --sigdir noTaggerSignificances_10 --cutdir noTaggerCuts
 
-python graph-cuts.py --lumi 1 --outfile baseline1 --sigdir baselineSignificances_1 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_1
-python graph-cuts.py --lumi 2 --outfile baseline2 --sigdir baselineSignificances_2 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_2
-python graph-cuts.py --lumi 4 --outfile baseline4 --sigdir baselineSignificances_4 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_4
-python graph-cuts.py --lumi 10 --outfile baseline10 --sigdir baselineSignificances_10 --supercuts supercuts_baseline.json --hashdir outputHash_baseline_10
+python graph-cuts.py --lumi 1 --outfile baseline1 --sigdir baselineSignificances_1 --supercuts supercuts/baseline.json --hashdir outputHash_baseline_1
+python graph-cuts.py --lumi 2 --outfile baseline2 --sigdir baselineSignificances_2 --supercuts supercuts/baseline.json --hashdir outputHash_baseline_2
+python graph-cuts.py --lumi 4 --outfile baseline4 --sigdir baselineSignificances_4 --supercuts supercuts/baseline.json --hashdir outputHash_baseline_4
+python graph-cuts.py --lumi 10 --outfile baseline10 --sigdir baselineSignificances_10 --supercuts supercuts/baseline.json --hashdir outputHash_baseline_10
 
-python graph-cuts.py --lumi 1 --outfile massScan1 --sigdir massScanSignificances_1 --supercuts supercuts_massScan.json --hashdir outputHash_massScan_1
-python graph-cuts.py --lumi 2 --outfile massScan2 --sigdir massScanSignificances_2 --supercuts supercuts_massScan.json --hashdir outputHash_massScan_2
-python graph-cuts.py --lumi 4 --outfile massScan4 --sigdir massScanSignificances_4 --supercuts supercuts_massScan.json --hashdir outputHash_massScan_4
-python graph-cuts.py --lumi 10 --outfile massScan10 --sigdir massScanSignificances_10 --supercuts supercuts_massScan.json --hashdir outputHash_massScan_10
+python graph-cuts.py --lumi 1 --outfile massScan1 --sigdir massScanSignificances_1 --supercuts supercuts/massScan.json --hashdir outputHash_massScan_1
+python graph-cuts.py --lumi 2 --outfile massScan2 --sigdir massScanSignificances_2 --supercuts supercuts/massScan.json --hashdir outputHash_massScan_2
+python graph-cuts.py --lumi 4 --outfile massScan4 --sigdir massScanSignificances_4 --supercuts supercuts/massScan.json --hashdir outputHash_massScan_4
+python graph-cuts.py --lumi 10 --outfile massScan10 --sigdir massScanSignificances_10 --supercuts supercuts/massScan.json --hashdir outputHash_massScan_10
 
-python graph-cuts.py --lumi 1 --outfile nomTb1 --sigdir nomTbSignificances_1 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_1
-python graph-cuts.py --lumi 2 --outfile nomTb2 --sigdir nomTbSignificances_2 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_2
-python graph-cuts.py --lumi 4 --outfile nomTb4 --sigdir nomTbSignificances_4 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_4
-python graph-cuts.py --lumi 10 --outfile nomTb10 --sigdir nomTbSignificances_10 --supercuts supercuts_no_mTb.json --hashdir outputHash_nomTb_10
+python graph-cuts.py --lumi 1 --outfile nomTb1 --sigdir nomTbSignificances_1 --supercuts supercuts/no_mTb.json --hashdir outputHash_nomTb_1
+python graph-cuts.py --lumi 2 --outfile nomTb2 --sigdir nomTbSignificances_2 --supercuts supercuts/no_mTb.json --hashdir outputHash_nomTb_2
+python graph-cuts.py --lumi 4 --outfile nomTb4 --sigdir nomTbSignificances_4 --supercuts supercuts/no_mTb.json --hashdir outputHash_nomTb_4
+python graph-cuts.py --lumi 10 --outfile nomTb10 --sigdir nomTbSignificances_10 --supercuts supercuts/no_mTb.json --hashdir outputHash_nomTb_10
 
-python graph-cuts.py --lumi 1 --outfile fixedMassScan1 --sigdir fixedMassScanSignificances_1 --supercuts supercuts_fixedMassScan.json --hashdir outputHash_fixedMassScan_1
-python graph-cuts.py --lumi 2 --outfile fixedMassScan2 --sigdir fixedMassScanSignificances_2 --supercuts supercuts_fixedMassScan.json --hashdir outputHash_fixedMassScan_2
-python graph-cuts.py --lumi 4 --outfile fixedMassScan4 --sigdir fixedMassScanSignificances_4 --supercuts supercuts_fixedMassScan.json --hashdir outputHash_fixedMassScan_4
-python graph-cuts.py --lumi 10 --outfile fixedMassScan10 --sigdir fixedMassScanSignificances_10 --supercuts supercuts_fixedMassScan.json --hashdir outputHash_fixedMassScan_10
+python graph-cuts.py --lumi 1 --outfile fixedMassScan1 --sigdir fixedMassScanSignificances_1 --supercuts supercuts/fixedMassScan.json --hashdir outputHash_fixedMassScan_1
+python graph-cuts.py --lumi 2 --outfile fixedMassScan2 --sigdir fixedMassScanSignificances_2 --supercuts supercuts/fixedMassScan.json --hashdir outputHash_fixedMassScan_2
+python graph-cuts.py --lumi 4 --outfile fixedMassScan4 --sigdir fixedMassScanSignificances_4 --supercuts supercuts/fixedMassScan.json --hashdir outputHash_fixedMassScan_4
+python graph-cuts.py --lumi 10 --outfile fixedMassScan10 --sigdir fixedMassScanSignificances_10 --supercuts supercuts/fixedMassScan.json --hashdir outputHash_fixedMassScan_10
 
-python graph-cuts.py --lumi 1 --outfile noTagger1 --sigdir noTaggerSignificances_1 --supercuts supercuts_noTagger.json --hashdir outputHash_noTagger_1
-python graph-cuts.py --lumi 2 --outfile noTagger2 --sigdir noTaggerSignificances_2 --supercuts supercuts_noTagger.json --hashdir outputHash_noTagger_2
-python graph-cuts.py --lumi 4 --outfile noTagger4 --sigdir noTaggerSignificances_4 --supercuts supercuts_noTagger.json --hashdir outputHash_noTagger_4
-python graph-cuts.py --lumi 10 --outfile noTagger10 --sigdir noTaggerSignificances_10 --supercuts supercuts_noTagger.json --hashdir outputHash_noTagger_10
+python graph-cuts.py --lumi 1 --outfile noTagger1 --sigdir noTaggerSignificances_1 --supercuts supercuts/noTagger.json --hashdir outputHash_noTagger_1
+python graph-cuts.py --lumi 2 --outfile noTagger2 --sigdir noTaggerSignificances_2 --supercuts supercuts/noTagger.json --hashdir outputHash_noTagger_2
+python graph-cuts.py --lumi 4 --outfile noTagger4 --sigdir noTaggerSignificances_4 --supercuts supercuts/noTagger.json --hashdir outputHash_noTagger_4
+python graph-cuts.py --lumi 10 --outfile noTagger10 --sigdir noTaggerSignificances_10 --supercuts supercuts/noTagger.json --hashdir outputHash_noTagger_10
 
