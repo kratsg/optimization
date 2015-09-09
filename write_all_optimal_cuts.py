@@ -1,30 +1,21 @@
-'''
-supercuts_file = 'supercuts_baseline.json'
-hash_dir = 'outputHash_baseline_1'
-sig_dir = 'baselineSignificances_1'
-'''
+import argparse
+import subprocess
+import os
 
-'''
-supercuts_file = 'supercuts_massScan.json'
-hash_dir = 'outputHash_massScan_1'
-sig_dir = 'massScanSignificances_1'
-'''
+class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
+  pass
 
-'''
-supercuts_file = 'supercuts_no_mTb.json'
-hash_dir = 'outputHash_nomTb_10'
-sig_dir = 'nomTbSignificances_10'
-'''
+__version__ = subprocess.check_output(["git", "describe", "--always"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
+__short_hash__ = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
 
-'''
-supercuts_file = 'supercuts_fixedMassScan.json'
-hash_dir = 'outputHash_fixedMassScan_1'
-sig_dir = 'fixedMassScanSignificances_1'
-'''
+parser = argparse.ArgumentParser(description='Author: A. Cukierman, G. Stark. v.{0}'.format(__version__),
+                                 formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+parser.add_argument('--supercuts', required=True, type=str, dest='supercuts', metavar='<file.json>', help='json dict of supercuts to generate optimization cuts to apply')
+parser.add_argument('--significances', required=True, type=str, dest='significances', metavar='<folder>', help='folder of significance calculations')
+parser.add_argument('-o', '--output', required=False, type=str, dest='output', metavar='<folder>', help='folder to store output hash dumps')
 
-supercuts_file = 'supercuts_noTagger.json'
-hash_dir = 'outputHash_noTagger_1'
-sig_dir = 'noTaggerSignificances_1'
+# parse the arguments, throw errors if missing any
+args = parser.parse_args()
 
 import csv,glob,re,json
 def get_hashes():
@@ -41,7 +32,7 @@ def get_hashes():
     mlsp = mlist[2]
     return mglue,mstop,mlsp
 
-  filenames = glob.glob(sig_dir+'/s*.b*.json')
+  filenames = glob.glob(args.significances+'/s*.b*.json')
   regex = re.compile('s(\d{6})\.b.*\.json')
   dids = []
   sigs = []
@@ -65,12 +56,12 @@ bashCommand = 'python optimize.py hash '
 for row in array:
   h = row[3]
   bashCommand += h + ' '
-bashCommand += '--supercuts ' + supercuts_file + ' -b'
-bashCommand += ' -o ' + hash_dir
+bashCommand += '--supercuts ' + args.supercuts + ' -b'
+bashCommand += ' -o ' + args.output
 print bashCommand
 subprocess.call(bashCommand,shell=True)
 
 import numpy
 nparray = numpy.array(array)
 import pdb
-numpy.savetxt(hash_dir+'/mass_windows_hashes.txt',nparray,delimiter='\t',fmt='%s')
+numpy.savetxt(args.output+'/mass_windows_hashes.txt',nparray,delimiter='\t',fmt='%s')
