@@ -242,11 +242,12 @@ if __name__ == '__main__':
         #p.Draw()
 
         if numPivots == 1:
-          savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i) + '.png'
+          savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i)
         else:
-          savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i) + '-' + str(pivotIndex) + '.png'
+          savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i) + '-' + str(pivotIndex)
 
-        c.SaveAs(savefilename)
+        for ext in ['png', 'pdf']:
+          c.SaveAs(savefilename+'.{0}'.format(ext))
         print 'Saving file ' + savefilename
       i += 1
     print 'Done'
