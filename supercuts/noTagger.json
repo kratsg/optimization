@@ -1,0 +1,32 @@
+[
+    {
+        "selections": "m_effective > {0}",
+        "st3": [
+            [600, 2000, 200]
+        ]
+    },
+    {
+        "selections": "met > {0}",
+        "st3": [
+            [100, 900, 100]
+        ]
+    },
+    {
+        "selections": "multiplicity_jet >= {0}",
+        "st3": [
+            [5, 9, 1]
+        ]
+    },
+    {
+        "selections": "multiplicity_jet_b >= {0}",
+        "st3": [
+            [3, 7, 1]
+        ]
+    },
+    {
+        "selections": "mTb > {0}",
+        "st3": [
+          [0, 320, 80]
+        ]
+    }
+]
