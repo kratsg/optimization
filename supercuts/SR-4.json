@@ -1,0 +1,26 @@
+[
+    {
+        "selections": "m_effective >= {0}",
+        "pivot": [1800]
+    },
+    {
+        "selections": "met >= {0}",
+        "pivot": [300],
+    },
+    {
+        "selections": "multiplicity_jet >= {0}",
+        "pivot": [7],
+    },
+    {
+        "selections": "multiplicity_jet_b >= {0}",
+        "pivot": [3],
+    },
+    {
+        "selections": "multiplicity_topTag_loose >= {0}",
+        "pivot": [2],
+    },
+    {
+        "selections": "mTb >= {0}",
+        "pivot": [160],
+    }
+]
