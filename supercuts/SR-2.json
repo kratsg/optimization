@@ -5,22 +5,22 @@
     },
     {
         "selections": "met >= {0}",
-        "pivot": [300],
+        "pivot": [300]
     },
     {
         "selections": "multiplicity_jet >= {0}",
-        "pivot": [8],
+        "pivot": [8]
     },
     {
         "selections": "multiplicity_jet_b >= {0}",
-        "pivot": [3],
+        "pivot": [3]
     },
     {
         "selections": "multiplicity_topTag_loose >= {0}",
-        "pivot": [0],
+        "pivot": [0]
     },
     {
         "selections": "mTb >= {0}",
-        "pivot": [160],
+        "pivot": [160]
     }
 ]
