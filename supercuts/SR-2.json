@@ -16,7 +16,7 @@
         "pivot": [3]
     },
     {
-        "selections": "multiplicity_topTag_loose >= {0}",
+        "selections": "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1) >= {0}",
         "pivot": [0]
     },
     {
