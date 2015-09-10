@@ -230,9 +230,11 @@ if __name__ == '__main__':
         st3 = supercut['st3'][pivotIndex]
         # number of steps
         nSteps = len(range(*st3))
-        h.GetZaxis().SetRangeUser(st3[0], st3[1] - st3[2])
+        h.GetZaxis().SetRangeUser(st3[0], st3[1])
+        h.GetZaxis().CenterLabels()
+        h.GetZaxis().SetTickLength(0)
         h.SetContour(nSteps)
-        h.GetZaxis().SetNdivisions(nSteps-1, False)
+        h.GetZaxis().SetNdivisions(nSteps, False)
 
         draw_hist(h)
         draw_labels(opts.lumi)

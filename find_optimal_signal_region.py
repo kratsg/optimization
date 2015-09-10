@@ -86,9 +86,11 @@ ROOT.gStyle.SetPaintTextFormat("1.0f")
 h.Draw("TEXT COLZ")
 
 # fix the ZAxis
-h.GetZaxis().SetRangeUser(1, 4)
+h.GetZaxis().SetRangeUser(1, 5)
+h.GetZaxis().CenterLabels()
+h.GetZaxis().SetTickLength(0)
 h.SetContour(4)
-h.GetZaxis().SetNdivisions(3, False)
+h.GetZaxis().SetNdivisions(4, False)
 
 txt = ROOT.TLatex()
 txt.SetNDC()
