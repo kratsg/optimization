@@ -14,6 +14,10 @@ parser.add_argument('--lumi', required=False, type=int, dest='lumi', metavar='<L
 parser.add_argument('-o', '--output', required=False, type=str, dest='output', metavar='', help='basename to use for output filename', default='output')
 parser.add_argument('-d', '--output-dir', required=False, type=str, dest='output_dir', metavar='', help='directory to put it in', default='plots')
 
+parser.add_argument("--run1_color", required=False, type=int, help="color of run 1 line", default=46)
+parser.add_argument("--run1_csvfile", required=False, type=str, help="csv file containing run 1 exclusion points", default="run1_limit.csv")
+parser.add_argument("--run1_1sigma_csvfile", required=False, type=str, help="csv file containing run 1 exclusion (+1 sigma) points", default="run1_limit_1sigma.csv")
+
 # parse the arguments, throw errors if missing any
 args = parser.parse_args()
 
@@ -87,6 +91,39 @@ def draw_line():
   l.SetLineStyle(2)
   l.DrawLine(800,800-2*topmass,1300+2*topmass,1300)
 
+import array
+def get_run1(filename,linestyle,linewidth,linecolor):
+  x = array.array('f')
+  y = array.array('f')
+  n = 0
+  with open(filename,'r') as csvfile:
+    reader = csv.reader(csvfile, delimiter = ' ')
+    for row in reader:
+      n += 1
+      x.append(float(row[0]))
+      y.append(float(row[1]))
+
+  gr = ROOT.TGraph(n,x,y)
+  gr.SetLineColor(linecolor)
+  gr.SetLineWidth(linewidth)
+  gr.SetLineStyle(linestyle)
+  return gr
+
+def draw_run1_text(color):
+    txt = ROOT.TLatex()
+    txt.SetNDC()
+    txt.SetTextFont(22)
+    txt.SetTextSize(0.04)
+    txt.SetTextColor(color)
+    txt.DrawText(0.2,0.2,"Run 1 Limit")
+
+def draw_run1(args):
+  gr = get_run1(args.run1_csvfile, 1, 3, args.run1_color)
+  gr.Draw("C")
+  gr_1sigma = get_run1(args.run1_1sigma_csvfile, 3, 1, args.run1_color)
+  gr_1sigma.Draw("C")
+  draw_run1_text(args.run1_color)
+
 def save_canvas(c, filename):
   c.SaveAs(filename + ".pdf")
   print "Saving file " + filename
@@ -139,6 +176,14 @@ draw_hist(h)
 draw_text(args)
 fix_zaxis(h)
 draw_line()
+# THIS DOESN'T WORK WHY???
+#draw_run1(args)
+gr = get_run1(args.run1_csvfile, 1, 3, args.run1_color)
+gr.Draw("C")
+gr_1sigma = get_run1(args.run1_1sigma_csvfile, 3, 1, args.run1_color)
+gr_1sigma.Draw("C")
+draw_run1_text(args.run1_color)
+
 save_canvas(c, '{0}_optimalSR_grid_lumi{1}'.format(os.path.join(args.output_dir, args.output), args.lumi))
 
 # now make a plot of the actual significances
@@ -153,5 +198,13 @@ for did, vals in significances.iteritems():
 draw_hist(h, "1.1f")
 draw_text(args)
 draw_line()
+# THIS DOESN'T WORK WHY???
+#draw_run1(args)
+gr = get_run1(args.run1_csvfile, 1, 3, args.run1_color)
+gr.Draw("C")
+gr_1sigma = get_run1(args.run1_1sigma_csvfile, 3, 1, args.run1_color)
+gr_1sigma.Draw("C")
+draw_run1_text(args.run1_color)
+
 save_canvas(c, '{0}_optimalSR_sig_lumi{1}'.format(os.path.join(args.output_dir, args.output), args.lumi))
 
