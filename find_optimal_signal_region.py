@@ -176,13 +176,6 @@ draw_hist(h)
 draw_text(args)
 fix_zaxis(h)
 draw_line()
-# THIS DOESN'T WORK WHY???
-#draw_run1(args)
-gr = get_run1(args.run1_csvfile, 1, 3, args.run1_color)
-gr.Draw("C")
-gr_1sigma = get_run1(args.run1_1sigma_csvfile, 3, 1, args.run1_color)
-gr_1sigma.Draw("C")
-draw_run1_text(args.run1_color)
 
 save_canvas(c, '{0}_optimalSR_grid_lumi{1}'.format(os.path.join(args.output_dir, args.output), args.lumi))
 
