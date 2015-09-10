@@ -25,6 +25,58 @@ import re
 import json
 from collections import defaultdict
 
+def init_canvas():
+  c = ROOT.TCanvas("c", "", 0, 0, 800, 600)
+  c.SetRightMargin(0.16)
+  c.SetTopMargin(0.07)
+  return c
+
+def init_hist(label):
+  return ROOT.TH2F("grid", ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % label, 12, 800, 2000, 13, 0, 1300)
+
+def draw_hist(h):
+  # now draw it
+  h.SetMarkerSize(1.5)
+  h.SetMarkerColor(ROOT.kWhite)
+  ROOT.gStyle.SetPalette(51)
+  ROOT.gStyle.SetPaintTextFormat("1.0f")
+  h.Draw("TEXT COLZ")
+
+def draw_text(args):
+  txt = ROOT.TLatex()
+  txt.SetNDC()
+  txt.DrawText(0.32,0.87,"Internal")
+  txt.DrawText(0.2,0.82,"Simulation")
+  txt.SetTextSize(0.030)
+  txt.DrawLatex(0.16,0.95,"#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}")
+  txt.DrawLatex(0.62,0.95,"L_{int} = %d fb^{-1}, #sqrt{s} = 13 TeV"% args.lumi)
+  txt.SetTextFont(72)
+  txt.SetTextSize(0.05)
+  txt.DrawText(0.2,0.87,"ATLAS")
+  txt.SetTextFont(12)
+  txt.SetTextAngle(38)
+  txt.SetTextSize(0.02)
+  txt.DrawText(0.33,0.63,"Kinematically Forbidden")
+
+def fix_zaxis(h):
+  # fix the ZAxis
+  h.GetZaxis().SetRangeUser(1, 5)
+  h.GetZaxis().CenterLabels()
+  h.GetZaxis().SetTickLength(0)
+  h.SetContour(4)
+  h.GetZaxis().SetNdivisions(4, False)
+
+def draw_line():
+  topmass = 173.34
+  l=ROOT.TLine(1000,1000,2000,2000)
+  l.SetLineStyle(2)
+  l.DrawLine(800,800-2*topmass,1300+2*topmass,1300)
+
+def save_canvas(c, filename):
+  c.SaveAs(filename + ".pdf")
+  print "Saving file " + filename
+  c.Clear()
+
 from rootpy.plotting.style import set_style, get_style
 set_style('ATLAS')
 
@@ -56,12 +108,8 @@ for did, vals in significances.iteritems():
 
 print winners
 
-ROOT.gStyle.SetPalette(1)
-c = ROOT.TCanvas("c", "", 0, 0, 800, 600)
-c.SetRightMargin(0.16)
-c.SetTopMargin(0.07)
-
-h = ROOT.TH2F("grid", ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % "Optimal Signal Region", 12, 800, 2000, 13, 0, 1300)
+c = init_canvas()
+h = init_hist("Optimal Signal Region")
 for did, vals in significances.iteritems():
   winningSR = max(vals.iteritems(), key=operator.itemgetter(1))[0]
   mgluino, mstop, mlsp = mdict[did]
@@ -78,42 +126,9 @@ for did, vals in significances.iteritems():
     print "-"*20
   h.SetBinContent(b, winningSR)
 
-# now draw it
-h.SetMarkerSize(1.5)
-h.SetMarkerColor(ROOT.kWhite)
-ROOT.gStyle.SetPalette(51)
-ROOT.gStyle.SetPaintTextFormat("1.0f")
-h.Draw("TEXT COLZ")
+draw_hist(h)
+draw_text(args)
+fix_zaxis(h)
+draw_line()
+save_canvas(c, '{0}_optimalSR_grid_lumi{1}'.format(os.path.join(args.output_dir, args.output), args.lumi))
 
-# fix the ZAxis
-h.GetZaxis().SetRangeUser(1, 5)
-h.GetZaxis().CenterLabels()
-h.GetZaxis().SetTickLength(0)
-h.SetContour(4)
-h.GetZaxis().SetNdivisions(4, False)
-
-txt = ROOT.TLatex()
-txt.SetNDC()
-txt.DrawText(0.32,0.87,"Internal")
-txt.DrawText(0.2,0.82,"Simulation")
-txt.SetTextSize(0.030)
-txt.DrawLatex(0.16,0.95,"#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}")
-txt.DrawLatex(0.62,0.95,"L_{int} = %d fb^{-1}, #sqrt{s} = 13 TeV"% args.lumi)
-txt.SetTextFont(72)
-txt.SetTextSize(0.05)
-txt.DrawText(0.2,0.87,"ATLAS")
-txt.SetTextFont(12)
-txt.SetTextAngle(38)
-txt.SetTextSize(0.02)
-txt.DrawText(0.33,0.63,"Kinematically Forbidden")
-
-topmass = 173.34
-
-l=ROOT.TLine(1000,1000,2000,2000)
-l.SetLineStyle(2)
-l.DrawLine(800,800-2*topmass,1300+2*topmass,1300)
-
-savefilename = '{0}_maxSR{1}'.format(os.path.join(args.output_dir, args.output), args.lumi)
-c.SaveAs(savefilename + ".pdf")
-print "Saving file " + savefilename
-c.Clear()
