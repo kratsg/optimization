@@ -165,7 +165,7 @@ print winners
 
 # do optimal signal regions
 c = init_canvas()
-h = init_hist("Optimal Signal Region")
+h = init_hist("Optimal Control Region")
 for did, vals in significances.iteritems():
   winningCR = vals['winner']
   mgluino, mstop, mlsp = mdict[did]
