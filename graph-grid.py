@@ -58,6 +58,7 @@ def get_significances(opts):
   sigs = []
   signals = []
   bkgds = []
+  ratios = []
   for filename in filenames:
     with open(filename) as json_file:
       sig_dict = json.load(json_file)
@@ -82,16 +83,18 @@ def get_significances(opts):
       sigs.append(max_sig)
       signals.append(signal)
       bkgds.append(bkgd)
+      ratios.append(signal/bkgd)
       dids.append(signal_did)
 
 
-  plot_array={'sig':[],'signal':[],'bkgd':[],'mgluino':[],'mlsp':[]}
-  for did,sig,signal,bkgd in zip(dids,sigs,signals,bkgds):
+  plot_array={'sig':[],'signal':[],'bkgd':[],'mgluino':[],'mlsp':[],'ratio':[]}
+  for did,sig,signal,bkgd,ratio in zip(dids,sigs,signals,bkgds,ratios):
     mgluino,mstop,mlsp = masses(did)
     if int(mstop) == 5000:
       plot_array['sig'].append(sig)
       plot_array['signal'].append(signal)
       plot_array['bkgd'].append(bkgd)
+      plot_array['ratio'].append(ratio)
       plot_array['mgluino'].append(mgluino)
       plot_array['mlsp'].append(mlsp)
 
@@ -230,8 +233,8 @@ if __name__ == '__main__':
     opts = parse_argv()
     plot_array = get_significances(opts)
     c = init_canvas(opts)
-    labels = ['sig','signal','bkgd']
-    ylabels = ['Significance in optimal cut','Exp. num. signal in optimal cut','Exp. num. bkgd in optimal cut']
+    labels = ['sig','signal','bkgd', 'ratio']
+    ylabels = ['Significance in optimal cut','Exp. num. signal in optimal cut','Exp. num. bkgd in optimal cut', 'Signal/Background']
     for label,ylabel in zip(labels,ylabels):
       h = init_hist(opts,ylabel)
       fill_hist(h,opts,plot_array,label)
