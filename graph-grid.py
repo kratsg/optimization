@@ -130,7 +130,7 @@ def init_hist(opts,label):
                 opts.l_min,
                 opts.l_max)
 
-def fill_hist(hist,opts,plot_array,label):
+def fill_hist(hist,opts,plot_array,label,skipNegativeSig=True):
 
   for i in range(len(plot_array[label])):
       g = int(plot_array['mgluino'][i])
@@ -138,7 +138,7 @@ def fill_hist(hist,opts,plot_array,label):
       z = plot_array[label][i]
       sig = plot_array['sig'][i]
       b = hist.FindFixBin(g,l)
-      if(sig>0):
+      if(sig>0) or not(skipNegativeSig):
         xx=Long(0)
         yy=Long(0)
         zz=Long(0)
@@ -237,7 +237,7 @@ if __name__ == '__main__':
     ylabels = ['Significance in optimal cut','Exp. num. signal in optimal cut','Exp. num. bkgd in optimal cut', 'Signal/Background']
     for label,ylabel in zip(labels,ylabels):
       h = init_hist(opts,ylabel)
-      fill_hist(h,opts,plot_array,label)
+      fill_hist(h,opts,plot_array,label, label=='sig')
       draw_hist(h)
       draw_labels(opts.lumi)
       draw_text(opts.text_file)
