@@ -21,6 +21,6 @@
     },
     {
       "selections": "m_transverse <= {0}",
-      "pivot": [180000]
+      "pivot": [200000]
     }
 ]
