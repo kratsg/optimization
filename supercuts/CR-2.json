@@ -1,7 +1,7 @@
 [
     {
         "selections": "m_effective >= {0}",
-        "pivot": [1300]
+        "pivot": [1200]
     },
     {
         "selections": "met >= {0}",
