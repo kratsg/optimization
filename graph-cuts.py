@@ -249,7 +249,7 @@ if __name__ == '__main__':
         else:
           savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i) + '-' + str(pivotIndex)
 
-        for ext in ['png', 'pdf']:
+        for ext in ['pdf']:
           c.SaveAs(savefilename+'.{0}'.format(ext))
         print 'Saving file ' + savefilename
       i += 1
