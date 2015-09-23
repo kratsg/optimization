@@ -55,7 +55,7 @@ def set_bin(h, x, y, val):
 
 def draw_hist(h, textFormat="1.0f"):
   # now draw it
-  h.SetMarkerSize(1.5)
+  h.SetMarkerSize(800)
   h.SetMarkerColor(ROOT.kWhite)
   ROOT.gStyle.SetPalette(51)
   ROOT.gStyle.SetPaintTextFormat(textFormat)
@@ -66,7 +66,8 @@ def draw_text(args):
   txt.SetNDC()
   txt.DrawText(0.32,0.87,"Internal")
   txt.DrawText(0.2,0.82,"Simulation")
-  txt.SetTextSize(0.030)
+  #txt.SetTextSize(0.030)
+  txt.SetTextSize(18)
   txt.DrawLatex(0.16,0.95,"#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}")
   txt.DrawLatex(0.62,0.95,"L_{int} = %d fb^{-1}, #sqrt{s} = 13 TeV"% args.lumi)
   txt.SetTextFont(72)

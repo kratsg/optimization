@@ -117,7 +117,6 @@ def init_canvas(opts):
     return c
 
 def axis_labels(opts,label):
-
     return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % label
 
 def init_hist(opts,label):
@@ -150,7 +149,7 @@ def fill_hist(hist,opts,plot_array,label,skipNegativeSig=True):
         hist.SetBinContent(b,0.01)
 
 def draw_hist(hist):
-    hist.SetMarkerSize(1.5)
+    hist.SetMarkerSize(800)
     hist.SetMarkerColor(kWhite)
     gStyle.SetPalette(51)
     gStyle.SetPaintTextFormat("1.1f");
@@ -161,7 +160,8 @@ def draw_labels(lumi):
     txt.SetNDC()
     txt.DrawText(0.32,0.87,"Internal")
     txt.DrawText(0.2,0.82,"Simulation")
-    txt.SetTextSize(0.030)
+    #txt.SetTextSize(0.030)
+    txt.SetTextSize(18)
     txt.DrawLatex(0.16,0.95,"#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}")
     txt.DrawLatex(0.62,0.95,"L_{int} = %d fb^{-1}, #sqrt{s} = 13 TeV"% lumi)
     txt.SetTextFont(72)
