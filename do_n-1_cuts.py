@@ -32,50 +32,62 @@ from itertools import combinations
 import operator
 import optimize
 import ROOT
+from collections import defaultdict
 
 supercuts = json.load(file(args.supercuts, 'r'))
 boundaries = json.load(file(args.boundaries, 'r'))
 
-differences = []
-level = 0
-c = ROOT.TCanvas("canvas", "canvas", 500, 500)
-for subercuts in combinations(supercuts, len(supercuts)-1):
-  level += 1
-  # hold the differences and create a text file with them later for reference
-  # use integers to denote them
-  differences.append([x for x in supercuts if x not in subercuts][0])
-  # now that we have a sub-supercuts, let's actually do_cuts
-  subercutsFile = os.path.join(args.output, '{0:d}.json'.format(level))
-  with open(subercutsFile, 'w+') as f:
-    f.write(json.dumps(subercuts, sort_keys=True, indent=4))
+# first step is to group by the sample DID
+dids = defaultdict(list)
+for fname in args.files:
+  dids[optimize.get_did(fname)].append(fname)
 
-  # get the tree
-  tree = optimize.get_ttree(args.tree_name, args.files, args.eventWeightBranch)
+# loop by did and file
+for did, files in dids.iteritems():
+  # first open file
+  froot = ROOT.TFile.Open(os.path.join(args.output, "n-1.{0}.root".format(did)), "NEW")
 
-  # get the selection we apply to draw it
-  selection = optimize.cuts_to_selection(subercuts)
-  # get the branch we need to draw
-  selection_string = differences[-1]['selections']
+  differences = []
+  level = 0
+  #c = ROOT.TCanvas("canvas", "canvas", 500, 500)
+  for subercuts in combinations(supercuts, len(supercuts)-1):
+    level += 1
+    # hold the differences and create a text file with them later for reference
+    # use integers to denote them
+    differences.append([x for x in supercuts if x not in subercuts][0])
+    # now that we have a sub-supercuts, let's actually do_cuts
+    subercutsFile = os.path.join(args.output, '{0:d}.json'.format(level))
+    with open(subercutsFile, 'w+') as f:
+      f.write(json.dumps(subercuts, sort_keys=True, indent=4))
 
-  branchesSpecified = set(optimize.selection_to_branches(selection_string, tree))
-  # get actual list of branches in the file
-  availableBranches = optimize.tree_get_branches(tree, args.eventWeightBranch)
-  # remove anything that doesn't exist
-  branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
+    # get the tree
+    tree = optimize.get_ttree(args.tree_name, files, args.eventWeightBranch)
 
-  # more than one branch, we skip and move to the next
-  if len(branchesToUse) != 1:
-    print("Warning: selection has multiple branches.\n\tSelection: {0}".format(selection_string))
-    level -= 1
-    del differences[-1]
-    continue
+    # get the selection we apply to draw it
+    selection = optimize.cuts_to_selection(subercuts)
+    # get the branch we need to draw
+    selection_string = differences[-1]['selections']
 
-  branchToDraw = branchesToUse[0]
+    branchesSpecified = set(optimize.selection_to_branches(selection_string, tree))
+    # get actual list of branches in the file
+    availableBranches = optimize.tree_get_branches(tree, args.eventWeightBranch)
+    # remove anything that doesn't exist
+    branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
 
-  h = ROOT.TH1F(branchToDraw, branchToDraw, 100, boundaries[branchToDraw][0], boundaries[branchToDraw][1])
-  # draw with selection and branch
-  tree.Draw("{0}>>{0}".format(branchToDraw), '{0:s}*{1:s}'.format(args.eventWeightBranch, selection))
+    # more than one branch, we skip and move to the next
+    if len(branchesToUse) != 1:
+      print("\tWarning: selection has multiple branches.\n\tSelection: {0}".format(selection_string))
+      level -= 1
+      del differences[-1]
+      continue
 
-  # write to file
-  c.SaveAs('{0}_{1}.pdf'.format(os.path.join(args.output, str(level)), branchToDraw))
-  c.Clear()
+    branchToDraw = branchesToUse[0]
+    print("Drawing {0}".format(branchToDraw))
+
+    h = ROOT.TH1F("all/{0}".format(branchToDraw), branchToDraw, 100, boundaries[branchToDraw][0], boundaries[branchToDraw][1])
+    # draw with selection and branch
+    tree.Draw("{0}>>all/{0}".format(branchToDraw), '{0:s}*{1:s}'.format(args.eventWeightBranch, selection))
+
+    # write to file
+    h.Write()
+  froot.Close()
