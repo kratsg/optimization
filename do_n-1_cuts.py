@@ -22,6 +22,7 @@ parser.add_argument('--output', required=False, type=str, dest='output', metavar
 
 parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='name of the tree containing the ntuples', default='oTree')
 parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='name of event weight branch in the ntuples. It must exist.', default='event_weight')
+parser.add_argument('--boundaries', type=str, required=False, dest='boundaries', metavar='<file.json>', help='name of json file containing boundary definitions', default='boundaries.json')
 
 # parse the arguments, throw errors if missing any
 args = parser.parse_args()
@@ -33,6 +34,7 @@ import optimize
 import ROOT
 
 supercuts = json.load(file(args.supercuts, 'r'))
+boundaries = json.load(file(args.boundaries, 'r'))
 
 differences = []
 level = 0
@@ -68,9 +70,12 @@ for subercuts in combinations(supercuts, len(supercuts)-1):
     del differences[-1]
     continue
 
+  branchToDraw = branchesToUse[0]
+
+  h = ROOT.TH1F(branchToDraw, branchToDraw, 100, boundaries[branchToDraw][0], boundaries[branchToDraw][1])
   # draw with selection and branch
-  tree.Draw(branchesToUse[0], '{0:s}*{1:s}'.format(args.eventWeightBranch, selection))
+  tree.Draw("{0}>>{0}".format(branchToDraw), '{0:s}*{1:s}'.format(args.eventWeightBranch, selection))
 
   # write to file
-  c.SaveAs('{0}_{1}.pdf'.format(os.path.join(args.output, str(level)), branchesToUse[0]))
+  c.SaveAs('{0}_{1}.pdf'.format(os.path.join(args.output, str(level)), branchToDraw))
   c.Clear()
