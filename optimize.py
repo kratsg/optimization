@@ -296,6 +296,16 @@ def cut_to_selection(cut):
 def cuts_to_selection(cuts):
   return "({})".format(")*(".join(map(cut_to_selection, cuts)))
 
+alphachars = re.compile('\W+')
+#@echo(write=logger.debug)
+def selection_to_branches(selection_string, tree):
+  global alphachars
+  return filter(None, alphachars.sub(' ', selection_string.format(*['-']*10)).split(' '))
+
+#@echo(write=logger.debug)
+def tree_get_branches(tree, eventWeightBranch):
+  return [i.GetName() for i in tree.GetListOfBranches() if not i.GetName() == eventWeightBranch]
+
 #@echo(write=logger.debug)
 def do_cut(args, did, files, supercuts, weights):
   start = clock()
@@ -325,10 +335,9 @@ def do_cut(args, did, files, supercuts, weights):
         # remove duplicates
         totalSelections = list(set(totalSelections))
       '''
-      alphachars = re.compile('\W+')
-      branchesSpecified = list(set(itertools.chain.from_iterable(filter(None, alphachars.sub(' ', supercut['selections'].format(*['-']*10)).split(' ')) for supercut in supercuts)))
+      branchesSpecified = list(set(itertools.chain.from_iterable(selection_to_branches(supercut['selections'], tree) for supercut in supercuts)))
       # get actual list of branches in the file
-      availableBranches = [i.GetName() for i in tree.GetListOfBranches() if not i.GetName() == args.eventWeightBranch]
+      availableBranches = tree_get_branches(tree, args.eventWeightBranch)
       # remove anything that doesn't exist
       branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
       branchesSkipped = list(set(branchesSpecified) - set(branchesToUse))
