@@ -655,3 +655,6 @@ if __name__ == "__main__":
       ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
 
     logger.exception("{0}\nAn exception was caught!".format("-"*20))
+else:
+  # being imported, so we start timing here
+  import timing
