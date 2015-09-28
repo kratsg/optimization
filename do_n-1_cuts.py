@@ -2,7 +2,6 @@ import argparse
 import subprocess
 import os
 
-
 '''
 TO DO:
   - automatically grab the parsers from optimize.py instead of copying them over...
@@ -34,6 +33,11 @@ import optimize
 import ROOT
 from collections import defaultdict
 
+from rootpy.io import root_open
+from rootpy.plotting import Hist
+from rootpy.plotting import set_style
+from rootpy.tree import Tree, TreeChain
+
 supercuts = json.load(file(args.supercuts, 'r'))
 boundaries = json.load(file(args.boundaries, 'r'))
 
@@ -45,23 +49,19 @@ for fname in args.files:
 # loop by did and file
 for did, files in dids.iteritems():
   # first open file
-  froot = ROOT.TFile.Open(os.path.join(args.output, "n-1.{0}.root".format(did)), "NEW")
+  out_file = root_open(os.path.join(args.output, "n-1.{0}.root".format(did)), "NEW")
+  out_file.mkdir('all')
+  out_file.cd('all')
 
   differences = []
-  level = 0
   #c = ROOT.TCanvas("canvas", "canvas", 500, 500)
   for subercuts in combinations(supercuts, len(supercuts)-1):
-    level += 1
     # hold the differences and create a text file with them later for reference
     # use integers to denote them
     differences.append([x for x in supercuts if x not in subercuts][0])
-    # now that we have a sub-supercuts, let's actually do_cuts
-    subercutsFile = os.path.join(args.output, '{0:d}.json'.format(level))
-    with open(subercutsFile, 'w+') as f:
-      f.write(json.dumps(subercuts, sort_keys=True, indent=4))
 
     # get the tree
-    tree = optimize.get_ttree(args.tree_name, files, args.eventWeightBranch)
+    tree = TreeChain(args.tree_name, files)
 
     # get the selection we apply to draw it
     selection = optimize.cuts_to_selection(subercuts)
@@ -77,17 +77,22 @@ for did, files in dids.iteritems():
     # more than one branch, we skip and move to the next
     if len(branchesToUse) != 1:
       print("\tWarning: selection has multiple branches.\n\tSelection: {0}".format(selection_string))
-      level -= 1
       del differences[-1]
       continue
 
     branchToDraw = branchesToUse[0]
     print("Drawing {0}".format(branchToDraw))
 
-    h = ROOT.TH1F("all/{0}".format(branchToDraw), branchToDraw, 100, boundaries[branchToDraw][0], boundaries[branchToDraw][1])
+    h = Hist(100, boundaries[branchToDraw][0], boundaries[branchToDraw][1], name=branchToDraw)
     # draw with selection and branch
-    tree.Draw("{0}>>all/{0}".format(branchToDraw), '{0:s}*{1:s}'.format(args.eventWeightBranch, selection))
+    tree.Draw(branchToDraw, '{0:s}*{1:s}'.format(args.eventWeightBranch, selection), hist = h)
 
     # write to file
-    h.Write()
-  froot.Close()
+    h.write()
+
+    # now that we have a sub-supercuts, let's actually do_cuts
+    subercutsFile = os.path.join(args.output, '{0}.json'.format(branchToDraw))
+    with open(subercutsFile, 'w+') as f:
+      f.write(json.dumps(subercuts, sort_keys=True, indent=4))
+
+  out_file.close()
