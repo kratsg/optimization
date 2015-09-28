@@ -3,5 +3,6 @@
   "mTb": [0, 500],
   "multiplicity_jet_b": [0, 20],
   "multiplicity_jet": [0, 20],
-  "m_effective": [0, 7000]
+  "m_effective": [0, 7000],
+  "m_transverse": [0, 7000]
 }
