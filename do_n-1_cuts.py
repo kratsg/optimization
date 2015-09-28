@@ -23,6 +23,8 @@ parser.add_argument('--tree', type=str, required=False, dest='tree_name', metava
 parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='name of event weight branch in the ntuples. It must exist.', default='event_weight')
 parser.add_argument('--boundaries', type=str, required=False, dest='boundaries', metavar='<file.json>', help='name of json file containing boundary definitions', default='boundaries.json')
 
+parser.add_argument('-f', '--force', action='store_true', dest='overwrite', help='Overwrite the directory if it exists')
+
 # parse the arguments, throw errors if missing any
 args = parser.parse_args()
 
@@ -31,6 +33,7 @@ from itertools import combinations
 import operator
 import optimize
 import ROOT
+import sys
 from collections import defaultdict
 
 from rootpy.io import root_open
@@ -41,17 +44,38 @@ from rootpy.tree import Tree, TreeChain
 supercuts = json.load(file(args.supercuts, 'r'))
 boundaries = json.load(file(args.boundaries, 'r'))
 
-# first step is to group by the sample DID
-dids = defaultdict(list)
 for fname in args.files:
-  dids[optimize.get_did(fname)].append(fname)
-
-# loop by did and file
-for did, files in dids.iteritems():
   # first open file
-  out_file = root_open(os.path.join(args.output, "n-1.{0}.root".format(did)), "NEW")
-  out_file.mkdir('all')
-  out_file.cd('all')
+  print("Opening {0}".format(fname))
+  out_file = root_open(fname, "UPDATE")
+
+  '''
+    Given a file and a path to a directory to create, check if parent exists
+    and then try to create if it doesn't. Then cd() into it, and create the
+    base directory needed. If it exists, remove if required, then create and cd.
+  '''
+  parent_dir = os.path.dirname(args.output)
+  if getattr(out_file, parent_dir, None) is None:
+    print("\tMaking {0}".format(parent_dir))
+    out_file.mkdir(parent_dir, recurse=True)
+  print("\tCd'ing into {0}".format(parent_dir))
+  out_file.cd(parent_dir)
+
+  base_dir = os.path.basename(args.output)
+  # if it exists and user wants to overwrite, do so
+  if getattr(out_file, base_dir, None) and args.overwrite:
+    print("\tRemoving {0}".format(base_dir))
+    out_file.rmdir(base_dir)
+  try:
+    # this will crash here if the user doesn't choose to overwrite directory that exists
+    print("\tMaking {0}".format(base_dir))
+    out_file.mkdir(base_dir)
+  except ValueError:
+    print("\t\tThis exists. Try re-running with -f, --force to overwrite the existing directory or specify a different output directory")
+    sys.exit(1)
+  # guess we're all ok, so cd and continue
+  print("\tCd'ing into {0}".format(base_dir))
+  out_file.cd(base_dir)
 
   differences = []
   #c = ROOT.TCanvas("canvas", "canvas", 500, 500)
@@ -61,13 +85,14 @@ for did, files in dids.iteritems():
     differences.append([x for x in supercuts if x not in subercuts][0])
 
     # get the tree
-    tree = TreeChain(args.tree_name, files)
+    tree = getattr(out_file, args.tree_name)
 
     # get the selection we apply to draw it
     selection = optimize.cuts_to_selection(subercuts)
     # get the branch we need to draw
     selection_string = differences[-1]['selections']
 
+    print("\tLooking at selection: {0}".format(selection_string))
     branchesSpecified = set(optimize.selection_to_branches(selection_string, tree))
     # get actual list of branches in the file
     availableBranches = optimize.tree_get_branches(tree, args.eventWeightBranch)
@@ -76,18 +101,19 @@ for did, files in dids.iteritems():
 
     # more than one branch, we skip and move to the next
     if len(branchesToUse) != 1:
-      print("\tWarning: selection has multiple branches.\n\tSelection: {0}".format(selection_string))
+      print("\t\tWarning: selection has multiple branches.")
       del differences[-1]
       continue
 
     branchToDraw = branchesToUse[0]
-    print("Drawing {0}".format(branchToDraw))
+    print("\t\tDrawing {0}".format(branchToDraw))
 
     h = Hist(100, boundaries[branchToDraw][0], boundaries[branchToDraw][1], name=branchToDraw)
     # draw with selection and branch
     tree.Draw(branchToDraw, '{0:s}*{1:s}'.format(args.eventWeightBranch, selection), hist = h)
 
     # write to file
+    print("\t\tWriting to file")
     h.write()
 
     # now that we have a sub-supercuts, let's actually do_cuts
@@ -95,4 +121,5 @@ for did, files in dids.iteritems():
     with open(subercutsFile, 'w+') as f:
       f.write(json.dumps(subercuts, sort_keys=True, indent=4))
 
+  print("\tClosing file")
   out_file.close()
