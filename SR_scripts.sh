@@ -12,10 +12,10 @@ do
   outputNMinus1="n-1/SR-${i}"
   rm -rf $outputNMinus1
   mkdir -p $outputNMinus1
-  python do_n-1_cuts.py $gttFiles --supercuts $supercutsLocation --output $outputNMinus1 --boundaries boundaries.json
+  python do_n-1_cuts.py $gttFiles $ttbarIncFiles $ttbarExcFiles --supercuts $supercutsLocation --output $outputNMinus1 --boundaries boundaries.json
 
   rm -rf $cutsLocation
-  python optimize.py cut "${files[@]}" --supercuts $supercutsLocation -o $cutsLocation --numpy -v -b
+  python optimize.py cut $gttFiles $ttbarIncFiles $ttbarExcFiles --supercuts $supercutsLocation -o $cutsLocation --numpy -v -b
 
   for lumi in 1 2 4 10
   do
