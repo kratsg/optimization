@@ -104,15 +104,25 @@ for fname in args.files:
     branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
 
     # more than one branch, we skip and move to the next
-    if len(branchesToUse) != 1:
-      print("\t\tWarning: selection has multiple branches.")
+    if len(branchesToUse) == 0:
+      print("\t\tWarning: selection has no branches.")
       del differences[-1]
       continue
 
+    # at least one branch in there
     branchToDraw = branchesToUse[0]
-    print("\t\tDrawing {0}".format(branchToDraw))
+    # in most cases, these will be the same, we separate for the top tagging case
+    histName = branchToDraw
 
-    h = Hist(boundaries[branchToDraw][2], boundaries[branchToDraw][0], boundaries[branchToDraw][1], name=branchToDraw)
+    if len(branchesToUse) > 1:
+      print("\t\tWarning: selection has multiple branches.")
+      print("\t\tWarning: for now, assume this is n-tops.")
+      branchToDraw = "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1)"
+      histName = "n_tops"
+
+    print("\t\tDrawing {0}".format(histName))
+
+    h = Hist(boundaries[histName][2], boundaries[histName][0], boundaries[histName][1], name=histName)
     # draw with selection and branch
     tree.Draw(branchToDraw, '{0:s}*{1:s}'.format(args.eventWeightBranch, selection), hist = h)
 
