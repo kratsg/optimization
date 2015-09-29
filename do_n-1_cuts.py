@@ -54,28 +54,32 @@ for fname in args.files:
     and then try to create if it doesn't. Then cd() into it, and create the
     base directory needed. If it exists, remove if required, then create and cd.
   '''
+
   parent_dir = os.path.dirname(args.output)
   if getattr(out_file, parent_dir, None) is None:
     print("\tMaking {0}".format(parent_dir))
     out_file.mkdir(parent_dir, recurse=True)
-  print("\tCd'ing into {0}".format(parent_dir))
-  out_file.cd(parent_dir)
 
+  # now that we know parent directory exists...
+  parent_dir = getattr(out_file, parent_dir)
+  # get the base directory to create
   base_dir = os.path.basename(args.output)
   # if it exists and user wants to overwrite, do so
-  if getattr(out_file, base_dir, None) and args.overwrite:
+  out_file.rmdir(base_dir)
+  if getattr(parent_dir, base_dir, None) and args.overwrite:
     print("\tRemoving {0}".format(base_dir))
-    out_file.rmdir(base_dir)
+    parent_dir.rmdir(base_dir)
   try:
     # this will crash here if the user doesn't choose to overwrite directory that exists
     print("\tMaking {0}".format(base_dir))
-    out_file.mkdir(base_dir)
+    parent_dir.mkdir(base_dir)
   except ValueError:
     print("\t\tThis exists. Try re-running with -f, --force to overwrite the existing directory or specify a different output directory")
     sys.exit(1)
+
   # guess we're all ok, so cd and continue
-  print("\tCd'ing into {0}".format(base_dir))
-  out_file.cd(base_dir)
+  print("\tCd'ing into {0}".format(args.output))
+  out_file.cd(args.output)
 
   differences = []
   #c = ROOT.TCanvas("canvas", "canvas", 500, 500)
@@ -108,7 +112,7 @@ for fname in args.files:
     branchToDraw = branchesToUse[0]
     print("\t\tDrawing {0}".format(branchToDraw))
 
-    h = Hist(100, boundaries[branchToDraw][0], boundaries[branchToDraw][1], name=branchToDraw)
+    h = Hist(boundaries[branchToDraw][2], boundaries[branchToDraw][0], boundaries[branchToDraw][1], name=branchToDraw)
     # draw with selection and branch
     tree.Draw(branchToDraw, '{0:s}*{1:s}'.format(args.eventWeightBranch, selection), hist = h)
 
