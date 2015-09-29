@@ -1,8 +1,8 @@
 {
-  "met": [0, 2000],
-  "mTb": [0, 500],
-  "multiplicity_jet_b": [0, 20],
-  "multiplicity_jet": [0, 20],
-  "m_effective": [0, 7000],
-  "m_transverse": [0, 7000]
+  "met": [0, 2000, 100],
+  "mTb": [0, 1000, 100],
+  "multiplicity_jet_b": [-0.5, 19.5, 20],
+  "multiplicity_jet": [-0.5, 19.5, 20],
+  "m_effective": [0, 7000, 100],
+  "m_transverse": [0, 7000, 100]
 }
