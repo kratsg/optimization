@@ -5,7 +5,7 @@
     },
     {
         "selections": "met >= {0}",
-        "pivot": [250]
+        "pivot": [30]
     },
     {
         "selections": "multiplicity_jet >= {0}",
@@ -21,6 +21,6 @@
     },
     {
       "selections": "m_transverse <= {0}",
-      "pivot": [200000]
+      "pivot": [80000]
     }
 ]
