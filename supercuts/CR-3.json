@@ -17,7 +17,7 @@
     },
     {
         "selections": "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1) >= {0}",
-        "pivot": [1]
+        "pivot": [0]
     },
     {
       "selections": "m_transverse <= {0}",
