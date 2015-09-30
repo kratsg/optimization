@@ -6,7 +6,9 @@ from ROOT import *
 import rootpy as rpy
 from rootpy.plotting.style import set_style, get_style
 
-set_style('ATLAS')
+atlas = get_style('ATLAS')
+atlas.SetPalette(51)
+set_style(atlas)
 sys.argv = sys.argv[:-1]
 
 topmass = 173.34
@@ -108,7 +110,7 @@ def nbinsy(opts):
 
 def init_canvas(opts):
 
-    gStyle.SetPalette(1);
+    #gStyle.SetPalette(1);
 
     c = TCanvas("c", "", 0, 0, opts.x_dim, opts.y_dim)
     c.SetRightMargin(0.16)
@@ -151,7 +153,7 @@ def fill_hist(hist,opts,plot_array,label,skipNegativeSig=True):
 def draw_hist(hist):
     hist.SetMarkerSize(800)
     hist.SetMarkerColor(kWhite)
-    gStyle.SetPalette(51)
+    #gStyle.SetPalette(51)
     gStyle.SetPaintTextFormat("1.1f");
     hist.Draw("TEXT COLZ")
 

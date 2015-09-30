@@ -57,7 +57,7 @@ def draw_hist(h, textFormat="1.0f"):
   # now draw it
   h.SetMarkerSize(800)
   h.SetMarkerColor(ROOT.kWhite)
-  ROOT.gStyle.SetPalette(51)
+  #ROOT.gStyle.SetPalette(51)
   ROOT.gStyle.SetPaintTextFormat(textFormat)
   h.Draw("TEXT COLZ")
 
@@ -131,7 +131,9 @@ def save_canvas(c, filename):
   c.Clear()
 
 from rootpy.plotting.style import set_style, get_style
-set_style('ATLAS')
+atlas = get_style('ATLAS')
+atlas.SetPalette(51)
+set_style(atlas)
 
 # given a DID, we get the mass points, translates to a box on the graph for us
 with open('mass_windows.txt', 'r') as f:
