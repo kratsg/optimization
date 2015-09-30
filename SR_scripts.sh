@@ -12,7 +12,7 @@ do
   outputNMinus1="n-1/SR-${i}"
   rm -rf $outputNMinus1
   mkdir -p $outputNMinus1
-  python do_n-1_cuts.py $gttFiles $ttbarIncFiles $ttbarExcFiles --supercuts $supercutsLocation --output $outputNMinus1 --boundaries boundaries.json
+  python do_n-1_cuts.py $gttFiles $ttbarIncFiles $ttbarExcFiles --supercuts $supercutsLocation --output $outputNMinus1 --boundaries boundaries.json -f
 
   rm -rf $cutsLocation
   python optimize.py cut $gttFiles $ttbarIncFiles $ttbarExcFiles --supercuts $supercutsLocation -o $cutsLocation --numpy -v -b
