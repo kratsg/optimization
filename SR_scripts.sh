@@ -1,8 +1,8 @@
 #!/bin/bash
 
-gttFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/Gtt_0L_b/fetch/data-optimizationTree/*.root
-ttbarIncFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root
-ttbarExcFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V1/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root
+gttFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V3/Gtt_0L_b/fetch/data-optimizationTree/*.root
+ttbarIncFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V3/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root
+ttbarExcFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V3/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root
 
 for i in 1 2 3 4
 do
