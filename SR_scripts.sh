@@ -17,7 +17,7 @@ do
   rm -rf $cutsLocation
   python optimize.py cut $gttFiles $ttbarIncFiles $ttbarExcFiles --supercuts $supercutsLocation -o $cutsLocation --numpy -v -b
 
-  for lumi in 1 2 4 10
+  for lumi in 2 4 10
   do
     significancesLocation="SR${i}Significances_${lumi}"
     rm -rf $significancesLocation
@@ -35,7 +35,7 @@ do
   done
 done
 
-for lumi in 1 2 4 10
+for lumi in 2 4 10
 do
   python find_optimal_signal_region.py --lumi $lumi
 done
