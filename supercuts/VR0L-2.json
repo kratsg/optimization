@@ -1,0 +1,26 @@
+[
+    {
+        "selections": "m_effective >= {0}",
+        "pivot": [1400]
+    },
+    {
+        "selections": "met >= {0}",
+        "pivot": [300]
+    },
+    {
+        "selections": "multiplicity_jet >= {0}",
+        "pivot": [8]
+    },
+    {
+        "selections": "multiplicity_jet_b >= {0}",
+        "pivot": [3]
+    },
+    {
+        "selections": "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1) >= {0}",
+        "pivot": [0]
+    },
+    {
+        "selections": "mTb >= {0}",
+        "pivot": [160]
+    }
+]
