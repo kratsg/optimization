@@ -37,8 +37,3 @@ do
     python graph-cuts.py --lumi $lumi --outfile $outputFilePlots --sigdir $significancesLocation --supercuts $supercutsLocation --hashdir $outputHashLocation
   done
 done
-
-for lumi in 2 4 10
-do
-  python find_optimal_control_region.py --lumi $lumi
-done

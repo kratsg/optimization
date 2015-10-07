@@ -4,7 +4,7 @@ gttFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V4/Gtt_0L_b/fetch/dat
 ttbarIncFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V4/ttbar*_0L_b/fetch/data-optimizationTree/*410000*r6765_r6282*.root
 ttbarExcFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V4/ttbar*_0L_b/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root
 
-for i in 1 2 3
+for i in 1 2 3 4
 do
   supercutsLocation="supercuts/VR0L-${i}.json"
   cutsLocation="VR0L${i}Cuts"
@@ -36,9 +36,4 @@ do
     python graph-grid.py --lumi $lumi --outfile $outputFilePlots --sigdir $significancesLocation --cutdir $cutsLocation
     python graph-cuts.py --lumi $lumi --outfile $outputFilePlots --sigdir $significancesLocation --supercuts $supercutsLocation --hashdir $outputHashLocation
   done
-done
-
-for lumi in 2 4 10
-do
-  python find_optimal_control_region.py --lumi $lumi
 done
