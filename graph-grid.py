@@ -6,7 +6,9 @@ from ROOT import *
 import rootpy as rpy
 from rootpy.plotting.style import set_style, get_style
 
-set_style('ATLAS')
+atlas = get_style('ATLAS')
+atlas.SetPalette(51)
+set_style(atlas)
 sys.argv = sys.argv[:-1]
 
 topmass = 173.34
@@ -108,7 +110,7 @@ def nbinsy(opts):
 
 def init_canvas(opts):
 
-    gStyle.SetPalette(1);
+    #gStyle.SetPalette(1);
 
     c = TCanvas("c", "", 0, 0, opts.x_dim, opts.y_dim)
     c.SetRightMargin(0.16)
@@ -148,11 +150,11 @@ def fill_hist(hist,opts,plot_array,label,skipNegativeSig=True):
       else:
         hist.SetBinContent(b,0.01)
 
-def draw_hist(hist):
+def draw_hist(hist, nSigs=1):
     hist.SetMarkerSize(800)
     hist.SetMarkerColor(kWhite)
-    gStyle.SetPalette(51)
-    gStyle.SetPaintTextFormat("1.1f");
+    #gStyle.SetPalette(51)
+    gStyle.SetPaintTextFormat("1.{0:d}f".format(nSigs));
     hist.Draw("TEXT COLZ")
 
 def draw_labels(lumi):
@@ -238,7 +240,7 @@ if __name__ == '__main__':
     for label,ylabel in zip(labels,ylabels):
       h = init_hist(opts,ylabel)
       fill_hist(h,opts,plot_array,label, label=='sig')
-      draw_hist(h)
+      draw_hist(h, (2 if label=='ratio' else 1))
       draw_labels(opts.lumi)
       draw_text(opts.text_file)
       draw_line()
