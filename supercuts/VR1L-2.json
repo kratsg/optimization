@@ -20,7 +20,7 @@
         "pivot": [0]
     },
     {
-      "selections": "m_transverse > {0}",
+      "selections": "m_transverse <= {0}",
       "pivot": [150]
     },
     {
