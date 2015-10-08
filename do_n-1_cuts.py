@@ -130,10 +130,12 @@ for fname in args.files:
     print("\t\tWriting to file")
     h.write()
 
+    '''
     # now that we have a sub-supercuts, let's actually do_cuts
     subercutsFile = os.path.join(args.output, '{0}.json'.format(branchToDraw))
     with open(subercutsFile, 'w+') as f:
       f.write(json.dumps(subercuts, sort_keys=True, indent=4))
+    '''
 
   print("\tClosing file")
   out_file.close()

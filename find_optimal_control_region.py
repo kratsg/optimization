@@ -18,6 +18,8 @@ parser.add_argument("--run1_color", required=False, type=int, help="color of run
 parser.add_argument("--run1_csvfile", required=False, type=str, help="csv file containing run 1 exclusion points", default="run1_limit.csv")
 parser.add_argument("--run1_1sigma_csvfile", required=False, type=str, help="csv file containing run 1 exclusion (+1 sigma) points", default="run1_limit_1sigma.csv")
 
+parser.add_argument("--basedir", required=False, type=str, help="base directory", default="CR")
+
 # parse the arguments, throw errors if missing any
 args = parser.parse_args()
 
@@ -149,7 +151,7 @@ p_did = re.compile('s(\d+)\.b([0-9\-]+)\.json')
 
 # for each signal region, build up the significance value
 for i in range(1,5):
-  files = glob.glob("CR{0:d}Significances_{1:d}/s*.b*.json".format(i, args.lumi))
+  files = glob.glob(os.path.join(args.basedir, "CR{0:d}Significances_{1:d}".format(i, args.lumi), "s*.b*.json"))
   for filename in files:
     with open(filename, 'r') as f:
       data = json.load(f)
