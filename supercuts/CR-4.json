@@ -1,7 +1,7 @@
 [
     {
         "selections": "m_effective >= {0}",
-        "pivot": [1500]
+        "pivot": [1300]
     },
     {
         "selections": "met >= {0}",
@@ -9,7 +9,7 @@
     },
     {
         "selections": "multiplicity_jet >= {0}",
-        "pivot": [7]
+        "pivot": [6]
     },
     {
         "selections": "multiplicity_jet_b >= {0}",
@@ -17,7 +17,7 @@
     },
     {
         "selections": "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1) >= {0}",
-        "pivot": [1]
+        "pivot": [2]
     },
     {
       "selections": "m_transverse <= {0}",
