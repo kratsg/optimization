@@ -5,7 +5,7 @@
     },
     {
         "selections": "met >= {0}",
-        "pivot": [200]
+        "pivot": [250]
     },
     {
         "selections": "multiplicity_jet >= {0}",
@@ -13,7 +13,7 @@
     },
     {
         "selections": "multiplicity_jet_b >= {0}",
-        "pivot": [3]
+        "pivot": [4]
     },
     {
         "selections": "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1) >= {0}",

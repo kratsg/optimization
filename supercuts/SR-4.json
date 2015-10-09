@@ -1,15 +1,15 @@
 [
     {
         "selections": "m_effective >= {0}",
-        "pivot": [1500]
+        "pivot": [1300]
     },
     {
         "selections": "met >= {0}",
-        "pivot": [300]
+        "pivot": [350]
     },
     {
         "selections": "multiplicity_jet >= {0}",
-        "pivot": [7]
+        "pivot": [6]
     },
     {
         "selections": "multiplicity_jet_b >= {0}",
