@@ -9,7 +9,7 @@
     },
     {
         "selections": "multiplicity_jet >= {0}",
-        "pivot": [8]
+        "pivot": [7]
     },
     {
         "selections": "multiplicity_jet_b >= {0}",
