@@ -1,8 +1,10 @@
 #!/bin/bash
 
-gttFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V5/Gtt_1L/fetch/data-optimizationTree/*.root
-ttbarIncFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V5/ttbar*_1L/fetch/data-optimizationTree/*410000*r6765_r6282*.root
-ttbarExcFiles=${HOME}/Dropbox/TheAccountant_dataFiles/TA07_MBJ10V5/ttbar*_1L/fetch/data-optimizationTree/*407012*r6765_r6282*p2411*.root
+files=()
+for sample in "Gtt" "ttbarInc" "ttbarExc" "Wsherpa" "Zsherpa" "dijet" "data" "singletop" "topEW"
+do
+  files+=($(ls ${HOME}/Dropbox/TheAccountant_dataFiles/TA01_MBJ13V5/"${sample}"_1L/fetch/data-optimizationTree/*.root))
+done
 
 baseDir="VR1L"
 rm -rf $baseDir
@@ -14,16 +16,16 @@ do
   cutsLocation="${baseDir}/VR1L${i}Cuts"
 
   outputNMinus1="n-1/VR1L-${i}"
-  python do_n-1_cuts.py $gttFiles $ttbarIncFiles $ttbarExcFiles --supercuts $supercutsLocation --output $outputNMinus1 --boundaries boundaries.json -f
+  python do_n-1_cuts.py ${files[*]} --supercuts $supercutsLocation --output $outputNMinus1 --boundaries boundaries.json -f
 
-  python optimize.py cut $gttFiles $ttbarIncFiles $ttbarExcFiles --supercuts $supercutsLocation -o $cutsLocation --numpy -v -b
+  python optimize.py cut ${files[*]} --supercuts $supercutsLocation -o $cutsLocation --numpy -v -b
 
-  for lumi in 2 4 10
+  for lumi in 2
   do
 
     significancesLocation="${baseDir}/VR1L${i}Significances_${lumi}"
 
-    python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory $cutsLocation -b --o $significancesLocation --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi $lumi
+    python optimize.py optimize --signal 37* --bkgd 410000.json 407012.json --searchDirectory $cutsLocation -b --o $significancesLocation --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi $lumi
 
     outputHashLocation="${baseDir}/outputHash_VR1L${i}_${lumi}"
 
