@@ -237,10 +237,11 @@ if __name__ == '__main__':
     c = init_canvas(opts)
     labels = ['sig','signal','bkgd', 'ratio']
     ylabels = ['Significance in optimal cut','Exp. num. signal in optimal cut','Exp. num. bkgd in optimal cut', 'Signal/Background']
-    for label,ylabel in zip(labels,ylabels):
+    nSigs = [2, 3, 3, 2]
+    for label,ylabel,nSig in zip(labels,ylabels,nSigs):
       h = init_hist(opts,ylabel)
       fill_hist(h,opts,plot_array,label, label=='sig')
-      draw_hist(h, (2 if label=='ratio' else 1))
+      draw_hist(h, nSig)
       draw_labels(opts.lumi)
       draw_text(opts.text_file)
       draw_line()
