@@ -81,61 +81,68 @@ for fname in args.files:
   print("\tCd'ing into {0}".format(args.output))
   out_file.cd(args.output)
 
-  differences = []
-  #c = ROOT.TCanvas("canvas", "canvas", 500, 500)
-  for subercuts in combinations(supercuts, len(supercuts)-1):
-    # hold the differences and create a text file with them later for reference
-    # use integers to denote them
-    differences.append([x for x in supercuts if x not in subercuts][0])
+  # get the tree
+  tree = getattr(out_file, args.tree_name)
 
-    # get the tree
-    tree = getattr(out_file, args.tree_name)
+  # no entries, just write empty histograms to file
+  if tree.get_entries() == 0:
+    print("\tNo entries in ntuple, writing empty histograms and finishing.")
+    for histName, st3 in boundaries.iteritems():
+      h = Hist(st3[2], st3[0], st3[1], name=histName)
+      h.write()
+  else:
+    differences = []
+    #c = ROOT.TCanvas("canvas", "canvas", 500, 500)
+    for subercuts in combinations(supercuts, len(supercuts)-1):
+      # hold the differences and create a text file with them later for reference
+      # use integers to denote them
+      differences.append([x for x in supercuts if x not in subercuts][0])
 
-    # get the selection we apply to draw it
-    selection = optimize.cuts_to_selection(subercuts)
-    # get the branch we need to draw
-    selection_string = differences[-1]['selections']
+      # get the selection we apply to draw it
+      selection = optimize.cuts_to_selection(subercuts)
+      # get the branch we need to draw
+      selection_string = differences[-1]['selections']
 
-    print("\tLooking at selection: {0}".format(selection_string))
-    branchesSpecified = set(optimize.selection_to_branches(selection_string, tree))
-    # get actual list of branches in the file
-    availableBranches = optimize.tree_get_branches(tree, args.eventWeightBranch)
-    # remove anything that doesn't exist
-    branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
+      print("\tLooking at selection: {0}".format(selection_string))
+      branchesSpecified = set(optimize.selection_to_branches(selection_string, tree))
+      # get actual list of branches in the file
+      availableBranches = optimize.tree_get_branches(tree, args.eventWeightBranch)
+      # remove anything that doesn't exist
+      branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
 
-    # more than one branch, we skip and move to the next
-    if len(branchesToUse) == 0:
-      print("\t\tWarning: selection has no branches.")
-      del differences[-1]
-      continue
+      # more than one branch, we skip and move to the next
+      if len(branchesToUse) == 0:
+        print("\t\tWarning: selection has no branches.")
+        del differences[-1]
+        continue
 
-    # at least one branch in there
-    branchToDraw = branchesToUse[0]
-    # in most cases, these will be the same, we separate for the top tagging case
-    histName = branchToDraw
+      # at least one branch in there
+      branchToDraw = branchesToUse[0]
+      # in most cases, these will be the same, we separate for the top tagging case
+      histName = branchToDraw
 
-    if len(branchesToUse) > 1:
-      print("\t\tWarning: selection has multiple branches.")
-      print("\t\tWarning: for now, assume this is n-tops.")
-      branchToDraw = "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1)"
-      histName = "n_tops"
+      if len(branchesToUse) > 1:
+        print("\t\tWarning: selection has multiple branches.")
+        print("\t\tWarning: for now, assume this is n-tops.")
+        branchToDraw = "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1)"
+        histName = "n_tops"
 
-    print("\t\tDrawing {0}".format(histName))
+      print("\t\tDrawing {0}".format(histName))
 
-    h = Hist(boundaries[histName][2], boundaries[histName][0], boundaries[histName][1], name=histName)
-    # draw with selection and branch
-    tree.Draw(branchToDraw, '{0:s}*{1:s}'.format(args.eventWeightBranch, selection), hist = h)
+      h = Hist(boundaries[histName][2], boundaries[histName][0], boundaries[histName][1], name=histName)
+      # draw with selection and branch
+      tree.Draw(branchToDraw, '{0:s}*{1:s}'.format(args.eventWeightBranch, selection), hist = h)
 
-    # write to file
-    print("\t\tWriting to file")
-    h.write()
+      # write to file
+      print("\t\tWriting to file")
+      h.write()
 
-    '''
-    # now that we have a sub-supercuts, let's actually do_cuts
-    subercutsFile = os.path.join(args.output, '{0}.json'.format(branchToDraw))
-    with open(subercutsFile, 'w+') as f:
-      f.write(json.dumps(subercuts, sort_keys=True, indent=4))
-    '''
+      '''
+      # now that we have a sub-supercuts, let's actually do_cuts
+      subercutsFile = os.path.join(args.output, '{0}.json'.format(branchToDraw))
+      with open(subercutsFile, 'w+') as f:
+        f.write(json.dumps(subercuts, sort_keys=True, indent=4))
+      '''
 
   print("\tClosing file")
   out_file.close()
