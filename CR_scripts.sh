@@ -3,7 +3,7 @@
 files=()
 for sample in "Gtt" "ttbarInc" "ttbarExc" "Wsherpa" "Zsherpa" "dijet" "data" "singletop" "topEW"
 do
-  files+=($(ls ${HOME}/Dropbox/TheAccountant_dataFiles/TA01_MBJ13V5/"${sample}"_1L/fetch/data-optimizationTree/*.root))
+  files+=($(ls ${HOME}/Dropbox/TheAccountant_dataFiles/TA01_MBJ13V8/"${sample}"_1L/fetch/data-optimizationTree/*.root))
 done
 
 baseDir="CR"
