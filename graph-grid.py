@@ -5,6 +5,7 @@ sys.argv.append("-b")
 from ROOT import *
 import rootpy as rpy
 from rootpy.plotting.style import set_style, get_style
+import os
 
 atlas = get_style('ATLAS')
 atlas.SetPalette(51)
@@ -55,7 +56,8 @@ def get_significances(opts):
     return mglue,mstop,mlsp
 
   filenames = glob.glob(opts.sigdir+'/s*.b*.json')
-  regex = re.compile(opts.sigdir+'/s(\d+)\.b([0-9\-]+)\.json')
+
+  regex = re.compile(r'{0:s}'.format(os.path.join(opts.sigdir, 's(\d+)\.b([a-fA-F\d]{32})\.json')))
   dids = []
   sigs = []
   signals = []
@@ -74,7 +76,8 @@ def get_significances(opts):
         signal_dict = json.load(signal_json_file)
         entry = signal_dict[max_hash]
         signal = entry['scaled']*opts.lumi*1000
-      bkgd_dids = did.group(2).split('-')
+      with open(os.path.join(opts.sigdir, '{0:s}.json'.format(did.group(2))), 'r') as f:
+        bkgd_dids = json.load(f)
       bkgd = 0
       for bkgd_did in bkgd_dids:
         with open(opts.cutdir+'/'+bkgd_did+'.json') as bkgd_json_file:

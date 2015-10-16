@@ -147,7 +147,7 @@ del m
 # start up a dictionary to hold all information
 significances = defaultdict(lambda: {1: 0, 2: 0, 3: 0, 4: 0})
 
-p_did = re.compile('s(\d+)\.b([0-9\-]+)\.json')
+p_did = re.compile(r's(\d+)\.b([a-fA-F\d]{32})\.json')
 
 # for each signal region, build up the significance value
 for i in range(1,5):

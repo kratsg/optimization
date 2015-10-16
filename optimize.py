@@ -433,8 +433,14 @@ def do_optimize(args):
           for counts_type, counts in counts_dict.iteritems():
             total_bkgd[cuthash][counts_type] += counts
 
-  logger.log(25, "Calculating significance for each signal file")
+  # create hash for background
+  bkgdHash = hashlib.md5(str(sorted(bkgd_dids))).hexdigest()
+  logger.log(25, "List of backgrounds produces hash: {0:s}".format(bkgdHash))
+  # write the backgrounds to a file
+  with open(os.path.join(args.output_directory, '{0:s}.json'.format(bkgdHash)), 'w+') as f:
+    f.write(json.dumps(sorted(bkgd_dids)))
 
+  logger.log(25, "Calculating significance for each signal file")
   # for each signal file, open, read, load, and divide with the current background
   for signal in args.signal:
     # expand out patterns if needed
@@ -449,7 +455,7 @@ def do_optimize(args):
           significances.append(sig_dict)
       logger.log(25, '\t\tCalculated significances for {0:d} cuts'.format(len(significances)))
       # at this point, we have a list of significances that we can dump to a file
-      with open('{0:s}/s{1:s}.b{2:s}.json'.format(args.output_directory, did, '-'.join(sorted(bkgd_dids))), 'w+') as f:
+      with open(os.path.join(args.output_directory, 's{0:s}.b{1:s}.json'.format(did, bkgdHash)), 'w+') as f:
         f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance_scaled'), reverse=True), sort_keys=True, indent=4))
 
   return True
