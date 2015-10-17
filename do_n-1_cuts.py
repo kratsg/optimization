@@ -81,11 +81,11 @@ for fname in args.files:
   print("\tCd'ing into {0}".format(args.output))
   out_file.cd(args.output)
 
-  # get the tree
-  tree = getattr(out_file, args.tree_name)
+  # get the tree if exists
+  tree = getattr(out_file, args.tree_name, None)
 
   # no entries, just write empty histograms to file
-  if tree.get_entries() == 0:
+  if tree is None or tree.get_entries() == 0:
     print("\tNo entries in ntuple, writing empty histograms and finishing.")
     for histName, st3 in boundaries.iteritems():
       h = Hist(st3[2], st3[0], st3[1], name=histName)
