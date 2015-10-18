@@ -2,13 +2,13 @@
     {
         "selections": "m_effective > {0}",
         "st3": [
-            [1000, 1600, 100]
+            [1000, 1600, 50]
         ]
     },
     {
         "selections": "met > {0}",
         "st3": [
-            [200, 650, 50]
+            [200, 650, 25]
         ]
     },
     {
@@ -20,19 +20,17 @@
     {
         "selections": "multiplicity_jet_b >= {0}",
         "st3": [
-            [3, 7, 1]
+            [3, 6, 1]
         ]
     },
     {
-        "selections": "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1) >= {0}",
+        "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0) >= {0}",
         "st3": [
             [0, 3, 1]
         ]
     },
     {
         "selections": "mTb > {0}",
-        "st3": [
-          [0, 240, 80]
-        ]
+        "pivot": [80]
     }
 ]
