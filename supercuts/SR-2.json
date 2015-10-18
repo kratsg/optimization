@@ -1,7 +1,7 @@
 [
     {
         "selections": "m_effective >= {0}",
-        "pivot": [1300]
+        "pivot": [1200]
     },
     {
         "selections": "met >= {0}",
@@ -17,7 +17,7 @@
     },
     {
         "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0) >= {0}",
-        "pivot": [0]
+        "pivot": [1]
     },
     {
         "selections": "mTb >= {0}",
