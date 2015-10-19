@@ -5,7 +5,7 @@
     },
     {
         "selections": "met >= {0}",
-        "pivot": [475]
+        "pivot": [350]
     },
     {
         "selections": "multiplicity_jet >= {0}",
@@ -17,7 +17,7 @@
     },
     {
         "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_1 + topTag_VeryLoose_jet_largeR_2 + topTag_VeryLoose_jet_largeR_3) >= {0}",
-        "pivot": [1]
+        "pivot": [2]
     },
     {
         "selections": "mTb >= {0}",
