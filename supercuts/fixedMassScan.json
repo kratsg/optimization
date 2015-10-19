@@ -14,7 +14,7 @@
     {
         "selections": "multiplicity_jet >= {0}",
         "st3": [
-            [5, 9, 1]
+            [7, 9, 1]
         ]
     },
     {
@@ -24,7 +24,7 @@
         ]
     },
     {
-        "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0) >= {0}",
+        "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_1 + topTag_VeryLoose_jet_largeR_2 + topTag_VeryLoose_jet_largeR_3) >= {0}",
         "st3": [
             [0, 3, 1]
         ]
