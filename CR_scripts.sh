@@ -20,7 +20,7 @@ do
 
   python optimize.py cut ${files[*]} --supercuts $supercutsLocation -o $cutsLocation --numpy -v -b
 
-  for lumi in 2
+  for lumi in 2 4
   do
 
     significancesLocation="${baseDir}/CR${i}Significances_${lumi}"
@@ -37,7 +37,7 @@ do
   done
 done
 
-for lumi in 2
+for lumi in 2 4
 do
   python find_optimal_control_region.py --lumi $lumi --basedir $baseDir
 done
