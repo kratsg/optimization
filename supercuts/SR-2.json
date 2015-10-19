@@ -1,11 +1,11 @@
 [
     {
         "selections": "m_effective >= {0}",
-        "pivot": [1200]
+        "pivot": [1300]
     },
     {
         "selections": "met >= {0}",
-        "pivot": [350]
+        "pivot": [375]
     },
     {
         "selections": "multiplicity_jet >= {0}",
@@ -16,7 +16,7 @@
         "pivot": [3]
     },
     {
-        "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_0) >= {0}",
+        "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_1 + topTag_VeryLoose_jet_largeR_2 + topTag_VeryLoose_jet_largeR_3) >= {0}",
         "pivot": [1]
     },
     {
