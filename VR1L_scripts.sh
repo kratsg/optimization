@@ -1,7 +1,7 @@
 #!/bin/bash
 
 files=()
-for sample in "Gtt" "ttbarInc" "ttbarExc" "Wsherpa" "Zsherpa" "dijet" "data" "singletop" "topEW"
+for sample in "Gtt" "ttbarInc" "ttbarExc" "Wsherpa" "Zsherpa" "dijet" "data" "singletop" "topEW" "diboson"
 do
   files+=($(ls ${HOME}/Dropbox/TheAccountant_dataFiles/TA01_MBJ13V4/"${sample}"_1L/fetch/data-optimizationTree/*.root))
 done
