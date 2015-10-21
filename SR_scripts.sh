@@ -24,7 +24,7 @@ do
   do
     significancesLocation="${baseDir}/SR${i}Significances_${lumi}"
 
-    python optimize.py optimize --signal 37* --bkgd 410000.json 407012.json --searchDirectory $cutsLocation -b --o $significancesLocation --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi $lumi
+    python optimize.py optimize --signal 37* --bkgd 410000.json 407012.json 36*.json --searchDirectory $cutsLocation -b --o $significancesLocation --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi $lumi
 
     outputHashLocation="${baseDir}/outputHash_SR${i}_${lumi}"
 
