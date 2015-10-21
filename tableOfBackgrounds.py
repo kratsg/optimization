@@ -3,6 +3,7 @@ import glob
 import os
 import re
 import copy
+import numpy
 
 # write scalefactor in ifb
 scaleFactor = 2
@@ -57,17 +58,26 @@ for regionID in range(1, 5):
         if count_type == 'scaled': sf = scaleFactor*1000
         groups[did_to_group[did]][region][regionID][count_type] += data[count_type]*sf
 
+def getValues(group, groups):
+  return [group] + [groups[group][region][i][index] for region in ['SR', 'CR'] for i in range(1,5)]
+
 for index, typeBkgd in zip(count_types, ['raw', 'weighted', 'scaled ({0:0.4f}ifb)'.format(scaleFactor)]):
   sumValues = [0]*8
   print("{0: ^150s}".format(typeBkgd))
   printStr = "{{0:12}}{0:s}1{0:s}2{0:s}3{0:s}4{1:s}1{1:s}2{1:s}3{1:s}4".format("\t{1:>9}", "\t{2:>9}")
   print(printStr.format("GROUP", "SR", "CR"))
   for group in sorted(groups):
-    values = [group] + [groups[group][region][i][index] for region in ['SR', 'CR'] for i in range(1,5)]
+    values = getValues(group, groups)
     valueStr = "{{0:12}}\t{{1:{0:s}}}\t{{2:{0:s}}}\t{{3:{0:s}}}\t{{4:{0:s}}}\t{{5:{0:s}}}\t{{6:{0:s}}}\t{{7:{0:s}}}\t{{8:{0:s}}}".format("10.4f")
     print(valueStr.format(*values))
     sumValues = [sum(x) for x in zip(sumValues, values[1:])]
   print("\t"+("-"*100))
   sumValues = ["total"] + sumValues
   print(valueStr.format(*sumValues))
+  # add ttbar fraction
+  ttbarFrac = getValues('ttbar', groups)
+  ttbarFrac[0] = '%ttbar'
+  for i in range(1, len(ttbarFrac)):
+    ttbarFrac[i] = numpy.float64(ttbarFrac[i])/sumValues[i]
+  print(valueStr.format(*ttbarFrac))
   print("="*100)
