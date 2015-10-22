@@ -3,7 +3,7 @@
 files=()
 for sample in "Gtt" "ttbarInc" "ttbarExc" "Wsherpa" "Zsherpa" "dijet" "data" "singletop" "topEW" "diboson"
 do
-  files+=($(ls ${HOME}/Dropbox/TheAccountant_dataFiles/TA01_MBJ13V4/"${sample}"_0L/fetch/data-optimizationTree/*.root))
+  files+=($(ls ./TA01_MBJ13V4_2/"${sample}"_0L/fetch/data-optimizationTree/*.root))
 done
 
 baseDir="SR"
@@ -24,7 +24,7 @@ do
   do
     significancesLocation="${baseDir}/SR${i}Significances_${lumi}"
 
-    python optimize.py optimize --signal 37* --bkgd 410000.json 407012.json 36*.json --searchDirectory $cutsLocation -b --o $significancesLocation --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi $lumi
+    python optimize.py optimize --signal 37* --bkgd 41001* 41008* 41007* 41006* 410000.json 407012.json 36*.json --searchDirectory $cutsLocation -b --o $significancesLocation --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.45 --lumi $lumi
 
     outputHashLocation="${baseDir}/outputHash_SR${i}_${lumi}"
 

@@ -9,7 +9,7 @@ import numpy
 scaleFactor = 2
 
 # edit with the path to the files you're looking at, so we can figure out did to group mapping
-pathToFiles = r'/Users/kratsg/Dropbox/TheAccountant_dataFiles/TA01_MBJ13V4'
+pathToFiles = r'./TA01_MBJ13V4_2/'
 
 # this holds a list of various subset of counts
 count_types = ['raw', 'weighted', 'scaled']
