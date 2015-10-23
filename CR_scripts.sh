@@ -3,7 +3,7 @@
 files=()
 for sample in "Gtt" "ttbarInc" "ttbarExc" "Wsherpa" "Zsherpa" "dijet" "singletop" "topEW" "diboson" "data"
 do
-  files+=($(ls ./TA01_MBJ13V4_2/"${sample}"_1L/fetch/data-optimizationTree/*.root))
+  files+=($(ls ./TA02_MBJ13V4_2/"${sample}"_1L/fetch/data-optimizationTree/*.root))
 done
 
 baseDir="CR"
