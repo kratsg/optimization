@@ -1,19 +1,19 @@
 [
     {
         "selections": "m_effective >= {0}",
-        "pivot": [1500]
+        "pivot": [1200]
     },
     {
         "selections": "met >= {0}",
-        "pivot": [300]
+        "pivot": [200]
     },
     {
         "selections": "multiplicity_jet >= {0}",
-        "pivot": [7]
+        "pivot": [8]
     },
     {
         "selections": "multiplicity_jet_b >= {0}",
-        "pivot": [3]
+        "pivot": [2]
     },
     {
         "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_1 + topTag_VeryLoose_jet_largeR_2 + topTag_VeryLoose_jet_largeR_3) >= {0}",
