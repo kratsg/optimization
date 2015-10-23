@@ -13,7 +13,7 @@
     },
     {
         "selections": "multiplicity_jet_b >= {0}",
-        "pivot": [3]
+        "pivot": [4]
     },
     {
         "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_1 + topTag_VeryLoose_jet_largeR_2 + topTag_VeryLoose_jet_largeR_3) >= {0}",
@@ -21,7 +21,7 @@
     },
     {
       "selections": "m_transverse <= {0}",
-      "pivot": [150]
+      "pivot": [200]
     },
     {
         "selections": "mTb >= {0}",

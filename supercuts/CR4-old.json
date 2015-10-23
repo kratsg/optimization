@@ -9,7 +9,7 @@
     },
     {
         "selections": "multiplicity_jet >= {0}",
-        "pivot": [6]
+        "pivot": [5]
     },
     {
         "selections": "multiplicity_jet_b >= {0}",
@@ -17,7 +17,7 @@
     },
     {
         "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_1 + topTag_VeryLoose_jet_largeR_2 + topTag_VeryLoose_jet_largeR_3) >= {0}",
-        "pivot": [1]
+        "pivot": [2]
     },
     {
       "selections": "m_transverse <= {0}",

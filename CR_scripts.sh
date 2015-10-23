@@ -1,7 +1,7 @@
 #!/bin/bash
 
 files=()
-for sample in "Gtt" "ttbarInc" "ttbarExc" "Wsherpa" "Zsherpa" "dijet" "data" "singletop" "topEW" "diboson"
+for sample in "Gtt" "ttbarInc" "ttbarExc" "Wsherpa" "Zsherpa" "dijet" "singletop" "topEW" "diboson" "data"
 do
   files+=($(ls ./TA01_MBJ13V4_2/"${sample}"_1L/fetch/data-optimizationTree/*.root))
 done
@@ -25,7 +25,7 @@ do
 
     significancesLocation="${baseDir}/CR${i}Significances_${lumi}"
 
-    python optimize.py optimize --signal 37* --bkgd 410000.json 407012.json 36*.json --searchDirectory $cutsLocation -b --o $significancesLocation --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi $lumi
+    python optimize.py optimize --signal 37* --bkgd 410000.json 407012.json 36*.json 41001* 41008* 41007* 41006* --searchDirectory $cutsLocation -b --o $significancesLocation --bkgdUncertainty=0.3 --bkgdStatUncertainty=0.3 --insignificance=0.5 --lumi $lumi
 
     outputHashLocation="${baseDir}/outputHash_CR${i}_${lumi}"
 
