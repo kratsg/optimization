@@ -16,11 +16,11 @@
         "pivot": [4]
     },
     {
-        "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_1 + topTag_VeryLoose_jet_largeR_2 + topTag_VeryLoose_jet_largeR_3 + topTag_VeryLoose_jet_largeR_4 + topTag_VeryLoose_jet_largeR_5 + topTag_VeryLoose_jet_largeR_6 + topTag_VeryLoose_jet_largeR_7) >= {0}",
+        "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_1 + topTag_VeryLoose_jet_largeR_2 + topTag_VeryLoose_jet_largeR_3) >= {0}",
         "pivot": [0]
     },
     {
       "selections": "m_transverse <= {0}",
-      "pivot": [150]
+      "pivot": [125]
     }
 ]
