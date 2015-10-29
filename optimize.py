@@ -165,8 +165,11 @@ def apply_cut(arr, cut):
 def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False):
   if doNumpy:
     # here, the tree is an rnp.tree2array() np.array
-    events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree, cut) for cut in cuts))]
-    return float(events.size), np.sum(events).astype(float)
+    entireSelection = '{0:s}*{1:s}'.format(eventWeightBranch, cuts_to_selection(cuts))
+    events = ne.evaluate(entireSelection, local_dict=tree)
+    #events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree, cut) for cut in cuts))]
+    # count number of events that pass, not summing the weights since `events!=0` returns a boolean array
+    return np.sum(events!=0).astype(float), np.sum(events).astype(float)
   else:
     # here, the tree is a ROOT.TTree
     return apply_selection(tree, cuts, eventWeightBranch)
@@ -265,8 +268,10 @@ def get_ttree(tree_name, filenames, eventWeightBranch):
   # make sure the branches are compatible between the two
   branches = set(i.GetName() for i in tree.GetListOfBranches())
 
-  if not eventWeightBranch in branches:
-    raise ValueError('The event weight branch does not exist: {0}'.format(eventWeightBranch))
+  # user can pass in a selection for the branch
+  for ewBranch in selection_to_branches(eventWeightBranch, tree):
+    if not ewBranch in branches:
+      raise ValueError('The event weight branch does not exist: {0}'.format(ewBranch))
 
   return tree
 
@@ -304,7 +309,7 @@ def selection_to_branches(selection_string, tree):
 
 #@echo(write=logger.debug)
 def tree_get_branches(tree, eventWeightBranch):
-  return [i.GetName() for i in tree.GetListOfBranches() if not i.GetName() == eventWeightBranch]
+  return [i.GetName() for i in tree.GetListOfBranches() if not i.GetName() in eventWeightBranch]
 
 #@echo(write=logger.debug)
 def do_cut(args, did, files, supercuts, weights):
@@ -336,8 +341,11 @@ def do_cut(args, did, files, supercuts, weights):
         totalSelections = list(set(totalSelections))
       '''
       branchesSpecified = list(set(itertools.chain.from_iterable(selection_to_branches(supercut['selections'], tree) for supercut in supercuts)))
+      eventWeightBranchesSpecified = list(set(selection_to_branches(args.eventWeightBranch, tree)))
+
       # get actual list of branches in the file
-      availableBranches = tree_get_branches(tree, args.eventWeightBranch)
+      availableBranches = tree_get_branches(tree, eventWeightBranchesSpecified)
+
       # remove anything that doesn't exist
       branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
       branchesSkipped = list(set(branchesSpecified) - set(branchesToUse))
@@ -345,7 +353,7 @@ def do_cut(args, did, files, supercuts, weights):
         logger.info("The following branches have been skipped...")
         for branch in branchesSkipped:
           logger.info("\t{0:s}".format(branch))
-      tree = rnp.tree2array(tree, branches=[args.eventWeightBranch]+branchesToUse)
+      tree = rnp.tree2array(tree, branches=eventWeightBranchesSpecified+branchesToUse)
 
     # get the scale factor
     sample_scaleFactor = get_scaleFactor(weights, did)

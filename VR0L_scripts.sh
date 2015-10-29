@@ -18,7 +18,7 @@ do
   outputNMinus1="n-1/VR0L-${i}"
   python do_n-1_cuts.py ${files[*]} --supercuts $supercutsLocation --output $outputNMinus1 --boundaries boundaries.json -f
 
-  python optimize.py cut ${files[*]} --supercuts $supercutsLocation -o $cutsLocation --numpy -v -b
+  python optimize.py cut ${files[*]} --supercuts $supercutsLocation -o $cutsLocation --numpy -v -b --eventWeight "event_weight*sf_btag"
 
   for lumi in 2
   do
