@@ -123,9 +123,7 @@ for fname in args.files:
 
       if len(branchesToUse) > 1:
         print("\t\tWarning: selection has multiple branches.")
-        print("\t\tWarning: for now, assume this is n-tops.")
-        branchToDraw = "((m_jet_largeR_0 > 100)*1 + (m_jet_largeR_1 > 100)*1 + (m_jet_largeR_2 > 100)*1 + (m_jet_largeR_3 > 100)*1)"
-        histName = "n_tops"
+        continue
 
       print("\t\tDrawing {0}".format(histName))
 
