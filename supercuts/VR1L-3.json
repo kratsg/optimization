@@ -16,7 +16,7 @@
         "pivot": [3]
     },
     {
-        "selections": "(topTag_VeryLoose_jet_largeR_0 + topTag_VeryLoose_jet_largeR_1 + topTag_VeryLoose_jet_largeR_2 + topTag_VeryLoose_jet_largeR_3) >= {0}",
+        "selections": "multiplicity_topTag_veryloose >= {0}",
         "pivot": [1]
     },
     {
