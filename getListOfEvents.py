@@ -46,6 +46,8 @@ for region in regions:
 
 overlapsByColumn = [0]*len(regions)
 
+atLeastOneOverlap = 0
+
 print "{0:s}\t\t{1:s}\t| {2:s}".format("Event #", "\t".join(map(lambda x: os.path.basename(x).split('.')[0], regions)), "# Overlaps")
 print "-"*80
 for event_number, in_regions in eventNumbers.iteritems():
@@ -55,8 +57,10 @@ for event_number, in_regions in eventNumbers.iteritems():
         numOverlapsInRow += overlaps[i]&overlaps[i+1]
         overlapsByColumn[i] += overlaps[i]&overlaps[i+1]
     print "{0:d}\t\t{1:s}\t| {2:>10d}".format(event_number, "\t".join(("x" if overlap else "") for overlap in overlaps), numOverlapsInRow)
+    if numOverlapsInRow > 0:
+        atLeastOneOverlap += 1
 
 print "-"*80
 for i in range(0, len(overlaps), 2):
     overlapsByColumn[i+1] = round(float(overlapsByColumn[i])/len(eventNumbers), 2)
-print "{0:s}\t{1:s}".format("{0:d} evts".format(len(eventNumbers)), "\t".join(map(str, overlapsByColumn)))
+print "{0:s}\t{1:s}\t| {2:>10d}".format("{0:d} evts".format(len(eventNumbers)), "\t".join(map(str, overlapsByColumn)), atLeastOneOverlap)
