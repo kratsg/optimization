@@ -15,7 +15,7 @@ eventNumbers = defaultdict(list)
 
 tree_name = 'oTree'
 eventWeightBranch = 'event_number'
-files = glob.glob("TA02_MBJ13V4-6/data_0L/fetch/data-optimizationTree/*.root")
+files = glob.glob("TA02_MBJ13V4-6/ttbarExc_0L/fetch/data-optimizationTree/*407012*.root")
 
 for region in regions:
     supercuts = json.load(file(region))
@@ -44,7 +44,7 @@ for region in regions:
         eventNumbers[event_number].append(region)
     #    print "\t", event_number
 
-overlapsByColumn = [0]*(len(regions)/2)
+overlapsByColumn = [0]*len(regions)
 
 print "{0:s}\t\t{1:s}\t| {2:s}".format("Event #", "\t".join(map(lambda x: os.path.basename(x).split('.')[0], regions)), "# Overlaps")
 print "-"*80
@@ -53,8 +53,10 @@ for event_number, in_regions in eventNumbers.iteritems():
     numOverlapsInRow = 0
     for i in range(0, len(overlaps), 2):
         numOverlapsInRow += overlaps[i]&overlaps[i+1]
-        overlapsByColumn[i/2] += overlaps[i]&overlaps[i+1]
-    print "{0:d}\t{1:s}\t| {2:>10d}".format(event_number, "\t".join(("x" if overlap else "") for overlap in overlaps), numOverlapsInRow)
+        overlapsByColumn[i] += overlaps[i]&overlaps[i+1]
+    print "{0:d}\t\t{1:s}\t| {2:>10d}".format(event_number, "\t".join(("x" if overlap else "") for overlap in overlaps), numOverlapsInRow)
 
 print "-"*80
-print "{0:s}\t{1:s}".format("{0:d} events".format(len(eventNumbers)), "\t\t".join(map(str, overlapsByColumn)))
+for i in range(0, len(overlaps), 2):
+    overlapsByColumn[i+1] = round(float(overlapsByColumn[i])/len(eventNumbers), 2)
+print "{0:s}\t{1:s}".format("{0:d} evts".format(len(eventNumbers)), "\t".join(map(str, overlapsByColumn)))
