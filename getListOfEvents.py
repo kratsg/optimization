@@ -6,15 +6,18 @@ import itertools
 import numexpr as ne
 import numpy as np
 import os
+from collections import defaultdict
 
-regions = glob.glob('supercuts/*-*.json')
+skipRegions = ["old", "SR", "VR0"]
+
+regions = sorted([region for region in glob.glob('supercuts/*-*.json') if all([skipRegion not in region for skipRegion in skipRegions])], key=lambda x: int(x.split('.')[0].split('-')[1]))
+eventNumbers = defaultdict(list)
+
 tree_name = 'oTree'
 eventWeightBranch = 'event_number'
 files = glob.glob("TA02_MBJ13V4-6/data_0L/fetch/data-optimizationTree/*.root")
 
 for region in regions:
-    if "old" in region: continue
-    print os.path.basename(region)
     supercuts = json.load(file(region))
 
     tree = get_ttree(tree_name, files, eventWeightBranch)
@@ -38,4 +41,20 @@ for region in regions:
     result = ne.evaluate(entireSelection, local_dict = tree)
 
     for event_number in result[np.where(result!=0)]:
-        print "\t", event_number
+        eventNumbers[event_number].append(region)
+    #    print "\t", event_number
+
+overlapsByColumn = [0]*(len(regions)/2)
+
+print "{0:s}\t\t{1:s}\t| {2:s}".format("Event #", "\t".join(map(lambda x: os.path.basename(x).split('.')[0], regions)), "# Overlaps")
+print "-"*80
+for event_number, in_regions in eventNumbers.iteritems():
+    overlaps = [bool(region in in_regions) for region in regions]
+    numOverlapsInRow = 0
+    for i in range(0, len(overlaps), 2):
+        numOverlapsInRow += overlaps[i]&overlaps[i+1]
+        overlapsByColumn[i/2] += overlaps[i]&overlaps[i+1]
+    print "{0:d}\t{1:s}\t| {2:>10d}".format(event_number, "\t".join(("x" if overlap else "") for overlap in overlaps), numOverlapsInRow)
+
+print "-"*80
+print "{0:s}\t{1:s}".format("{0:d} events".format(len(eventNumbers)), "\t\t".join(map(str, overlapsByColumn)))
