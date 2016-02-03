@@ -306,7 +306,7 @@ alphachars = re.compile('\W+')
 def selection_to_branches(selection_string, tree):
   global alphachars
   # filter out all selection criteria
-  raw_branches filter(None, alphachars.sub(' ', selection_string.format(*['-']*10)).split(' '))
+  raw_branches = filter(None, alphachars.sub(' ', selection_string.format(*['-']*10)).split(' '))
   # filter out those that are just numbers in string
   return [branch for branch in raw_branches if not branch.isdigit()]
 
