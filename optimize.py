@@ -305,7 +305,10 @@ alphachars = re.compile('\W+')
 #@echo(write=logger.debug)
 def selection_to_branches(selection_string, tree):
   global alphachars
-  return filter(None, alphachars.sub(' ', selection_string.format(*['-']*10)).split(' '))
+  # filter out all selection criteria
+  raw_branches filter(None, alphachars.sub(' ', selection_string.format(*['-']*10)).split(' '))
+  # filter out those that are just numbers in string
+  return [branch for branch in raw_branches if not branch.isdigit()]
 
 #@echo(write=logger.debug)
 def tree_get_branches(tree, eventWeightBranch):
