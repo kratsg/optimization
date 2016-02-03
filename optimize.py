@@ -525,6 +525,7 @@ def do_hash(args):
   # now loop over all cuts until we find all the hashes
   for cut in get_cut(copy.deepcopy(data)):
     cut_hash = get_cut_hash(cut)
+    logger.info("\tChecking {0:s}".format(cut_hash))
     if cut_hash in args.hash_values:
       with open(os.path.join(args.output_directory, "{0}.json".format(cut_hash)), 'w+') as f:
         f.write(json.dumps([{k: (NoIndent(v) if k == 'pivot' else v)  for k, v in d.iteritems() if k in ['selections', 'pivot', 'fixed']} for d in cut], sort_keys=True, indent=4, cls=NoIndentEncoder))
