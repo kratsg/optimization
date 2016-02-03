@@ -5,6 +5,7 @@ sys.argv.append("-b")
 from ROOT import *
 import rootpy as rpy
 from rootpy.plotting.style import set_style, get_style
+import numpy as np
 
 import re
 
@@ -232,7 +233,7 @@ if __name__ == '__main__':
         fill_hist(h, opts, cut, pivotIndex)
         st3 = supercut['st3'][pivotIndex]
         # number of steps
-        nSteps = len(range(*st3))
+        nSteps = len(np.arange(*st3))
         h.GetZaxis().SetRangeUser(st3[0], st3[1])
         h.GetZaxis().CenterLabels()
         h.GetZaxis().SetTickLength(0)
