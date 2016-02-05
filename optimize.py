@@ -407,7 +407,8 @@ def do_cuts(args):
     weights = yaml.load(file(args.weightsFile))
 
   # parallelize
-  num_cores = multiprocessing.cpu_count()
+  num_cores = min(multiprocessing.cpu_count(),args.ncores)
+  logger.log(25, "Using {0} cores".format(num_cores) )
   results = Parallel(n_jobs=num_cores)(delayed(do_cut)(args, did, files, supercuts, weights) for did, files in dids.iteritems())
 
   for did, result in zip(dids, results):
@@ -612,6 +613,7 @@ if __name__ == "__main__":
   cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
   cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='cuts')
   cuts_parser.add_argument('--numpy', required=False, action='store_true', help='Enable numpy optimization to speed up the cuts processing')
+  cuts_parser.add_argument('--ncores', type=int, required=False, dest='ncores', help='Set number of cores to use for parallel cutting. Defaults to max.', default=multiprocessing.cpu_count())
 
 
   # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
