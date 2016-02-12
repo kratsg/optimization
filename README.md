@@ -180,6 +180,17 @@ and I'm good to go.
 
 See [example_script.sh](example_script.sh) for an idea how how to run everything in order to produce a plot of significances.
 
+### Using the GUI
+
+We are now providing (beta) a GUI that can be used to click and execute optimization scripts for you without knowledge of the API itself. To use it, you will need the [`Shoes` app](https://github.com/shoes/shoes4). Instructions are simple. You will need `rvm` and `ruby` to get this working:
+
+```
+rvm install jruby
+gem install shoes --pre
+```
+
+and then you can run `shoes gui/main.rb` to get the GUI. Also make sure you set up your environment correctly (python + ROOT).
+
 ## Documentation
 
 ### Top-Level
