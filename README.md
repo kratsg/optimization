@@ -26,6 +26,7 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
     - [Looking up a cut (or two)](#looking-up-a-cut-or-two)
   - [Profiling Code](#profiling-code)
   - [Example Script](#example-script)
+  - [Using the GUI](#using-the-gui)
 - [Documentation](#documentation)
   - [Top-Level](#top-level)
     - [Parameters](#parameters)
