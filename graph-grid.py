@@ -88,7 +88,10 @@ def get_significances(opts):
       sigs.append(max_sig)
       signals.append(signal)
       bkgds.append(bkgd)
-      ratios.append(signal/bkgd)
+      try:
+         ratios.append(signal/bkgd)
+      except:
+         ratios.append(-1)
       dids.append(signal_did)
 
 
