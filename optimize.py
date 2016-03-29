@@ -212,7 +212,8 @@ def get_did(filename):
 def get_scaleFactor(weights, did):
   weight = weights.get(did, None)
   if weight is None:
-    raise KeyError("Could not find the weights for did=%s" % did)
+    logger.warning("Could not find the weights for did=%s" % did)
+    return 1
   scaleFactor = 1.0
   cutflow = weight.get('num events')
   if cutflow == 0:
