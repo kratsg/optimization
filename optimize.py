@@ -206,8 +206,8 @@ def get_did(filename):
   global did_regex
   m = did_regex.search(filename.split("/")[-1])
   if m is None: 
-    return filename.split("/")[-1]
     logger.warning('Can\'t figure out the DID! Using input filename')
+    return filename.split("/")[-1]
   return m.group(1)
 
 #@echo(write=logger.debug)
