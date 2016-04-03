@@ -204,15 +204,18 @@ def get_cut_hash(cut):
 did_regex = re.compile('\.?(?:00)?(\d{6,8})\.?')
 def get_did(filename):
   global did_regex
-  m = did_regex.search(filename)
-  if m is None: raise ValueError('Can\'t figure out the DID!')
+  m = did_regex.search(filename.split("/")[-1])
+  if m is None: 
+    logger.warning('Can\'t figure out the DID! Using input filename')
+    return filename.split("/")[-1]
   return m.group(1)
 
 #@echo(write=logger.debug)
 def get_scaleFactor(weights, did):
   weight = weights.get(did, None)
   if weight is None:
-    raise KeyError("Could not find the weights for did=%s" % did)
+    logger.warning("Could not find the weights for did=%s" % did)
+    return 1.0
   scaleFactor = 1.0
   cutflow = weight.get('num events')
   if cutflow == 0:
