@@ -327,8 +327,8 @@ did_to_group['410076'] = 'ttbarV'
 did_to_group['410080'] = 'ttbarV' # 4tops SM
 did_to_group['341177'] = 'ttbarV' # ttH
 
-for regionID in range(1, 5):
-  for fname in glob.glob("CR{0:d}Cuts/*.json".format(regionID))+glob.glob("SR{0:d}Cuts/*.json".format(regionID)):
+for regionID in range(0, 5):
+  for fname in glob.glob("cuts_ICHEP/0L/CR{0:d}Cuts/*.json".format(regionID))+glob.glob("cuts_ICHEP/0L/SR{0:d}Cuts/*.json".format(regionID)):
     did = os.path.basename(fname).split('.')[0]
 
     # figure out if we're using SR or CR
@@ -345,7 +345,8 @@ for regionID in range(1, 5):
       # if we haven't added the group yet, set up defaults
       if group not in groups:
         nullregion = dict((count_type, 0) for count_type in count_types)
-        nulldict = {1: copy.deepcopy(nullregion),
+        nulldict = {0: copy.deepcopy(nullregion),
+                    1: copy.deepcopy(nullregion),
                     2: copy.deepcopy(nullregion),
                     3: copy.deepcopy(nullregion),
                     4: copy.deepcopy(nullregion)}
@@ -362,16 +363,16 @@ for regionID in range(1, 5):
         groups[did_to_group[did]][region][regionID][count_type] += data[count_type]*sf
 
 def getValues(group, groups):
-  return [group] + [groups[group][region][i][index] for region in ['SR', 'CR'] for i in range(1, 5)]
+  return [group] + [groups[group][region][i][index] for region in ['SR', 'CR'] for i in range(0, 5)]
 
 for index, typeBkgd in zip(count_types, ['raw', 'weighted', 'scaled ({0:0.2f} ifb)'.format(scaleFactor)]):
-  sumValues = [0]*8
+  sumValues = [0]*10
   print("{0: ^150s}".format(typeBkgd))
-  printStr = "{{0:12}}{0:s}1{0:s}2{0:s}3{0:s}4{1:s}1{1:s}2{1:s}3{1:s}4".format("\t{1:>9}", "\t{2:>9}")
+  printStr = "{{0:12}}{0:s}0{0:s}1{0:s}2{0:s}3{0:s}4{1:s}1{1:s}2{1:s}3{1:s}4".format("\t{1:>9}", "\t{2:>9}")
   print(printStr.format("GROUP", "SR", "CR"))
   for group in sorted(groups):
     values = getValues(group, groups)
-    valueStr = "{{0:12}}\t{{1:{0:s}}}\t{{2:{0:s}}}\t{{3:{0:s}}}\t{{4:{0:s}}}\t{{5:{0:s}}}\t{{6:{0:s}}}\t{{7:{0:s}}}\t{{8:{0:s}}}".format("10.4f")
+    valueStr = "{{0:12}}\t{{1:{0:s}}}\t{{2:{0:s}}}\t{{3:{0:s}}}\t{{4:{0:s}}}\t{{5:{0:s}}}\t{{6:{0:s}}}\t{{7:{0:s}}}\t{{8:{0:s}}}\t{{9:{0:s}}}".format("10.4f")
     print(valueStr.format(*values))
     #print(valueStr)
     sumValues = [sum(x) for x in zip(sumValues, values[1:])]
@@ -385,4 +386,3 @@ for index, typeBkgd in zip(count_types, ['raw', 'weighted', 'scaled ({0:0.2f} if
     ttbarFrac[i] = numpy.float64(ttbarFrac[i])/sumValues[i]
   print(valueStr.format(*ttbarFrac))
   print("="*100)
-
