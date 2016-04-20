@@ -1724,3 +1724,9 @@ default: &default_weights
   filter efficiency: 1.0
   k-factor: 1.0
   num events: 198800.0
+'341177':
+  cross section: 0.5085
+  errors: []
+  filter efficiency: 0.10554
+  k-factor: 1.0
+  num events: 146477.0
