@@ -1,9 +1,9 @@
 {
   "met": [0, 2000, 100],
-  "mTb": [0, 1000, 100],
-  "multiplicity_jet_b": [-0.5, 19.5, 20],
-  "multiplicity_jet": [-0.5, 19.5, 20],
-  "m_effective": [0, 7000, 100],
-  "m_transverse": [0, 1000, 100],
-  "multiplicity_topTag_veryloose": [-0.5, 5.5, 6]
+  "mTb_min": [0, 1000, 100],
+  "mEvent_rc_r10pt05": [0,2000,100],
+  "bjets_n": [-0.5, 19.5, 20],
+  "jets_n": [-0.5, 19.5, 20],
+  "meff_incl": [0, 7000, 100],
+  "mT": [0, 1000, 100]
 }
