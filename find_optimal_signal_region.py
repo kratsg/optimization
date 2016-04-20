@@ -17,6 +17,10 @@ parser.add_argument('-d', '--output-dir', required=False, type=str, dest='output
 parser.add_argument("--run1_color", required=False, type=int, help="color of run 1 line", default=46)
 parser.add_argument("--run1_csvfile", required=False, type=str, help="csv file containing run 1 exclusion points", default="run1_limit.csv")
 parser.add_argument("--run1_1sigma_csvfile", required=False, type=str, help="csv file containing run 1 exclusion (+1 sigma) points", default="run1_limit_1sigma.csv")
+parser.add_argument("--moriond2k16_combo_color", help="color of moriond 2k16 combo line", default=30, type=int)
+parser.add_argument("--do_moriond2k16_combo", help="add moriond 2k16 combination line to graph", default=True)
+parser.add_argument("--moriond2k16_combo_csvfile", help="csv file containing moriond 2k16 combo exclusion points", default="run2_moriond2k16_combo.csv", type=str)
+parser.add_argument("--moriond2k16_combo_1sigma_csvfile", help="csv file containing moriond 2k16 combo exclusion points +1 sigma", default="run2_moriond2k16_combo_1sigma.csv", type=str)
 
 parser.add_argument("--basedir", required=False, type=str, help="base directory", default="SR")
 
@@ -118,7 +122,15 @@ def draw_run1_text(color):
     txt.SetTextFont(22)
     txt.SetTextSize(0.04)
     txt.SetTextColor(color)
-    txt.DrawText(0.2,0.2,"Run 1 Limit")
+    txt.DrawText(0.2,0.72,"Run 1 Limit")
+
+def draw_moriond2k16_combo_text(color):
+  txt = ROOT.TLatex()
+  txt.SetNDC()
+  txt.SetTextFont(22)
+  txt.SetTextSize(0.04)
+  txt.SetTextColor(color)
+  txt.DrawText(0.2,0.77,"Moriond 2016 Combo")
 
 def draw_run1(args):
   gr = get_run1(args.run1_csvfile, 1, 3, args.run1_color)
@@ -203,6 +215,11 @@ gr.Draw("C")
 gr_1sigma = get_run1(args.run1_1sigma_csvfile, 3, 1, args.run1_color)
 gr_1sigma.Draw("C")
 draw_run1_text(args.run1_color)
-
+if args.do_moriond2k16_combo:
+  gr = get_run1(args.moriond2k16_combo_csvfile,1,3,args.moriond2k16_combo_color)
+  gr.Draw("C")
+  draw_moriond2k16_combo_text(args.moriond2k16_combo_color)
+  gr_1sigma = get_run1(args.moriond2k16_combo_1sigma_csvfile,3,1,args.moriond2k16_combo_color)
+  gr_1sigma.Draw("C")
 save_canvas(c, '{0}_optimalSR_sig_lumi{1}'.format(os.path.join(args.output_dir, args.output), args.lumi))
 
