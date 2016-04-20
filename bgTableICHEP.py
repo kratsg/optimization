@@ -302,6 +302,7 @@ did_to_group['370442'] = 'Gtt'
 did_to_group['370450'] = 'Gtt'
 did_to_group['370524'] = 'Gtt'
 did_to_group['370529'] = 'Gtt'
+did_to_group['370438'] = 'Gtt'
 
 did_to_group['407009'] = 'ttbar'
 did_to_group['407010'] = 'ttbar'
@@ -311,21 +312,22 @@ did_to_group['410011'] = 'singletop'
 did_to_group['410012'] = 'singletop'
 did_to_group['410013'] = 'singletop'
 did_to_group['410014'] = 'singletop'
+did_to_group['410025'] = 'singletop'
+did_to_group['410026'] = 'singletop'
 
-did_to_group['410066'] = 'ttbarV'
-did_to_group['410067'] = 'ttbarV'
-did_to_group['410068'] = 'ttbarV'
-did_to_group['410069'] = 'ttbarV'
-did_to_group['410069'] = 'ttbarV'
-did_to_group['410070'] = 'ttbarV'
-did_to_group['410071'] = 'ttbarV'
-did_to_group['410072'] = 'ttbarV'
-did_to_group['410073'] = 'ttbarV'
-did_to_group['410074'] = 'ttbarV'
-did_to_group['410075'] = 'ttbarV'
-did_to_group['410076'] = 'ttbarV'
-did_to_group['410080'] = 'ttbarV' # 4tops SM
-did_to_group['341177'] = 'ttbarV' # ttH
+did_to_group['410066'] = 'ttbarW' # ttW Np0
+did_to_group['410067'] = 'ttbarW' # ttW Np1
+did_to_group['410068'] = 'ttbarW' # ttW Np2
+did_to_group['410069'] = 'ttbarZll' # ttZllonshell Np0
+did_to_group['410070'] = 'ttbarZll' # ttZllonshell Np1
+#did_to_group['410071'] = 'ttbarV' # doesn't exist ?
+#did_to_group['410072'] = 'ttbarV' # doesn't exist ?
+did_to_group['410073'] = 'ttbarZnnqq' # ttZnnqq Np0
+did_to_group['410074'] = 'ttbarZnnqq' # ttZnnqq Np1
+did_to_group['410075'] = 'ttbaZnnqq' # ttZnnqq Np2
+#did_to_group['410076'] = 'ttbarV' # doesn't exist ?
+did_to_group['410080'] = '4topSM' # 4tops SM
+did_to_group['341177'] = 'ttH' # ttH
 
 for regionID in range(0, 5):
   for fname in glob.glob("cuts_ICHEP/0L/CR{0:d}Cuts/*.json".format(regionID))+glob.glob("cuts_ICHEP/0L/SR{0:d}Cuts/*.json".format(regionID)):
@@ -368,13 +370,12 @@ def getValues(group, groups):
 for index, typeBkgd in zip(count_types, ['raw', 'weighted', 'scaled ({0:0.2f} ifb)'.format(scaleFactor)]):
   sumValues = [0]*10
   print("{0: ^150s}".format(typeBkgd))
-  printStr = "{{0:12}}{0:s}0{0:s}1{0:s}2{0:s}3{0:s}4{1:s}1{1:s}2{1:s}3{1:s}4".format("\t{1:>9}", "\t{2:>9}")
+  printStr = "{{0:12}}{0:s}0{0:s}1{0:s}2{0:s}3{0:s}4{1:s}0{1:s}1{1:s}2{1:s}3{1:s}4".format("\t{1:>9}", "\t{2:>9}")
   print(printStr.format("GROUP", "SR", "CR"))
   for group in sorted(groups):
     values = getValues(group, groups)
-    valueStr = "{{0:12}}\t{{1:{0:s}}}\t{{2:{0:s}}}\t{{3:{0:s}}}\t{{4:{0:s}}}\t{{5:{0:s}}}\t{{6:{0:s}}}\t{{7:{0:s}}}\t{{8:{0:s}}}\t{{9:{0:s}}}".format("10.4f")
+    valueStr = "{{0:12}}\t{{1:{0:s}}}\t{{2:{0:s}}}\t{{3:{0:s}}}\t{{4:{0:s}}}\t{{5:{0:s}}}\t{{6:{0:s}}}\t{{7:{0:s}}}\t{{8:{0:s}}}\t{{9:{0:s}}}\t{{10:{0:s}}}".format("10.4f")
     print(valueStr.format(*values))
-    #print(valueStr)
     sumValues = [sum(x) for x in zip(sumValues, values[1:])]
   print("\t"+("-"*100))
   sumValues = ["total"] + sumValues
