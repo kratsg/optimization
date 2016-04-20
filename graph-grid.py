@@ -17,7 +17,7 @@ topmass = 173.34
 def parse_argv():
 
     parser = optparse.OptionParser()
-    parser.add_option("--lumi", help="luminosity", default=5, type=int)
+    parser.add_option("--lumi", help="luminosity", default=10, type=int)
     #parser.add_option("--z-label", help="z axis title", default="significance in optimal cut")
     parser.add_option("--text-file", help="text csv file", default=None, type=str)
     parser.add_option("--outdir", help="outfile directory", default="plots")
@@ -33,6 +33,11 @@ def parse_argv():
     parser.add_option("--dorun1", help="add run 1 line to graph", default=True)
     parser.add_option("--run1_csvfile", help="csv file containing run 1 exclusion points", default="run1_limit.csv", type=str)
     parser.add_option("--run1_1sigma_csvfile", help="csv file containing run 1 exclusion (+1 sigma) points", default="run1_limit_1sigma.csv", type=str)
+    parser.add_option("--moriond2k16_combo_color", help="color of moriond 2k16 combo line", default=30, type=int)
+    parser.add_option("--do_moriond2k16_combo", help="add moriond 2k16 combination line to graph", default=True)
+    parser.add_option("--moriond2k16_combo_csvfile", help="csv file containing moriond 2k16 combo exclusion points", default="run2_moriond2k16_combo.csv", type=str)
+    parser.add_option("--moriond2k16_combo_1sigma_csvfile", help="csv file containing moriond 2k16 combo exclusion points +1 sigma", default="run2_moriond2k16_combo_1sigma.csv", type=str)
+
     parser.add_option("--sigdir", help="directory where significances files are located", default='significances', type=str)
     parser.add_option("--cutdir", help="directory where cuts files are located", default='cuts', type=str)
 
@@ -223,7 +228,15 @@ def draw_run1_text(color):
     txt.SetTextFont(22)
     txt.SetTextSize(0.04)
     txt.SetTextColor(color)
-    txt.DrawText(0.2,0.2,"Run 1 Limit")
+    txt.DrawText(0.2,0.72,"Run 1 Limit")
+
+def draw_moriond2k16_combo_text(color):
+    txt = TLatex()
+    txt.SetNDC()
+    txt.SetTextFont(22)
+    txt.SetTextSize(0.04)
+    txt.SetTextColor(color)
+    txt.DrawText(0.2,0.77,"Moriond 2016 Combo")
 
 def exclusion():
   #x = array('d',[opts.g_min,opts.l_max+2*topmass,opts.g_min])
@@ -253,17 +266,22 @@ if __name__ == '__main__':
       draw_line()
       savefilename = opts.outdir + "/" + opts.outfilebase + "_" + label
       if opts.dorun1:
-        gr = get_run1(opts.run1_csvfile,1,3,opts.run1_color)
-        gr.Draw("C")
-        gr_1sigma = get_run1(opts.run1_1sigma_csvfile,3,1,opts.run1_color)
-        gr_1sigma.Draw("C")
-        draw_run1_text(opts.run1_color)
-        savefilename += "_wrun1"
-      #p = exclusion()
-      #p.Draw()
-      c.SaveAs(savefilename + ".pdf")
-      print "Saving file " + savefilename
-      c.Clear()
-
-    exit(0)
+          gr = get_run1(opts.run1_csvfile,1,3,opts.run1_color)
+          gr.Draw("C")
+          gr_1sigma = get_run1(opts.run1_1sigma_csvfile,3,1,opts.run1_color)
+          gr_1sigma.Draw("C")
+          draw_run1_text(opts.run1_color)
+          savefilename += "_wrun1"
+      if opts.do_moriond2k16_combo:
+          gr = get_run1(opts.moriond2k16_combo_csvfile,1,3,opts.moriond2k16_combo_color)
+          gr.Draw("C")
+          gr_1sigma = get_run1(opts.moriond2k16_combo_1sigma_csvfile,3,1,opts.moriond2k16_combo_color)
+          gr_1sigma.Draw("C")
+          draw_moriond2k16_combo_text(opts.moriond2k16_combo_color)
+          savefilename += "_wcombo"
+    c.SaveAs(savefilename + ".pdf")
+    print "Saving file " + savefilename
+    c.Clear()
+    
+exit(0)
 

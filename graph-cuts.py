@@ -86,7 +86,6 @@ def get_cut_value(opts, cut, pivotIndex = 0):
         val = -1
     return val
 
-
   plot_array=[]
   for did,h in zip(dids,hashs):
     mgluino,mstop,mlsp = masses(did)
