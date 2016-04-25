@@ -9,7 +9,7 @@ import numpy
 scaleFactor = 2
 
 # edit with the path to the files you're looking at, so we can figure out did to group mapping
-pathToFiles = r'./TA02_MBJ13V4-6/'
+pathToFiles = r'./TA03'
 
 # this holds a list of various subset of counts
 count_types = ['raw', 'weighted', 'scaled']
@@ -18,8 +18,8 @@ count_types = ['raw', 'weighted', 'scaled']
 groups = {}
 
 # get the did to group mapping
-files = glob.glob(os.path.join(pathToFiles, "*_*L/fetch/data-optimizationTree/*.root"))
-p = re.compile(os.path.join(pathToFiles, r'(.*?)_\dL/fetch/data-optimizationTree/.*(\d{6}).*root'))
+files = glob.glob(os.path.join(pathToFiles, "*_*L/fetch/data-optimizationTree/*"))
+p = re.compile(os.path.join(pathToFiles, r'(.*?)_\dL/fetch/data-optimizationTree/.*(\d{6}).*'))
 did_to_group = {}
 
 for f in files:
