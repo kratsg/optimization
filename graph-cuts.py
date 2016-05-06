@@ -33,6 +33,7 @@ def parse_argv():
     parser.add_option("--sigdir", help="directory where significances files are located", default='significances', type=str)
     parser.add_option("--hashdir", help="directory where hash files are located", default='outputHash', type=str)
     parser.add_option("--supercuts", help="supercuts file detailing all selections used", default="supercuts.json", type=str)
+    parser.add_option('--massWindows', help='Location of mass windows file', default='mass_windows.txt', type=str)
 
     (options,args) = parser.parse_args()
 
@@ -41,7 +42,7 @@ import pdb
 import csv,glob,re,json
 def get_cut_value(opts, cut, pivotIndex = 0):
   mdict = {}
-  with open('mass_windows.txt', 'r') as f:
+  with open(opts.massWindows, 'r') as f:
     reader = csv.reader(f, delimiter='\t')
     m = list(reader)
     mdict = {l[0]: [l[1],l[2],l[3]] for l in m}
