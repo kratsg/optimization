@@ -7,6 +7,9 @@ import rootpy as rpy
 from rootpy.plotting.style import set_style, get_style
 import os
 
+from joblib import Parallel, delayed, load, dump
+import multiprocessing
+
 atlas = get_style('ATLAS')
 atlas.SetPalette(51)
 set_style(atlas)
@@ -35,15 +38,52 @@ def parse_argv():
     parser.add_option("--run1_1sigma_csvfile", help="csv file containing run 1 exclusion (+1 sigma) points", default="run1_limit_1sigma.csv", type=str)
     parser.add_option("--sigdir", help="directory where significances files are located", default='significances', type=str)
     parser.add_option("--cutdir", help="directory where cuts files are located", default='cuts', type=str)
+    parser.add_option('--massWindows', help='Location of mass windows file', default='mass_windows.txt', type=str)
+    parser.add_option('--ncores', type=int, help='Set number of cores to use for parallel cutting. Defaults to max.', default=multiprocessing.cpu_count())
 
     (options,args) = parser.parse_args()
 
     return (options)
 
 import csv,glob,re,json
+
+regex = re.compile(r's(\d+)\.b([a-fA-F\d]{32})\.json')
+def get_significance(opts, filename):
+  global regex
+  print 'reading', filename
+  with open(filename) as json_file:
+    sig_dict = json.load(json_file)
+    entry = sig_dict[0]
+    max_sig = entry['significance_scaled']
+    max_hash = entry['hash']
+
+    did = regex.search(os.path.basename(filename))
+    signal_did = did.group(1)
+    with open(opts.cutdir+'/'+signal_did+'.json') as signal_json_file:
+      signal_dict = json.load(signal_json_file)
+      entry = signal_dict[max_hash]
+      signal = entry['scaled']*opts.lumi*1000
+    with open(os.path.join(opts.sigdir, '{0:s}.json'.format(did.group(2))), 'r') as f:
+      bkgd_dids = json.load(f)
+    bkgd = 0
+    for bkgd_did in bkgd_dids:
+      with open(opts.cutdir+'/'+bkgd_did+'.json') as bkgd_json_file:
+        bkgd_dict = json.load(bkgd_json_file)
+        entry = bkgd_dict[max_hash]
+        bkgd += entry['scaled']*opts.lumi*1000
+
+    ratio = -1
+    try: ratio = signal/bkgd
+    except: pass
+    return {'max_sig': max_sig,
+            'signal': signal,
+            'bkgd': bkgd,
+            'ratio': ratio,
+            'did': signal_did}
+
 def get_significances(opts):
   mdict = {}
-  with open('mass_windows.txt', 'r') as f:
+  with open(opts.massWindows, 'r') as f:
     reader = csv.reader(f, delimiter='\t')
     m = list(reader)
     mdict = {l[0]: [l[1],l[2],l[3]] for l in m}
@@ -57,43 +97,21 @@ def get_significances(opts):
 
   filenames = glob.glob(opts.sigdir+'/s*.b*.json')
 
-  regex = re.compile(r'{0:s}'.format(os.path.join(opts.sigdir, 's(\d+)\.b([a-fA-F\d]{32})\.json')))
   dids = []
   sigs = []
   signals = []
   bkgds = []
   ratios = []
-  for filename in filenames:
-    with open(filename) as json_file:
-      sig_dict = json.load(json_file)
-      entry = sig_dict[0]
-      max_sig = entry['significance_scaled']
-      max_hash = entry['hash']
 
-      did = regex.search(filename)
-      signal_did = did.group(1)
-      with open(opts.cutdir+'/'+signal_did+'.json') as signal_json_file:
-        signal_dict = json.load(signal_json_file)
-        entry = signal_dict[max_hash]
-        signal = entry['scaled']*opts.lumi*1000
-      with open(os.path.join(opts.sigdir, '{0:s}.json'.format(did.group(2))), 'r') as f:
-        bkgd_dids = json.load(f)
-      bkgd = 0
-      for bkgd_did in bkgd_dids:
-        with open(opts.cutdir+'/'+bkgd_did+'.json') as bkgd_json_file:
-          bkgd_dict = json.load(bkgd_json_file)
-          entry = bkgd_dict[max_hash]
-          bkgd += entry['scaled']*opts.lumi*1000
-
-      sigs.append(max_sig)
-      signals.append(signal)
-      bkgds.append(bkgd)
-      try:
-         ratios.append(signal/bkgd)
-      except:
-         ratios.append(-1)
-      dids.append(signal_did)
-
+  num_cores = min(multiprocessing.cpu_count(),opts.ncores)
+  results = Parallel(n_jobs=num_cores)(delayed(get_significance)(opts, filename) for filename in filenames)
+  for result in results:
+    sigs.append(result['max_sig'])
+    signals.append(result['signal'])
+    bkgds.append(result['bkgd'])
+    ratios.append(result['ratio'])
+    dids.append(result['did'])
+    print 'Finished result for ', result['did']
 
   plot_array={'sig':[],'signal':[],'bkgd':[],'mgluino':[],'mlsp':[],'ratio':[]}
   for did,sig,signal,bkgd,ratio in zip(dids,sigs,signals,bkgds,ratios):
