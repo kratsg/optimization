@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser(description='Author: A. Cukierman, G. Stark. v.
                                  formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
 parser.add_argument('--supercuts', required=True, type=str, dest='supercuts', metavar='<file.json>', help='json dict of supercuts to generate optimization cuts to apply')
 parser.add_argument('--significances', required=True, type=str, dest='significances', metavar='<folder>', help='folder of significance calculations')
+parser.add_argument('--mass_windows', required=True, type=str, dest='f_massWindows', metavar='<file.txt>', help='tab-delimited list of mass windows for the signal')
 parser.add_argument('-o', '--output', required=False, type=str, dest='output', metavar='<folder>', help='folder to store output hash dumps')
 
 # parse the arguments, throw errors if missing any
@@ -20,7 +21,7 @@ args = parser.parse_args()
 import csv,glob,re,json
 def get_hashes():
   mdict = {}
-  with open('mass_windows.txt', 'r') as f:
+  with open(args.f_massWindows, 'r') as f:
     reader = csv.reader(f, delimiter='\t')
     m = list(reader)
     mdict = {l[0]: [l[1],l[2],l[3]] for l in m}
