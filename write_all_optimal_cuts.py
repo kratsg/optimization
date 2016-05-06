@@ -53,7 +53,7 @@ def get_hashes():
 
 import subprocess
 array = get_hashes()
-bashCommand = 'python optimize.py hash '
+bashCommand = 'python {0:s} hash '.format(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'optimize.py'))
 for row in array:
   h = row[3]
   bashCommand += h + ' '
