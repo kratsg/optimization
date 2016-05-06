@@ -38,6 +38,60 @@ default: &default_weights
   filter efficiency: 0.45517000555992126
   k-factor: 1.0
   num events: 506676.0
+'361020':
+  cross section: 78420000768.0
+  errors: ['root://fax.mwt2.org:1094//atlas/rucio/user.mswiatlo:user.mswiatlo.8302746._000001.output_xAOD.root']
+  filter efficiency: 1.0240000486373901
+  k-factor: 1.0
+  num events: 0
+'361021':
+  cross section: 78420000768.0
+  errors: []
+  filter efficiency: 0.0006719799712300301
+  k-factor: 1.0
+  num events: 68325948.97069669
+'361022':
+  cross section: 2433200128.0
+  errors: []
+  filter efficiency: 0.0003326399892102927
+  k-factor: 1.0
+  num events: 58986516.38804734
+'361023':
+  cross section: 26454000.0
+  errors: []
+  filter efficiency: 0.00031952999415807426
+  k-factor: 1.0
+  num events: 70881822.14179397
+'361024':
+  cross section: 254630.0
+  errors: []
+  filter efficiency: 0.0005300900083966553
+  k-factor: 1.0
+  num events: 47040369.52123678
+'361025':
+  cross section: 4553.5
+  errors: []
+  filter efficiency: 0.0009232499869540334
+  k-factor: 1.0
+  num events: 1589033.9123852253
+'361026':
+  cross section: 257.5299987792969
+  errors: []
+  filter efficiency: 0.0009401600109413266
+  k-factor: 1.0
+  num events: 19128249.28751254
+'361027':
+  cross section: 16.21500015258789
+  errors: []
+  filter efficiency: 0.0003928199876099825
+  k-factor: 1.0
+  num events: 50625609.52902746
+'361028':
+  cross section: 0.6250200271606445
+  errors: []
+  filter efficiency: 0.010161999613046646
+  k-factor: 1.0
+  num events: 1741825.0
 '361081':
   cross section: 25.9950008392334
   errors: []
