@@ -42,6 +42,7 @@ import itertools
 from time import clock
 from collections import defaultdict
 import numexpr as ne
+import utils
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
 from joblib import Parallel, delayed, load, dump
@@ -199,16 +200,6 @@ def get_cut(superCuts, index=0):
 #@echo(write=logger.debug)
 def get_cut_hash(cut):
   return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
-
-#@echo(write=logger.debug)
-did_regex = re.compile('\.?(?:00)?(\d{6,8})\.?')
-def get_did(filename):
-  global did_regex
-  m = did_regex.search(filename.split("/")[-1])
-  if m is None:
-    logger.warning('Can\'t figure out the DID! Using input filename: {0}'.format(filename))
-    return filename.split("/")[-1]
-  return m.group(1)
 
 #@echo(write=logger.debug)
 def get_scaleFactor(weights, did):
@@ -395,7 +386,7 @@ def do_cuts(args):
   # first step is to group by the sample DID
   dids = defaultdict(list)
   for fname in args.files:
-    dids[get_did(fname)].append(fname)
+    dids[utils.get_did(fname)].append(fname)
 
   # load in the supercuts file
   supercuts = read_supercuts_file(args.supercuts)
@@ -438,7 +429,7 @@ def do_optimize(args):
   for bkgd in args.bkgd:
     # expand out patterns if needed
     for fname in glob.glob(os.path.join(args.search_directory, bkgd)):
-      did = get_did(fname)
+      did = utils.get_did(fname)
       logger.log(25, '\tLoading {0:s} ({1:s})'.format(did, fname))
       # generate a list of background dids
       bkgd_dids.append(did)
@@ -460,7 +451,7 @@ def do_optimize(args):
   for signal in args.signal:
     # expand out patterns if needed
     for fname in glob.glob(os.path.join(args.search_directory, signal)):
-      did = get_did(fname)
+      did = utils.get_did(fname)
       logger.log(25, '\tCalculating significances for {0:s} ({1:s})'.format(did, fname))
       significances = []
       with open(fname, 'r') as f:
