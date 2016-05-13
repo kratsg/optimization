@@ -6,7 +6,7 @@ from ROOT import *
 import rootpy as rpy
 from rootpy.plotting.style import set_style, get_style
 import numpy as np
-
+import utils
 import re
 
 atlas = get_style('ATLAS')
@@ -41,18 +41,7 @@ def parse_argv():
 import pdb
 import csv,glob,re,json
 def get_cut_value(opts, cut, pivotIndex = 0):
-  mdict = {}
-  with open(opts.massWindows, 'r') as f:
-    reader = csv.reader(f, delimiter='\t')
-    m = list(reader)
-    mdict = {l[0]: [l[1],l[2],l[3]] for l in m}
-
-  def masses(did):
-    mlist = mdict[did]
-    mglue = mlist[0]
-    mstop = mlist[1]
-    mlsp = mlist[2]
-    return mglue,mstop,mlsp
+  masses = utils.load_mass_windows(opts.massWindows)
 
   filenames = glob.glob(opts.sigdir+'/s*.b*.json')
   regex = re.compile(opts.sigdir+'/s(\d{6}).b.*.json')
@@ -90,7 +79,7 @@ def get_cut_value(opts, cut, pivotIndex = 0):
 
   plot_array=[]
   for did,h in zip(dids,hashs):
-    mgluino,mstop,mlsp = masses(did)
+    mgluino,mstop,mlsp = masses.get(did)
     val = get_value(opts, cut, h, pivotIndex)
     row = [mgluino,mlsp,val]
     if int(mstop) == 5000:
