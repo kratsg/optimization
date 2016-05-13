@@ -1,6 +1,7 @@
 import argparse
 import subprocess
 import os
+import utils
 
 class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
   pass
@@ -20,18 +21,7 @@ args = parser.parse_args()
 
 import csv,glob,re,json
 def get_hashes():
-  mdict = {}
-  with open(args.f_massWindows, 'r') as f:
-    reader = csv.reader(f, delimiter='\t')
-    m = list(reader)
-    mdict = {l[0]: [l[1],l[2],l[3]] for l in m}
-
-  def masses(did):
-    mlist = mdict[did]
-    mglue = mlist[0]
-    mstop = mlist[1]
-    mlsp = mlist[2]
-    return mglue,mstop,mlsp
+  masses = utils.load_mass_windows(args.f_massWindows)
 
   filenames = glob.glob(args.significances+'/s*.b*.json')
   regex = re.compile('s(\d{6})\.b.*\.json')
@@ -45,7 +35,7 @@ def get_hashes():
 
   plot_array=[]
   for did,sig in zip(dids,sigs):
-    mgluino,mstop,mlsp = masses(did)
+    mgluino,mstop,mlsp = masses.get(did)
     row = [mgluino,mstop,mlsp,sig]
     if int(mstop) == 5000: plot_array.append(row)
 
