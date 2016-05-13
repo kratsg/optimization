@@ -46,11 +46,9 @@ def parse_argv():
 
     return (options)
 
-import csv,glob,re,json
+import csv,glob,json
 
-regex = re.compile(r's(\d+)\.b([a-fA-F\d]{32})\.json')
 def get_significance(opts, filename):
-  global regex
   print 'reading', filename
   with open(filename) as json_file:
     sig_dict = json.load(json_file)
@@ -58,13 +56,12 @@ def get_significance(opts, filename):
     max_sig = entry['significance_scaled']
     max_hash = entry['hash']
 
-    did = regex.search(os.path.basename(filename))
-    signal_did = did.group(1)
+    signal_did = utils.get_did(os.path.basename(filename))
     with open(opts.cutdir+'/'+signal_did+'.json') as signal_json_file:
       signal_dict = json.load(signal_json_file)
       entry = signal_dict[max_hash]
       signal = entry['scaled']*opts.lumi*1000
-    with open(os.path.join(opts.sigdir, '{0:s}.json'.format(did.group(2))), 'r') as f:
+    with open(os.path.join(opts.sigdir, filename.split('.b')[1]), 'r') as f:
       bkgd_dids = json.load(f)
     bkgd = 0
     for bkgd_did in bkgd_dids:

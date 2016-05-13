@@ -7,7 +7,6 @@ import rootpy as rpy
 from rootpy.plotting.style import set_style, get_style
 import numpy as np
 import utils
-import re
 
 atlas = get_style('ATLAS')
 atlas.SetPalette(51)
@@ -38,13 +37,12 @@ def parse_argv():
     (options,args) = parser.parse_args()
 
     return (options)
-import pdb
-import csv,glob,re,json
+
+import csv,glob,json
 def get_cut_value(opts, cut, pivotIndex = 0):
   masses = utils.load_mass_windows(opts.massWindows)
 
   filenames = glob.glob(opts.sigdir+'/s*.b*.json')
-  regex = re.compile(opts.sigdir+'/s(\d{6}).b.*.json')
   dids = []
   hashs = []
   for filename in filenames:
@@ -53,8 +51,8 @@ def get_cut_value(opts, cut, pivotIndex = 0):
       entry = hash_dict[0]
       h = entry['hash']
       hashs.append(h)
-      did = regex.search(filename)
-      dids.append(did.group(1))
+      did = utils.get_did(filename)
+      dids.append(did)
 
   def get_value(opts, cut, h, pivotIndex = 0):
     filenames = glob.glob(opts.hashdir+'/'+h+'.json')
@@ -107,9 +105,9 @@ def axis_labels(opts,cut):
 
     return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % cut
 
-def init_hist(opts, cut, pivotIndex = 0):
-    numPivots = len(set(p.findall(cut)))
-    formattedCut = cut.format(*(['#']*pivotIndex + [pivotIndex] + ['#']*(numPivots - 1 - pivotIndex)))
+def init_hist(opts, supercut, pivotIndex = 0):
+    numPivots = len(supercut['st3'])
+    formattedCut = supercut['selections'].format(*(['#']*pivotIndex + ['?'] + ['#']*(numPivots - 1 - pivotIndex)))
     return TH2F("grid",
                 axis_labels(opts,formattedCut),
                 nbinsx(opts),
@@ -118,7 +116,7 @@ def init_hist(opts, cut, pivotIndex = 0):
                 nbinsy(opts),
                 opts.l_min,
                 opts.l_max)
-import pdb
+
 def fill_hist(hist, opts, cut, pivotIndex = 0):
 
   plot_array = get_cut_value(opts, cut, pivotIndex)
@@ -204,22 +202,16 @@ if __name__ == '__main__':
     with open(opts.supercuts) as f:
       supercuts = json.load(f)
 
-    p = re.compile('{(\d+)}')
-
     i = 0
     for supercut in supercuts:
       if supercut.get('pivot') is not None: continue
       cut = supercut['selections']
       # a cut string can have multiple pivots, need to draw a histogram for each pivot subsection
       numPivots = len(supercut['st3'])
-      '''
-      # this is where it gets tricky, need to know how many actual format entries there are...
-      numPivots = len(set(p.findall(cut)))
-      '''
       for pivotIndex in range(numPivots):
         print(i, cut)
         c = init_canvas(opts)
-        h = init_hist(opts, cut, pivotIndex)
+        h = init_hist(opts, supercut, pivotIndex)
         fill_hist(h, opts, cut, pivotIndex)
         st3 = supercut['st3'][pivotIndex]
         # number of steps
