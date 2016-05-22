@@ -19,6 +19,7 @@ parser.add_argument("--run1_csvfile", required=False, type=str, help="csv file c
 parser.add_argument("--run1_1sigma_csvfile", required=False, type=str, help="csv file containing run 1 exclusion (+1 sigma) points", default="run1_limit_1sigma.csv")
 
 parser.add_argument("--basedir", required=False, type=str, help="base directory", default="SR")
+parser.add_argument("--massWindows", required=False, type=str, help="Location of mass windows file", default="mass_windows.txt")
 
 # parse the arguments, throw errors if missing any
 args = parser.parse_args()
@@ -138,7 +139,7 @@ atlas.SetPalette(51)
 set_style(atlas)
 
 # given a DID, we get the mass points, translates to a box on the graph for us
-with open('mass_windows.txt', 'r') as f:
+with open(args.massWindows, 'r') as f:
   reader = csv.reader(f, delimiter='\t')
   m = list(reader)
 mdict = {l[0]: [int(l[1]),int(l[2]),int(l[3])] for l in m}
