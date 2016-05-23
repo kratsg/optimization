@@ -21,6 +21,8 @@ parser.add_argument("--run1_1sigma_csvfile", required=False, type=str, help="csv
 parser.add_argument("--basedir", required=False, type=str, help="base directory", default="SR")
 parser.add_argument("--massWindows", required=False, type=str, help="Location of mass windows file", default="mass_windows.txt")
 
+parser.add_argument("--numSRs", required=False, type=int, help="Number of signal regions", default=4)
+
 # parse the arguments, throw errors if missing any
 args = parser.parse_args()
 
@@ -83,11 +85,11 @@ def draw_text(args):
 
 def fix_zaxis(h):
   # fix the ZAxis
-  h.GetZaxis().SetRangeUser(1, 5)
+  h.GetZaxis().SetRangeUser(1, args.numSRs+1)
   h.GetZaxis().CenterLabels()
   h.GetZaxis().SetTickLength(0)
   h.SetContour(4)
-  h.GetZaxis().SetNdivisions(4, False)
+  h.GetZaxis().SetNdivisions(args.numSRs, False)
 
 def draw_line():
   topmass = 173.34
@@ -146,12 +148,12 @@ mdict = {l[0]: [int(l[1]),int(l[2]),int(l[3])] for l in m}
 del m
 
 # start up a dictionary to hold all information
-significances = defaultdict(lambda: {1: 0, 2: 0, 3: 0, 4: 0})
+significances = defaultdict(lambda: dict((i,0) for i in range(1, args.numSRs+1)))
 
 p_did = re.compile(r's(\d+)\.b([a-fA-F\d]{32})\.json')
 
 # for each signal region, build up the significance value
-for i in range(1,5):
+for i in range(1,args.numSRs+1):
   files = glob.glob(os.path.join(args.basedir, "SR{0:d}Significances_{1:d}".format(i, args.lumi), "s*.b*.json"))
   for filename in files:
     with open(filename, 'r') as f:
@@ -161,7 +163,7 @@ for i in range(1,5):
 
 # find the winning SR
 import operator
-winners = {1: 0, 2: 0, 3: 0, 4: 0}
+winners = dict((i, 0) for i in range(1, args.numSRs+1))
 for did, vals in significances.iteritems():
   winner = max(vals.iteritems(), key=operator.itemgetter(1))[0]
   winners[winner] += 1
