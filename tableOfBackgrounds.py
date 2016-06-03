@@ -25,6 +25,7 @@ parser.add_argument('--hide-weighted', required=False, action='store_true', help
 parser.add_argument('--hide-scaled', required=False, action='store_true', help='Hide scaled counts')
 parser.add_argument('--skip-groups', required=False, nargs='+', help='Hide specific groups from output', default=['Gbb','Gtt'])
 parser.add_argument('--include-dids', required=False, nargs='+', help='Include the following DIDs in background calculation', default=[])
+parser.add_argument('--hide-invalid-dids', required=False, action='store_true', help='Suppress statements about invalid DIDs')
 
 # parse the arguments, throw errors if missing any
 args = parser.parse_args()
@@ -52,7 +53,8 @@ for region in regions:
       try:
         int(did)
       except ValueError:
-        print 'No valid DID found. Skipping {0}'.format(fname)
+        if not args.hide_invalid_dids:
+          print 'No valid DID found. Skipping {0}'.format(fname)
         continue #skip because it's probably a bad thing to use
       if did not in args.include_dids: continue
 
