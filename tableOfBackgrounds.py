@@ -75,17 +75,31 @@ for region in regions:
 def getValues(group, groups, count_type):
   return [group] + [groups[group][region['name']][count_type] for region in regions]
 
+# make a table for each count_type we look at
 for count_type in count_types:
-  sumValues = [0]*8
-  print("{0: ^150s}".format(count_type+(' ({0:0.4f}ifb)'.format(args.lumi) if (count_type == 'scaled') else '')))
-  printStr = "{{0:12}}{0:s}1{0:s}2{0:s}3{0:s}4{1:s}1{1:s}2{1:s}3{1:s}4".format("\t{1:>9}", "\t{2:>9}")
-  print(printStr.format("GROUP", "SR", "CR"))
-  valueStr = "{{0:12}}\t{{1:{0:s}}}\t{{2:{0:s}}}\t{{3:{0:s}}}\t{{4:{0:s}}}\t{{5:{0:s}}}\t{{6:{0:s}}}\t{{7:{0:s}}}\t{{8:{0:s}}}".format("10.4f")
+  # figure out the maximum column width
+  max_column_width = max(max(len(region['name']) for region in regions), 7)+4
+
+  # specify whether we look at raw, weighted, or scaled (table caption) at the top
+  header_label = count_type+(' ({0:0.2f}ifb)'.format(args.lumi) if (count_type == 'scaled') else '')
+  print(" "*max_column_width+"{0: ^{1}s}".format(header_label, max_column_width*len(regions)))
+
+  # define the table header row
+  printStr = "{0:<{1}s}".format("GROUP", max_column_width)
+  printStr += "".join("{0:>{1}s}".format(region['name'], max_column_width) for region in regions)
+  print(printStr)
+
+  # this specifies the format for rows of actual data/counts
+  valueStr = "{{0:<{0}s}}".format(max_column_width)
+  valueStr += "".join("{{{0}:{1}.2f}}".format(i+1, max_column_width) for i in range(len(regions)))
+
+  # initialize a row of zeros to keep track of sums
+  sumValues = [0]*len(regions)
   for group in sorted(groups):
     values = getValues(group, groups, count_type)
     print(valueStr.format(*values))
     sumValues = [sum(x) for x in zip(sumValues, values[1:])]
-  print("\t"+("-"*100))
+  print(" "*max_column_width+"-"*max_column_width*len(regions))
   sumValues = ["total"] + sumValues
   print(valueStr.format(*sumValues))
   # add ttbar fraction
@@ -94,4 +108,5 @@ for count_type in count_types:
   for i in range(1, len(ttbarFrac)):
     ttbarFrac[i] = numpy.float64(ttbarFrac[i])/sumValues[i]
   print(valueStr.format(*ttbarFrac))
-  print("="*100)
+  print(" "*max_column_width+"="*max_column_width*len(regions))
+
