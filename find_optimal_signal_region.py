@@ -88,7 +88,7 @@ def fix_zaxis(h):
   h.GetZaxis().SetRangeUser(1, args.numSRs+1)
   h.GetZaxis().CenterLabels()
   h.GetZaxis().SetTickLength(0)
-  h.SetContour(4)
+  h.SetContour(args.numSRs)
   h.GetZaxis().SetNdivisions(args.numSRs, False)
 
 def draw_line():
