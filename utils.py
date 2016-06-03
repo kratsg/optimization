@@ -3,6 +3,7 @@ import re
 
 import logging
 logger = logging.getLogger("optimize")
+logger.addHandler(logging.NullHandler())
 
 def load_mass_windows(filename):
   with open(filename, 'r') as f:
