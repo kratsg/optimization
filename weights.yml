@@ -682,7 +682,7 @@ default: &default_weights
   num events: 2157059.3071770603
 '363443':
   cross section: 84.2959976196289
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.mswiatlo:user.mswiatlo.8714210._000004.output_xAOD.root']
+  errors: ['root://fax.mwt2.org//atlas/rucio/user.mswiatlo:user.mswiatlo.8714210._000004.output_xAOD.root']
   filter efficiency: 0.2766000032424927
   k-factor: 1.0
   num events: 2065486.9573115995
@@ -1228,10 +1228,10 @@ default: &default_weights
   num events: 98552.13347697258
 '370172':
   cross section: 0.0016337907873094082
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.lvalery:user.lvalery.8715755._000002.output_xAOD.root']
+  errors: []
   filter efficiency: 1.0
   k-factor: 1.0
-  num events: 19112.30372363329
+  num events: 59334.76461726427
 '370173':
   cross section: 0.0016337907873094082
   errors: []
@@ -1264,10 +1264,10 @@ default: &default_weights
   num events: 100456.75386971235
 '370180':
   cross section: 0.0009802603162825108
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.lvalery:user.lvalery.8716624._000001.output_xAOD.root']
+  errors: []
   filter efficiency: 1.0
   k-factor: 1.0
-  num events: 40188.03140926361
+  num events: 84388.21615743637
 '370181':
   cross section: 0.0009802603162825108
   errors: []
@@ -1528,10 +1528,10 @@ default: &default_weights
   num events: 10140.754151940346
 '370280':
   cross section: 0.045982301235198975
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.lvalery:user.lvalery.8717171._000001.output_xAOD.root']
+  errors: []
   filter efficiency: 1.0
   k-factor: 1.0
-  num events: 0
+  num events: 10142.906466305256
 '370281':
   cross section: 0.045982301235198975
   errors: []
@@ -1630,10 +1630,10 @@ default: &default_weights
   num events: 10095.761422872543
 '370299':
   cross section: 0.014171450398862362
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.lvalery:user.lvalery.8718330._000001.output_xAOD.root']
+  errors: []
   filter efficiency: 1.0
   k-factor: 1.0
-  num events: 0
+  num events: 20196.541771650314
 '370300':
   cross section: 0.014171450398862362
   errors: []
@@ -1774,7 +1774,7 @@ default: &default_weights
   num events: 10063.74971562624
 '370326':
   cross section: 0.0027583648916333914
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.lvalery:user.lvalery.8717179._000001.output_xAOD.root']
+  errors: ['root://fax.mwt2.org//atlas/rucio/user.lvalery:user.lvalery.8717179._000001.output_xAOD.root']
   filter efficiency: 1.0
   k-factor: 1.0
   num events: 0
@@ -2122,10 +2122,10 @@ default: &default_weights
   num events: 20172.346721827984
 '370436':
   cross section: 0.004697468597441912
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.lvalery:user.lvalery.8715892._000001.output_xAOD.root']
+  errors: []
   filter efficiency: 1.0
   k-factor: 1.0
-  num events: 0
+  num events: 20144.883104860783
 '370437':
   cross section: 0.004697468597441912
   errors: []
@@ -2638,10 +2638,10 @@ default: &default_weights
   num events: 20092.096185803413
 '370559':
   cross section: 0.0009802603162825108
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.lvalery:user.lvalery.8715937._000001.output_xAOD.root']
+  errors: []
   filter efficiency: 1.0
   k-factor: 1.0
-  num events: 0
+  num events: 20093.930295944214
 '370560':
   cross section: 0.0009802603162825108
   errors: []
@@ -2653,7 +2653,7 @@ default: &default_weights
   errors: []
   filter efficiency: 1.0
   k-factor: 1.0
-  num events: 0
+  num events: 19090.782276570797
 '370562':
   cross section: 0.0009802603162825108
   errors: []
@@ -2794,7 +2794,7 @@ default: &default_weights
   num events: 3513000.0
 '407018':
   cross section: 34.00899887084961
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.mswiatlo:user.mswiatlo.8713903._000002.output_xAOD.root']
+  errors: ['root://fax.mwt2.org//atlas/rucio/user.mswiatlo:user.mswiatlo.8713903._000002.output_xAOD.root']
   filter efficiency: 0.08846119791269302
   k-factor: 1.0
   num events: 1870000.0
@@ -2914,7 +2914,7 @@ default: &default_weights
   num events: 198800.0
 '410111':
   cross section: 0.00962349958717823
-  errors: ['root://atlas-xrd-us.usatlas.org//atlas/rucio/user.mswiatlo:user.mswiatlo.8714178._000001.output_xAOD.root']
+  errors: ['root://fax.mwt2.org//atlas/rucio/user.mswiatlo:user.mswiatlo.8714178._000001.output_xAOD.root']
   filter efficiency: 1.0
   k-factor: 1.350000023841858
   num events: 0
