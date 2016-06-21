@@ -204,9 +204,12 @@ def get_cut_hash(cut):
 did_regex = re.compile('\.?(?:00)?(\d{6,8})\.?')
 def get_did(filename):
   global did_regex
-  m = did_regex.search(filename.split("/")[-1])
+  m = did_regex.search(filename.split("/")[-2])
   if m is None: 
-    logger.warning('Can\'t figure out the DID! Using input filename')
+    logger.warning('Can\'t figure out the DID! Trying format II ...')
+    m = did_regex.search(filename.split("/")[-1])
+  if m is None:
+    logger.warning('Can\'t figure out the DID! Using input filename ...')
     return filename.split("/")[-1]
   return m.group(1)
 

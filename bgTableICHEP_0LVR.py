@@ -617,7 +617,6 @@ did_to_group['370562'] = 'Gtt'
 did_to_group['370563'] = 'Gtt'
 did_to_group['370564'] = 'Gtt'
 did_to_group['370565'] = 'Gtt'
-
 did_to_group['370239'] = 'Gtt'
 did_to_group['370240'] = 'Gtt'
 did_to_group['370241'] = 'Gtt'
@@ -628,6 +627,7 @@ did_to_group['370245'] = 'Gtt'
 did_to_group['370246'] = 'Gtt'
 did_to_group['370247'] = 'Gtt'
 did_to_group['370248'] = 'Gtt'
+
 
 did_to_group['373421'] = 'Gtt'
 did_to_group['373422'] = 'Gtt'
@@ -704,12 +704,12 @@ did_to_group['410080'] = '4topSM' # 4tops SM
 did_to_group['341177'] = 'ttH' # ttH
 
 for regionID in range(0, 5):
-  for fname in glob.glob("cuts_ICHEP/0L/CR{0:d}Cuts/*.json".format(regionID))+glob.glob("cuts_ICHEP/0L/SR{0:d}Cuts/*.json".format(regionID)):
+  for fname in glob.glob("cuts_ICHEP/0L/VR0L{0:d}Cuts/*.json".format(regionID))+glob.glob("cuts_ICHEP/0L/VR1L{0:d}Cuts/*.json".format(regionID)):
     did = os.path.basename(fname).split('.')[0]
 
-    # figure out if we're using SR or CR
-    region='CR'
-    if 'SR' in os.path.basename(os.path.dirname(fname)): region='SR'
+    # figure out if we're using VR0L or VR1L
+    region='VR0L'
+    if 'VR0L' in os.path.basename(os.path.dirname(fname)): region='VR1L'
 
     with open(fname) as f:
       data = json.load(f)
@@ -726,7 +726,7 @@ for regionID in range(0, 5):
                     2: copy.deepcopy(nullregion),
                     3: copy.deepcopy(nullregion),
                     4: copy.deepcopy(nullregion)}
-        groups[group] = {'SR': copy.deepcopy(nulldict), 'CR': copy.deepcopy(nulldict)}
+        groups[group] = {'VR0L': copy.deepcopy(nulldict), 'VR1L': copy.deepcopy(nulldict)}
 
       # we just need the subset which is often first item (look at an example json)
       data = data[data.keys()[0]]
@@ -739,13 +739,13 @@ for regionID in range(0, 5):
         groups[did_to_group[did]][region][regionID][count_type] += data[count_type]*sf
 
 def getValues(group, groups):
-  return [group] + [groups[group][region][i][index] for region in ['SR', 'CR'] for i in range(0, 5)]
+  return [group] + [groups[group][region][i][index] for region in ['VR0L', 'VR1L'] for i in range(0, 5)]
 
 for index, typeBkgd in zip(count_types, ['raw', 'weighted', 'scaled ({0:0.2f} ifb)'.format(scaleFactor)]):
   sumValues = [0]*10
   print("{0: ^150s}".format(typeBkgd))
   printStr = "{{0:12}}{0:s}0{0:s}1{0:s}2{0:s}3{0:s}4{1:s}0{1:s}1{1:s}2{1:s}3{1:s}4".format("\t{1:>9}", "\t{2:>9}")
-  print(printStr.format("GROUP", "SR", "CR"))
+  print(printStr.format("GROUP", "VR1L", "VR0L"))
   for group in sorted(groups):
     values = getValues(group, groups)
     valueStr = "{{0:12}}\t{{1:{0:s}}}\t{{2:{0:s}}}\t{{3:{0:s}}}\t{{4:{0:s}}}\t{{5:{0:s}}}\t{{6:{0:s}}}\t{{7:{0:s}}}\t{{8:{0:s}}}\t{{9:{0:s}}}\t{{10:{0:s}}}".format("10.4f")

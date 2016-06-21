@@ -663,14 +663,22 @@ did_to_group['407009'] = 'ttbar'
 did_to_group['407010'] = 'ttbar'
 did_to_group['407011'] = 'ttbar'
 did_to_group['407012'] = 'ttbar'
-did_to_group['407019'] = 'singletop'
-did_to_group['407021'] = 'singletop'
 did_to_group['410011'] = 'singletop'
 did_to_group['410012'] = 'singletop'
 did_to_group['410013'] = 'singletop'
 did_to_group['410014'] = 'singletop'
+did_to_group['407019'] = 'singletop'
+did_to_group['407021'] = 'singletop'
 did_to_group['410025'] = 'singletop'
 did_to_group['410026'] = 'singletop'
+did_to_group['410066'] = 'topEW'
+did_to_group['410066'] = 'topEW'
+did_to_group['410067'] = 'topEW'
+did_to_group['410068'] = 'topEW'
+did_to_group['410073'] = 'topEW'
+did_to_group['410074'] = 'topEW'
+did_to_group['410075'] = 'topEW'
+did_to_group['410075'] = 'topEW'
 did_to_group['410080'] = 'topEW'
 did_to_group['410111'] = 'topEW'
 did_to_group['410112'] = 'topEW'
@@ -679,6 +687,7 @@ did_to_group['410114'] = 'topEW'
 did_to_group['410115'] = 'topEW'
 did_to_group['410116'] = 'topEW'
 did_to_group['341177'] = 'topEW'
+did_to_group['341270'] = 'topEW'
 did_to_group['341270'] = 'ttH'
 did_to_group['341271'] = 'ttH'
 #did_to_group['407021'] = 'singletop'
@@ -704,7 +713,7 @@ did_to_group['410080'] = '4topSM' # 4tops SM
 did_to_group['341177'] = 'ttH' # ttH
 
 for regionID in range(0, 5):
-  for fname in glob.glob("cuts_ICHEP/0L/CR{0:d}Cuts/*.json".format(regionID))+glob.glob("cuts_ICHEP/0L/SR{0:d}Cuts/*.json".format(regionID)):
+  for fname in glob.glob("cuts_ICHEP/1L/CR{0:d}Cuts/*.json".format(regionID))+glob.glob("cuts_ICHEP/1L/SR{0:d}Cuts/*.json".format(regionID)):
     did = os.path.basename(fname).split('.')[0]
 
     # figure out if we're using SR or CR

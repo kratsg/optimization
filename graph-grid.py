@@ -279,9 +279,9 @@ if __name__ == '__main__':
           gr_1sigma.Draw("C")
           draw_moriond2k16_combo_text(opts.moriond2k16_combo_color)
           savefilename += "_wcombo"
-    c.SaveAs(savefilename + ".pdf")
-    print "Saving file " + savefilename
-    c.Clear()
+      c.SaveAs(savefilename + ".pdf")
+      print "Saving file " + savefilename
+      c.Clear()
     
 exit(0)
 
