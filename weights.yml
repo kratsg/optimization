@@ -3134,3 +3134,6 @@ default: &default_weights
   filter efficiency: 1.0
   k-factor: 1.5099999904632568
   num events: 338152.417270869
+
+'2015.data.root.json': *default_weights
+'2016.data.root.json': *default_weights
