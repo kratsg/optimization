@@ -362,6 +362,7 @@ Variable | Type | Description | Default
 --insignificance | int | min. number of events for non-zero sig. | 0.5
 --o, --output | string | output directory to store significances calculated | significances
 --lumi | float | apply the luminosity when calculating significances, to avoid having to redo all the cuts | 1.0
+-n, --max-num-hashes | int | maximum number of hashes to dump in the significance files | 25
 
 #### Output
 
@@ -420,6 +421,8 @@ Sig. Value | What Happened
 -1         | The signal was insignificant
 -2         | The background was insignificant
 -3         | There were not enough statistics in the background events
+
+Note that `--max-num-hashes` determines how many hashes you will actually see in these output files.
 
 ### Action:Hash
 

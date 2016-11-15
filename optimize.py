@@ -461,7 +461,7 @@ def do_optimize(args):
       logger.log(25, '\t\tCalculated significances for {0:d} cuts'.format(len(significances)))
       # at this point, we have a list of significances that we can dump to a file
       with open(os.path.join(args.output_directory, 's{0:s}.b{1:s}.json'.format(did, bkgdHash)), 'w+') as f:
-        f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance_scaled'), reverse=True), sort_keys=True, indent=4))
+        f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance_scaled'), reverse=True)[:args.max_num_hashes], sort_keys=True, indent=4))
 
   return True
 
@@ -623,7 +623,7 @@ if __name__ == "__main__":
   optimize_parser.add_argument('--insignificance', type=float, required=False, dest='insignificanceThreshold', metavar='<min events>', help='minimum number of signal events for calculating significance', default=0.5)
   optimize_parser.add_argument('--lumi', type=float, required=False, dest='lumi', metavar='<scaled lumi>', help='Apply a global luminosity factor (units are ifb)', default=1.0)
   optimize_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='significances')
-
+  optimize_parser.add_argument('-n', '--max-num-hashes', required=False, type=int, metavar='<n>', help='Maximum number of hashes to print for each significance file', default=25)
 
   # needs: supercuts
   hash_parser = subparsers.add_parser("hash", parents=[main_parser, supercuts_parser],
