@@ -300,7 +300,7 @@ Variable | Type | Description | Default
 --eventWeight | string | event weight branch name | event_weight
 --supercuts | string | path to json dict of supercuts for generating cuts | supercuts.json
 --o, --output | directory | output directory to store json files containing cuts | cuts
---weightsFile | string | .yml file containing weights in proper formatting - see SampleWeights
+--weightsFile | string | .json file containing weights in proper formatting - see SampleWeights
 
 #### Output
 

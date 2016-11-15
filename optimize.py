@@ -36,7 +36,6 @@ import operator
 import re
 import fnmatch
 import math
-import yaml
 import glob
 import itertools
 from time import clock
@@ -398,7 +397,7 @@ def do_cuts(args):
   if not os.path.isfile(args.weightsFile):
     raise ValueError('The supplied weights file `{0}` does not exist or I cannot find it.'.format(args.weightsFile))
   else:
-    weights = yaml.load(file(args.weightsFile))
+    weights = json.load(file(args.weightsFile))
 
   # parallelize
   num_cores = min(multiprocessing.cpu_count(),args.ncores)
@@ -604,7 +603,7 @@ if __name__ == "__main__":
                                       usage='%(prog)s <file.root> ... [options]', help='Apply the cuts',
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
                                       epilog='cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.')
-  cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='yml file containing weights by DID', default='weights.yml')
+  cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='json file containing weights by DID', default='weights.json')
   cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='cuts')
   cuts_parser.add_argument('--numpy', required=False, action='store_true', help='Enable numpy optimization to speed up the cuts processing')
   cuts_parser.add_argument('--ncores', type=int, required=False, dest='ncores', help='Set number of cores to use for parallel cutting. Defaults to max.', default=multiprocessing.cpu_count())
