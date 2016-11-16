@@ -27,9 +27,9 @@ def parse_argv():
     parser.add_option("--outdir", help="outfile directory", default="plots")
     parser.add_option("--outfilebase", help="outfile base name", default="output")
     parser.add_option("--g-min", help="min gluino mass", default=800, type=float)
-    parser.add_option("--g-max", help="max gluino mass", default=2000, type=float)
+    parser.add_option("--g-max", help="max gluino mass", default=2500, type=float)
     parser.add_option("--l-min", help="min lsp mass", default=0, type=float)
-    parser.add_option("--l-max", help="max lsp mass", default=1300, type=float)
+    parser.add_option("--l-max", help="max lsp mass", default=1500, type=float)
     parser.add_option("--bin-width", help="bin width", default=100, type=float)
     parser.add_option("--x-dim", help="x dimension of figure", default=800, type=float)
     parser.add_option("--y-dim", help="y dimension of figure", default=600, type=float)
@@ -166,7 +166,7 @@ def draw_hist(hist, nSigs=1):
     hist.SetMarkerColor(kWhite)
     #gStyle.SetPalette(51)
     gStyle.SetPaintTextFormat("1.{0:d}f".format(nSigs));
-    hist.Draw("TEXT COLZ")
+    hist.Draw("TEXT45 COLZ")
 
 def draw_labels(lumi):
     txt = TLatex()
