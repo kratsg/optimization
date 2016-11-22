@@ -370,7 +370,7 @@ Variable | Type | Description
 ---------|------|------------
 hash | 32-bit string | md5 hash of the cut
 significance | float | calculated significance of the cut
-insignificance | string | if set, value tells you which region was insignificant
+yield | float | number of events passing the cut
 
 The output is a directory of json files which will look like
 
@@ -381,7 +381,10 @@ The output is a directory of json files which will look like
         "hash": "7595976a84303a003f6a4a7458f12b8d",
         "significance_raw": 7.643122000999725,
         "significance_scaled": 4.382066929290212,
-        "significance_weighted": 18.34212454602254
+        "significance_weighted": 18.34212454602254,
+        "yield_raw": { ... },
+        "yield_scaled": { ... },
+        "yield_weighted": { ... }
     },
     ...
 ]
@@ -396,19 +399,28 @@ if a significance was calculated successfully or
         "hash": "c911af35708dcdc51380ebbde81c9b1e",
         "significance_raw": -3,
         "significance_scaled": -1,
-        "significance_weighted": -3
+        "significance_weighted": -3,
+        "yield_raw": { ... },
+        "yield_scaled": { ... },
+        "yield_weighted": { ... }
     },
     {
         "hash": "b383cea24037667ffb6136d670a33468",
         "significance_raw": -2,
         "significance_scaled": -1,
-        "significance_weighted": -2
+        "significance_weighted": -2,
+        "yield_raw": { ... },
+        "yield_scaled": { ... },
+        "yield_weighted": { ... }
     },
     {
         "hash": "095414bacf1022f2c941cc6164b175a1",
         "significance_raw": 9.421795580339449,
         "significance_scaled": -2,
-        "significance_weighted": 20.37611073465684
+        "significance_weighted": 20.37611073465684,
+        "yield_raw": { ... },
+        "yield_scaled": { ... },
+        "yield_weighted": { ... }
     },
     ...
 ]
