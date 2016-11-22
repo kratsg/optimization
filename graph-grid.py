@@ -65,7 +65,7 @@ def get_significance(opts, filename):
             'signal': signal,
             'bkgd': bkgd,
             'ratio': ratio,
-            'did': signal_did}
+            'did': utils.get_did(os.path.basename(filename))}
 
 def get_significances(opts):
   masses = utils.load_mass_windows(opts.massWindows)
