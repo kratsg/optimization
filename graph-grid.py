@@ -38,7 +38,6 @@ def parse_argv():
     parser.add_option("--run1_csvfile", help="csv file containing run 1 exclusion points", default="run1_limit.csv", type=str)
     parser.add_option("--run1_1sigma_csvfile", help="csv file containing run 1 exclusion (+1 sigma) points", default="run1_limit_1sigma.csv", type=str)
     parser.add_option("--sigdir", help="directory where significances files are located", default='significances', type=str)
-    parser.add_option("--cutdir", help="directory where cuts files are located", default='cuts', type=str)
     parser.add_option('--massWindows', help='Location of mass windows file', default='mass_windows.txt', type=str)
     parser.add_option('--ncores', type=int, help='Set number of cores to use for parallel cutting. Defaults to max.', default=multiprocessing.cpu_count())
 
@@ -56,19 +55,8 @@ def get_significance(opts, filename):
     max_sig = entry['significance_scaled']
     max_hash = entry['hash']
 
-    signal_did = utils.get_did(os.path.basename(filename))
-    with open(opts.cutdir+'/'+signal_did+'.json') as signal_json_file:
-      signal_dict = json.load(signal_json_file)
-      entry = signal_dict[max_hash]
-      signal = entry['scaled']*opts.lumi*1000
-    with open(os.path.join(opts.sigdir, filename.split('.b')[1]), 'r') as f:
-      bkgd_dids = json.load(f)
-    bkgd = 0
-    for bkgd_did in bkgd_dids:
-      with open(opts.cutdir+'/'+bkgd_did+'.json') as bkgd_json_file:
-        bkgd_dict = json.load(bkgd_json_file)
-        entry = bkgd_dict[max_hash]
-        bkgd += entry['scaled']*opts.lumi*1000
+    signal = entry['yield_scaled']['sig']
+    bkgd = entry['yield_scaled']['bkg']
 
     ratio = -1
     try: ratio = signal/bkgd
