@@ -30,6 +30,7 @@ parser.add_argument('--do-run1', action='store_true', help='Add Run-1 line to gr
 parser.add_argument('--run1-color', type=int, required=False, help='Color of Run-1 line', default=46)
 parser.add_argument('--run1-excl', type=str, required=False, help='CSV file containing Run-1 exclusion points', default='run1_limit.csv')
 parser.add_argument('--run1-1sigma', type=str, required=False, help='CSV file containing Run-1 exclusion (+1 sigma) points', default='run1_limit_1sigma.csv')
+parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT.')
 
 # parse the arguments, throw errors if missing any
 args = parser.parse_args()
@@ -162,6 +163,8 @@ def exclusion():
 
 if __name__ == '__main__':
   import ROOT
+  ROOT.gROOT.SetBatch(args.batch_mode)
+
   import utils
 
   from rootpy.plotting.style import set_style, get_style
