@@ -532,6 +532,9 @@ def do_hash(args):
       hash_values.remove(cut_hash)
       logger.log(25, "\tFound cut for hash {0:32s}. {1:d} hashes left.".format(cut_hash, len(hash_values)))
     if not hash_values: break
+  # warn the user if there were hashes we could not decode for some reason
+  if hash_values:
+    logger.warning("There are inputs (hashes) provided we did not decode: {0}".format(hash_values))
   return True
 
 #@echo(write=logger.debug)
