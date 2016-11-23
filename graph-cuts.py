@@ -52,11 +52,11 @@ def init_hist(args, supercut, pivotIndex = 0):
                 args.l_min,
                 args.l_max)
 
-def draw_hist(hist):
+def draw_hist(hist, nSigs=1):
     hist.SetMarkerSize(800)
     hist.SetMarkerColor(ROOT.kWhite)
     #gStyle.SetPalette(51)
-    ROOT.gStyle.SetPaintTextFormat("0.0f");
+    ROOT.gStyle.SetPaintTextFormat("1.{0:d}f".format(nSigs));
     hist.Draw("TEXT45 COLZ")
 
 def draw_labels(lumi):
@@ -178,7 +178,7 @@ if __name__ == '__main__':
       for r in summary:
         g = r['m_gluino']
         l = r['m_lsp']
-        z = int(round(get_cut_value(args, cut, r['hash'], pivotIndex)))
+        z = get_cut_value(args, cut, r['hash'], pivotIndex)
         b = hist.FindFixBin(g,l)
         xx=ROOT.Long(0)
         yy=ROOT.Long(0)
@@ -199,7 +199,7 @@ if __name__ == '__main__':
       hist.SetContour(nSteps)
       hist.GetZaxis().SetNdivisions(nSteps, False)
 
-      draw_hist(hist)
+      draw_hist(hist, int(st3[1]-st3[0] <= 1))
       draw_labels(args.lumi)
       draw_text(args.text_file)
       draw_line(args.top_mass)
