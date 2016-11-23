@@ -199,7 +199,7 @@ if __name__ == '__main__':
       hist.SetContour(nSteps)
       hist.GetZaxis().SetNdivisions(nSteps, False)
 
-      draw_hist(hist, int(st3[1]-st3[0] <= 1))
+      draw_hist(hist, int(abs(st3[1]-st3[0] <= 1)))
       draw_labels(args.lumi)
       draw_text(args.text_file)
       draw_line(args.top_mass)
