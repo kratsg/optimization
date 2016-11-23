@@ -515,17 +515,23 @@ def do_hash(args):
   # next, read in the supercuts file
   data = read_supercuts_file(args.supercuts)
 
-  logger.info("Finding cuts for {0:d} hashes.".format(len(args.hash_values)))
+  # either user provides a bunch of hashes, or we provide a summary.json file which contains the optimal cuts for us
+  hash_values = args.hash_values
+  if args.use_summary:
+    logger.info("Treating hash_values as containing only a summary.json file instead")
+    hash_values = set([r['hash'] for r in json.load(file(args.hash_values[0]))])
+
+  logger.info("Finding cuts for {0:d} hashes.".format(len(hash_values)))
   # now loop over all cuts until we find all the hashes
   for cut in get_cut(copy.deepcopy(data)):
     cut_hash = get_cut_hash(cut)
     logger.info("\tChecking {0:s}".format(cut_hash))
-    if cut_hash in args.hash_values:
+    if cut_hash in hash_values:
       with open(os.path.join(args.output_directory, "{0}.json".format(cut_hash)), 'w+') as f:
         f.write(json.dumps([{k: (NoIndent(v) if k == 'pivot' else v)  for k, v in d.iteritems() if k in ['selections', 'pivot', 'fixed']} for d in cut], sort_keys=True, indent=4, cls=NoIndentEncoder))
-      args.hash_values.remove(cut_hash)
-      logger.info("\tFound cut for hash {0:32s}. {1:d} hashes left.".format(cut_hash, len(args.hash_values)))
-    if not args.hash_values: break
+      hash_values.remove(cut_hash)
+      logger.log(25, "\tFound cut for hash {0:32s}. {1:d} hashes left.".format(cut_hash, len(hash_values)))
+    if not hash_values: break
   return True
 
 #@echo(write=logger.debug)
@@ -572,6 +578,7 @@ def do_summary(args):
   logger.log(25, "Using {0} cores".format(num_cores) )
   results = Parallel(n_jobs=num_cores)(delayed(get_summary)(args, filename, mass_windows) for filename in glob.glob(os.path.join(args.search_directory, "s*.b*.json")))
   results = filter(None, results)
+  logger.log(25, "Generated summary for {0} items".format(len(results)))
 
   with open(args.output, 'w+') as f:
     f.write(json.dumps(sorted(results, key=operator.itemgetter('did')), sort_keys=True, indent=4))
@@ -683,8 +690,9 @@ if __name__ == "__main__":
                                       usage='%(prog)s <hash> [<hash> ...] [options]', help='Translate hash to cut',
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
                                       epilog='hash will take in a list of hashes and dump the cuts associated with them')
-  hash_parser.add_argument('hash_values', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
+  hash_parser.add_argument('hash_values', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for. If --use-summary is flagged, you can pass in a summary.json file instead.')
   hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='outputHash')
+  hash_parser.add_argument('--use-summary', action='store_true', help='If flagged, read in the list of hashes from the provided summary.json file')
 
   summary_parser = subparsers.add_parser("summary", parents=[main_parser, parallel_parser],
                                          description='Given the results of optimize (significances), generate a table of results for each mass point. v.{0}'.format(__version__),

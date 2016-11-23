@@ -303,8 +303,9 @@ Variable | Type | Description | Default
 --tree | string | ttree name in the ntuples | oTree
 --eventWeight | string | event weight branch name | event_weight
 --supercuts | string | path to json dict of supercuts for generating cuts | supercuts.json
---o, --output | directory | output directory to store json files containing cuts | cuts
 --weightsFile | string | .json file containing weights in proper formatting - see SampleWeights
+--o, --output | directory | output directory to store json files containing cuts | cuts
+--numpy | bool | if enabled, use `numpy` and `numexpr` instead of ROOT. [See this section for more information.](#more-complicated-selections)
 
 #### Output
 
@@ -452,7 +453,7 @@ usage: optimize.py hash <hash> [<hash> ...] [options]
 
 Variable | Type | Description
 ---------|------|------------
-hash (positional) | string | 32-bit hash(es) to decode as cuts
+hash (positional) | string | 32-bit hash(es) to decode as cuts. If --use-summary is flagged, you can pass in your summary.json file instead.
 
 #### Optional Parameters
 
@@ -464,6 +465,7 @@ Variable | Type | Description| Default
 -b, --batch | bool | enable batch mode for ROOT | False
 --supercuts | string | path to json dict of supercuts | supercuts.json
 --o, --output | directory | output directory to store json files containing cuts | outputHash
+--use-summary | bool | if enabled, you can pass in your summary.json file instead of a bunch of hashes | False
 
 #### Output
 
