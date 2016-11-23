@@ -1,149 +1,100 @@
-#!/bin/env python2
-
-import optparse,csv,sys
-sys.argv.append("-b")
-from ROOT import *
-import rootpy as rpy
-from rootpy.plotting.style import set_style, get_style
-import numpy as np
+import argparse
+import subprocess
+import os
 import utils
+import csv
+import json
 
-atlas = get_style('ATLAS')
-atlas.SetPalette(51)
-set_style(atlas)
-sys.argv = sys.argv[:-1]
+class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
+  pass
 
-topmass = 173.34
+__version__ = subprocess.check_output(["git", "describe", "--always"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
+__short_hash__ = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
 
-def parse_argv():
+parser = argparse.ArgumentParser(description='Author: A. Cukierman, G. Stark. v.{0}'.format(__version__),
+                                 formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+parser.add_argument('--summary', type=str, required=True, help='Summary json')
+parser.add_argument("--outputHash", type=str, required=True, help="directory where outputHash files are located")
+parser.add_argument("--supercuts", type=str, required=True, help="supercuts file detailing all selections used")
+parser.add_argument('--lumi', type=float, required=False, help='Luminosity to write on plot [ifb]', default=35)
+parser.add_argument('--text-file', type=str, required=False, help='text csv file', default=None)
+parser.add_argument('--out-directory', type=str, required=False, help='output directory', default='plots')
+parser.add_argument('-o', '--output', type=str, required=False, help='Name to put in output filenames', default='output')
+parser.add_argument('--g-min', type=float, required=False, help='Minimum gluino mass', default=800)
+parser.add_argument('--g-max', type=float, required=False, help='Maximum gluino mass', default=2500)
+parser.add_argument('--l-min', type=float, required=False, help='Minimum LSP mass', default=0)
+parser.add_argument('--l-max', type=float, required=False, help='Maximum LSP mass', default=1500)
+parser.add_argument('--bin-size', type=float, required=False, help='Size of bins to use', default=100)
+parser.add_argument('--x-dim', type=float, required=False, help='x-dimension of figure', default=800)
+parser.add_argument('--y-dim', type=float, required=False, help='y-dimension of figure', default=600)
+parser.add_argument('--top-mass', type=float, required=False, help='Mass of top quark [GeV]. Mainly meant to draw exclusion line.', default=173.34)
+parser.add_argument('--do-run1', action='store_true', help='Add Run-1 line to graph')
+parser.add_argument('--run1-color', type=int, required=False, help='Color of Run-1 line', default=46)
+parser.add_argument('--run1-excl', type=str, required=False, help='CSV file containing Run-1 exclusion points', default='run1_limit.csv')
+parser.add_argument('--run1-1sigma', type=str, required=False, help='CSV file containing Run-1 exclusion (+1 sigma) points', default='run1_limit_1sigma.csv')
 
-    parser = optparse.OptionParser()
-    parser.add_option("--lumi", help="luminosity", default=5, type=int)
-    parser.add_option("--text-file", help="text csv file", default=None, type=str)
-    parser.add_option("--outdir", help="outfile directory", default="plots")
-    parser.add_option("--outfilebase", help="outfile base name", default="output")
-    parser.add_option("--g-min", help="min gluino mass", default=800, type=float)
-    parser.add_option("--g-max", help="max gluino mass", default=2500, type=float)
-    parser.add_option("--l-min", help="min lsp mass", default=0, type=float)
-    parser.add_option("--l-max", help="max lsp mass", default=1500, type=float)
-    parser.add_option("--bin-width", help="bin width", default=100, type=float)
-    parser.add_option("--x-dim", help="x dimension of figure", default=800, type=float)
-    parser.add_option("--y-dim", help="y dimension of figure", default=600, type=float)
-    parser.add_option("--sigdir", help="directory where significances files are located", default='significances', type=str)
-    parser.add_option("--hashdir", help="directory where hash files are located", default='outputHash', type=str)
-    parser.add_option("--supercuts", help="supercuts file detailing all selections used", default="supercuts.json", type=str)
-    parser.add_option('--massWindows', help='Location of mass windows file', default='mass_windows.txt', type=str)
+# parse the arguments, throw errors if missing any
+args = parser.parse_args()
 
-    (options,args) = parser.parse_args()
+def get_cut_value(args, cut, cut_hash, pivotIndex = 0):
+  filename = os.path.join(args.outputHash, '{0}.json'.format(cut_hash))
+  if not os.path.exists(filename): return 0
+  val = 0
+  with open(filename) as f:
+    cuts = json.load(f)
+    found_cut = False
+    for entry in cuts:
+      if entry['selections'] == cut:
+        found_cut = True
+        break
+    if found_cut:
+      val = entry['pivot'][pivotIndex]
+    else:
+      print 'Did not find cut '+cut+' in hash file'
+      val = -1
+  return val
 
-    return (options)
+def nbinsx(args):
+    return int((args.g_max - args.g_min) / args.bin_size)
 
-import csv,glob,json
-def get_cut_value(opts, cut, pivotIndex = 0):
-  masses = utils.load_mass_windows(opts.massWindows)
+def nbinsy(args):
+    return int((args.l_max - args.l_min) / args.bin_size)
 
-  filenames = glob.glob(opts.sigdir+'/s*.b*.json')
-  dids = []
-  hashs = []
-  for filename in filenames:
-    with open(filename) as json_file:
-      hash_dict = json.load(json_file)
-      entry = hash_dict[0]
-      h = entry['hash']
-      hashs.append(h)
-      did = utils.get_did(filename)
-      dids.append(did)
-
-  def get_value(opts, cut, h, pivotIndex = 0):
-    filenames = glob.glob(opts.hashdir+'/'+h+'.json')
-    if len(filenames)==0:
-      return 0
-    filename = filenames[0]
-    val = 0
-    with open(filename) as json_file:
-      cuts_dict = json.load(json_file)
-      found_cut = False
-      for entry in cuts_dict:
-        if entry['selections'] == cut:
-          found_cut = True
-          break
-      if found_cut:
-        val = entry['pivot'][pivotIndex]
-      else:
-        print 'Did not find cut '+cut+' in hash file'
-        val = -1
-    return val
-
-
-  plot_array=[]
-  for did,h in zip(dids,hashs):
-    mgluino,mstop,mlsp = masses.get(did)
-    val = get_value(opts, cut, h, pivotIndex)
-    row = [mgluino,mlsp,val]
-    if int(mstop) == 5000:
-      plot_array.append(row)
-
-  return plot_array
-
-def nbinsx(opts):
-    return int((opts.g_max - opts.g_min) / opts.bin_width)
-
-def nbinsy(opts):
-    return int((opts.l_max - opts.l_min) / opts.bin_width)
-
-def init_canvas(opts):
+def init_canvas(args):
 
     #gStyle.SetPalette(1);
 
-    c = TCanvas("c", "", 0, 0, opts.x_dim, opts.y_dim)
+    c = ROOT.TCanvas("c", "", 0, 0, args.x_dim, args.y_dim)
     c.SetRightMargin(0.16)
     c.SetTopMargin(0.07)
 
     return c
 
-def axis_labels(opts,cut):
+def axis_labels(args,cut):
 
     return ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % cut
 
-def init_hist(opts, supercut, pivotIndex = 0):
+def init_hist(args, supercut, pivotIndex = 0):
     numPivots = len(supercut['st3'])
     formattedCut = supercut['selections'].format(*(['#']*pivotIndex + ['?'] + ['#']*(numPivots - 1 - pivotIndex)))
-    return TH2F("grid",
-                axis_labels(opts,formattedCut),
-                nbinsx(opts),
-                opts.g_min,
-                opts.g_max,
-                nbinsy(opts),
-                opts.l_min,
-                opts.l_max)
-
-def fill_hist(hist, opts, cut, pivotIndex = 0):
-
-  plot_array = get_cut_value(opts, cut, pivotIndex)
-  for row in plot_array:
-      g = int(row[0])
-      l = int(row[1])
-      z = int(round(row[2]))
-      b = hist.FindFixBin(g,l)
-      xx=Long(0)
-      yy=Long(0)
-      zz=Long(0)
-      hist.GetBinXYZ(b,xx,yy,zz)
-      z_old =  hist.GetBinContent(xx,yy)
-      newz = max(z_old,z)
-      hist.SetBinContent(b,newz)
-      if newz == 0:
-        hist.SetBinContent(b, 0.001)
+    return ROOT.TH2F("grid",
+                axis_labels(args,formattedCut),
+                nbinsx(args),
+                args.g_min,
+                args.g_max,
+                nbinsy(args),
+                args.l_min,
+                args.l_max)
 
 def draw_hist(hist):
     hist.SetMarkerSize(800)
-    hist.SetMarkerColor(kWhite)
+    hist.SetMarkerColor(ROOT.kWhite)
     #gStyle.SetPalette(51)
-    gStyle.SetPaintTextFormat("0.0f");
+    ROOT.gStyle.SetPaintTextFormat("0.0f");
     hist.Draw("TEXT45 COLZ")
 
 def draw_labels(lumi):
-    txt = TLatex()
+    txt = ROOT.TLatex()
     txt.SetNDC()
     txt.DrawText(0.32,0.87,"Internal")
     txt.DrawText(0.2,0.82,"Simulation")
@@ -164,7 +115,7 @@ def draw_text(path):
     if path is None:
         return
 
-    txt = TLatex()
+    txt = ROOT.TLatex()
     txt.SetNDC()
     txt.SetTextSize(0.030)
 
@@ -173,15 +124,13 @@ def draw_text(path):
         for row in reader:
             txt.DrawLatex(float(row[0]), float(row[1]), row[2])
 
-def draw_line():
-  l=TLine(1000,1000,2000,2000)
+def draw_line(topmass=173.34):
+  l=ROOT.TLine(1000,1000,2000,2000)
   l.SetLineStyle(2)
-  l.DrawLine(opts.g_min,opts.g_min-2*topmass,opts.l_max+2*topmass,opts.l_max)
+  l.DrawLine(args.g_min,args.g_min-2*topmass,args.l_max+2*topmass,args.l_max)
 
 from array import *
 def exclusion():
-  #x = array('d',[opts.g_min,opts.l_max+2*topmass,opts.g_min])
-  #y = array('d',[opts.g_min-2*topmass,opts.l_max,opts.l_max])
   x = array('d',[1400,1600,1600,1400])
   y = array('d',[600,600,800,600])
   p=TPolyLine(4,x,y)
@@ -191,54 +140,80 @@ def exclusion():
   return p
 
 if __name__ == '__main__':
+  import ROOT
+  import utils
+  import numpy as np
 
-    #cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b','multiplicity_topTag_loose']
-    #cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b','multiplicity_jet_largeR']
-    #cuts = ['m_effective','mTb','met','multiplicity_jet','multiplicity_jet_b']
+  from rootpy.plotting.style import set_style, get_style
+  atlas = get_style('ATLAS')
+  atlas.SetPalette(51)
+  set_style(atlas)
 
-    opts = parse_argv()
+  summary = json.load(file(args.summary))
 
-    # load in supercuts
-    with open(opts.supercuts) as f:
-      supercuts = json.load(f)
+  plot_array={'sig':      [r['significance'] for r in summary],
+              'signal':   [r['signal'] for r in summary],
+              'bkgd':     [r['bkgd'] for r in summary],
+              'mgluino':  [r['m_gluino'] for r in summary],
+              'mlsp':     [r['m_lsp'] for r in summary],
+              'ratio':    [r['ratio'] for r in summary]}
 
-    i = 0
-    for supercut in supercuts:
-      if supercut.get('pivot') is not None: continue
-      cut = supercut['selections']
-      # a cut string can have multiple pivots, need to draw a histogram for each pivot subsection
-      numPivots = len(supercut['st3'])
-      for pivotIndex in range(numPivots):
-        print(i, cut)
-        c = init_canvas(opts)
-        h = init_hist(opts, supercut, pivotIndex)
-        fill_hist(h, opts, cut, pivotIndex)
-        st3 = supercut['st3'][pivotIndex]
-        # number of steps
-        nSteps = len(np.arange(*st3))
-        h.GetZaxis().SetRangeUser(st3[0], st3[1])
-        h.GetZaxis().CenterLabels()
-        h.GetZaxis().SetTickLength(0)
-        h.SetContour(nSteps)
-        h.GetZaxis().SetNdivisions(nSteps, False)
+  # load in supercuts
+  with open(args.supercuts) as f:
+    supercuts = json.load(f)
 
-        draw_hist(h)
-        draw_labels(opts.lumi)
-        draw_text(opts.text_file)
-        draw_line()
-        #p = exclusion()
-        #p.Draw()
+  i = 0
+  for supercut in supercuts:
+    if supercut.get('pivot') is not None: continue
+    cut = supercut['selections']
+    # a cut string can have multiple pivots, need to draw a histogram for each pivot subsection
+    numPivots = len(supercut['st3'])
+    for pivotIndex in range(numPivots):
+      print(i, cut)
+      c = init_canvas(args)
+      hist = init_hist(args, supercut, pivotIndex)
 
-        if numPivots == 1:
-          savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i)
-        else:
-          savefilename = opts.outdir + '/' + opts.outfilebase + '_' + str(i) + '-' + str(pivotIndex)
+      for r in summary:
+        g = r['m_gluino']
+        l = r['m_lsp']
+        z = int(round(get_cut_value(args, cut, r['hash'], pivotIndex)))
+        b = hist.FindFixBin(g,l)
+        xx=ROOT.Long(0)
+        yy=ROOT.Long(0)
+        zz=ROOT.Long(0)
+        hist.GetBinXYZ(b,xx,yy,zz)
+        z_old =  hist.GetBinContent(xx,yy)
+        newz = max(z_old,z)
+        hist.SetBinContent(b,newz)
+        if newz == 0:
+          hist.SetBinContent(b, 0.001)
 
-        for ext in ['pdf']:
-          c.SaveAs(savefilename+'.{0}'.format(ext))
-        print 'Saving file ' + savefilename
-      i += 1
-    print 'Done'
+      st3 = supercut['st3'][pivotIndex]
+      # number of steps
+      nSteps = len(np.arange(*st3))
+      hist.GetZaxis().SetRangeUser(st3[0], st3[1])
+      hist.GetZaxis().CenterLabels()
+      hist.GetZaxis().SetTickLength(0)
+      hist.SetContour(nSteps)
+      hist.GetZaxis().SetNdivisions(nSteps, False)
 
-    exit(0)
+      draw_hist(hist)
+      draw_labels(args.lumi)
+      draw_text(args.text_file)
+      draw_line(args.top_mass)
+      #p = exclusion()
+      #p.Draw()
+
+      if numPivots == 1:
+        savefilename = args.out_directory + '/' + args.output + '_' + str(i)
+      else:
+        savefilename = args.out_directory + '/' + args.output + '_' + str(i) + '-' + str(pivotIndex)
+
+      for ext in ['pdf']:
+        c.SaveAs(savefilename+'.{0}'.format(ext))
+      print 'Saving file ' + savefilename
+    i += 1
+  print 'Done'
+
+  exit(0)
 
