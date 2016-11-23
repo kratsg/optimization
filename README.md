@@ -45,6 +45,10 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
     - [Required Parameters](#required-parameters-3)
     - [Optional Parameters](#optional-parameters-3)
     - [Output](#output-3)
+  - [Action:Summary](#actionsummary)
+    - [Required Parameters](#required-parameters-4)
+    - [Optional Parameters](#optional-parameters-4)
+    - [Output](#output-4)
   - [Supercuts File](#supercuts-file)
     - [Defining a fixed cut](#defining-a-fixed-cut)
     - [Defining a supercut](#defining-a-supercut)
@@ -452,8 +456,8 @@ hash (positional) | string | 32-bit hash(es) to decode as cuts
 
 #### Optional Parameters
 
-Variable | Type | Description
----------|------|------------
+Variable | Type | Description| Default
+---------|------|------------|---------
 -h, --help | bool | display help message | False
 -v, --verbose | count | enable more verbose output | 0
 --debug | bool | enable full-on debugging | False
@@ -472,6 +476,46 @@ fixed | bool | whether the cut was from a fixed cut or a supercut
 pivot | number | the value which we cut on, see `signal_direction` for more
 signal_direction | string | `? = >` or `? = <`, cuts obey the rule `value ? pivot`
 
+### Action:Summary
+
+Optimize results to summary json. Given the finished results of an optimization, produce a json summarizing it entirely.
+
+```bash
+usage: optimize.py summary --searchDirectory significances/ --massWindows massWindows.txt [options]
+```
+
+#### Required Parameters
+
+Variable | Type | Description
+---------|------|------------
+--searchDirectory | str | The directory containing the significances produced from `optimize.py optimize`
+--massWindows | str | The file containing the mapping between DID and mass
+
+#### Optional Parameters
+
+Variable | Type | Description| Default
+---------|------|------------|---------
+-h, --help | bool | display help message | False
+-v, --verbose | count | enable more verbose output | 0
+--debug | bool | enable full-on debugging | False
+-b, --batch | bool | enable batch mode for ROOT | False
+--ncores | int | Number of cores to use for parallelization | <num cores>
+-o, --output | str | Name of output file to use | summary.json
+--stop-masses | int | Allowed stop masses to include in summary | [5000]
+
+#### Output
+
+The summary subcommand will create an output json file containing a list of dictionaries, one for each signal DID used in optimization. It will contain the following variables in each dictionary:
+
+Variable | Type | Description
+---------|------|------------
+bkgd | float | Background yield
+did | str | DID of signal
+m_gluino | int | Mass of Gluino
+m_lsp | int | Mass of LSP
+m_stop | int | Mass of Stop
+ratio | float | Ratio of signal/bkgd
+significance | float | Significance of optimal cut
 
 ### Supercuts File
 

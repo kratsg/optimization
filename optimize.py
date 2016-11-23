@@ -400,7 +400,7 @@ def do_cuts(args):
     weights = json.load(file(args.weightsFile))
 
   # parallelize
-  num_cores = min(multiprocessing.cpu_count(),args.ncores)
+  num_cores = min(multiprocessing.cpu_count(), args.num_cores)
   logger.log(25, "Using {0} cores".format(num_cores) )
   results = Parallel(n_jobs=num_cores)(delayed(do_cut)(args, did, files, supercuts, weights) for did, files in dids.iteritems())
 
@@ -528,6 +528,54 @@ def do_hash(args):
     if not args.hash_values: break
   return True
 
+#@echo(write=logger.debug)
+def get_summary(args, filename, mass_windows):
+  ''' Primarily used from within do_summary
+        - given a significance file, the mass windows, produce a summary dictionary for it
+  '''
+  logger.info("\treading {0:s}".format(filename))
+  with open(filename) as f:
+    entry = json.load(f)[0]
+
+    significance = entry['significance_scaled']
+    signal_yield = entry['yield_scaled']['sig']
+    bkgd_yield   = entry['yield_scaled']['bkg']
+
+    ratio = -1
+    try: ratio = signal_yield/bkgd_yield
+    except: pass
+
+    did = utils.get_did(os.path.basename(filename))
+
+    m_gluino, m_stop, m_lsp = [int(item) for item in mass_windows.get(did, (0, 0, 0))]
+    if not m_stop in args.stop_masses: return {}
+
+    return {'significance': significance,
+            'signal': signal_yield,
+            'bkgd': bkgd_yield,
+            'ratio': ratio,
+            'did': did,
+            'm_gluino': int(m_gluino),
+            'm_stop': int(m_stop),
+            'm_lsp': int(m_lsp)}
+
+#@echo(write=logger.debug)
+def do_summary(args):
+  # first check if output exists
+  if os.path.exists(args.output): raise IOError("Output already exists: {0:s}".format(args.output))
+  if not os.path.exists(args.mass_windows): raise IOError("Cannot find the mass_windows file: {0:s}".format(args.mass_windows))
+
+  mass_windows = utils.load_mass_windows(args.mass_windows)
+  num_cores = min(multiprocessing.cpu_count(),args.num_cores)
+  logger.log(25, "Using {0} cores".format(num_cores) )
+  results = Parallel(n_jobs=num_cores)(delayed(get_summary)(args, filename, mass_windows) for filename in glob.glob(os.path.join(args.search_directory, "s*.b*.json")))
+  results = filter(None, results)
+
+  with open(args.output, 'w+') as f:
+    f.write(json.dumps(sorted(results, key=operator.itemgetter('did')), sort_keys=True, indent=4))
+
+  return True
+
 if __name__ == "__main__":
   class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
     pass
@@ -568,6 +616,7 @@ if __name__ == "__main__":
   files_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
   tree_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
   supercuts_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  parallel_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
 
   # general arguments for all
   main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug to enable output for debugging.')
@@ -583,6 +632,8 @@ if __name__ == "__main__":
   tree_parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='name of the tree containing the ntuples', default='oTree')
   tree_parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='name of event weight branch in the ntuples. It must exist.', default='event_weight')
 
+  parallel_parser.add_argument('--ncores', type=int, required=False, dest='num_cores', metavar='<n>', help='Number of cores to use for parallelization. Defaults to max.', default=multiprocessing.cpu_count())
+
   ''' add subparsers '''
   subparsers = parser.add_subparsers(dest='command', help='actions available')
 
@@ -597,8 +648,8 @@ if __name__ == "__main__":
   generate_parser.add_argument('--fixedBranches', type=str, nargs='+', required=False, dest='fixed_branches', metavar='<branch>', help='branches that should have a fixed cut. can use wildcards', default=[])
   generate_parser.add_argument('--skipBranches', type=str, nargs='+', required=False, dest='skip_branches', metavar='<branch>', help='branches that should be skipped. can use wildcards', default=[])
 
-  # needs: files, tree, eventWeight, supercuts
-  cuts_parser = subparsers.add_parser("cut", parents=[main_parser, files_parser, tree_parser, supercuts_parser],
+  # needs: files, tree, eventWeight, supercuts, parallel
+  cuts_parser = subparsers.add_parser("cut", parents=[main_parser, files_parser, tree_parser, supercuts_parser, parallel_parser],
                                       description='Process ROOT ntuples and apply cuts. v.{0}'.format(__version__),
                                       usage='%(prog)s <file.root> ... [options]', help='Apply the cuts',
                                       formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
@@ -606,7 +657,6 @@ if __name__ == "__main__":
   cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='json file containing weights by DID', default='weights.json')
   cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='cuts')
   cuts_parser.add_argument('--numpy', required=False, action='store_true', help='Enable numpy optimization to speed up the cuts processing')
-  cuts_parser.add_argument('--ncores', type=int, required=False, dest='ncores', help='Set number of cores to use for parallel cutting. Defaults to max.', default=multiprocessing.cpu_count())
 
 
   # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
@@ -634,11 +684,22 @@ if __name__ == "__main__":
   hash_parser.add_argument('hash_values', type=str, nargs='+', metavar='<hash>', help='Specify a hash to look up the cut for')
   hash_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='outputHash')
 
+  summary_parser = subparsers.add_parser("summary", parents=[main_parser, parallel_parser],
+                                         description='Given the results of optimize (significances), generate a table of results for each mass point. v.{0}'.format(__version__),
+                                         usage='%(prog)s --searchDirectory significances/ --massWindows massWindows.txt [options]', help='Summarize Optimization Results',
+                                         formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
+                                         epilog='summary will take in significances and summarize in a json file')
+  summary_parser.add_argument('--searchDirectory', required=True, type=str, dest='search_directory', help='Directory that contains the significances')
+  summary_parser.add_argument('--massWindows', required=True, type=str, dest='mass_windows', help='File that maps DID to mass')
+  summary_parser.add_argument('--output', required=False, type=str, dest='output', help='Output json to make', default='summary.json')
+  summary_parser.add_argument('--stop-masses', required=False, type=int, nargs='+', help='Allowed stop masses', default=[5000])
+
   # set the functions that get called with the given arguments
   cuts_parser.set_defaults(func=do_cuts)
   optimize_parser.set_defaults(func=do_optimize)
   generate_parser.set_defaults(func=do_generate)
   hash_parser.set_defaults(func=do_hash)
+  summary_parser.set_defaults(func=do_summary)
 
   # print the help if called with no arguments
   import sys
