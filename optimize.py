@@ -537,6 +537,7 @@ def get_summary(args, filename, mass_windows):
   with open(filename) as f:
     entry = json.load(f)[0]
 
+    cut_hash     = entry['hash']
     significance = entry['significance_scaled']
     signal_yield = entry['yield_scaled']['sig']
     bkgd_yield   = entry['yield_scaled']['bkg']
@@ -550,7 +551,8 @@ def get_summary(args, filename, mass_windows):
     m_gluino, m_stop, m_lsp = [int(item) for item in mass_windows.get(did, (0, 0, 0))]
     if not m_stop in args.stop_masses: return {}
 
-    return {'significance': significance,
+    return {'hash': cut_hash,
+            'significance': significance,
             'signal': signal_yield,
             'bkgd': bkgd_yield,
             'ratio': ratio,

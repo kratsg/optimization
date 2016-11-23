@@ -511,11 +511,32 @@ Variable | Type | Description
 ---------|------|------------
 bkgd | float | Background yield
 did | str | DID of signal
+hash | 32-bit string | md5 hash of the optimal cut
 m_gluino | int | Mass of Gluino
 m_lsp | int | Mass of LSP
 m_stop | int | Mass of Stop
 ratio | float | Ratio of signal/bkgd
 significance | float | Significance of optimal cut
+
+This will look something like:
+
+```
+[
+    ...
+    {
+        "bkgd": 5.656293846714225,
+        "did": "370102",
+        "hash": "dc41780c77207a9a5dcf6b97b0cac5ac",
+        "m_gluino": 900,
+        "m_lsp": 400,
+        "m_stop": 5000,
+        "ratio": 79.33950854202577,
+        "signal": 448.76757396759103,
+        "significance": 29.78897424015455
+    },
+    ...
+]
+```
 
 ### Supercuts File
 
