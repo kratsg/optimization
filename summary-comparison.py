@@ -170,23 +170,23 @@ if __name__ == '__main__':
   atlas.cd()
   ROOT.gStyle.SetPalette(51)
 
-  # kDeepSea, kCherry (https://root.cern.ch/doc/v606/TColor_8cxx_source.html#l01672)
+  # based on kDeepSea, kCherry (https://root.cern.ch/doc/v606/TColor_8cxx_source.html#l01672)
 
   import numpy as np
   NCont = 255
-  stops = np.linspace(0.0, 1.0, 17, dtype=np.double)
+  stops = np.linspace(0.0, 1.0, 11, dtype=np.double)
 
-  kDeepSea = {'red': [ 0./255.,  9./255., 13./255., 17./255., 24./255.,  32./255.,  27./255.,  25./255.,  29./255.],
-              'green': [ 0./255.,  0./255.,  0./255.,  2./255., 37./255.,  74./255., 113./255., 160./255., 221./255. ],
-              'blue': [ 28./255., 42./255., 59./255., 78./255., 98./255., 129./255., 154./255., 184./255., 221./255. ]}
+  kDeepSea = {'red':   [ 24./255.,  32./255.,  27./255.,  25./255.,  29./255.],
+              'green': [ 37./255.,  74./255., 113./255., 160./255., 221./255. ],
+              'blue':  [  98./255., 129./255., 154./255., 184./255., 221./255. ]}
 
-  kCherry = {'red': [ 37./255., 102./255., 157./255., 188./255., 196./255., 214./255., 223./255., 235./255., 255./255. ],
-             'green': [ 37./255.,  29./255.,  25./255.,  37./255.,  67./255.,  91./255., 132./255., 185./255., 255./255. ],
-             'blue': [ 37./255.,  32./255.,  33./255.,  45./255.,  66./255.,  98./255., 137./255., 187./255., 255./255. ]}
+  kCherry = {'red':    [ 188./255., 196./255., 214./255., 223./255., 235./255., 255./255. ],
+             'green':  [  37./255.,  67./255.,  91./255., 132./255., 185./255., 255./255. ],
+             'blue':   [  45./255.,  66./255.,  98./255., 137./255., 187./255., 255./255. ]}
 
-  palette = {'red': kCherry['red']+kDeepSea['red'][:1:-1],
-             'green': kCherry['green']+kDeepSea['green'][:1:-1],
-             'blue': kCherry['blue']+kDeepSea['blue'][:1:-1]}
+  palette = {'red': kCherry['red']+kDeepSea['red'][::-1],
+             'green': kCherry['green']+kDeepSea['green'][::-1],
+             'blue': kCherry['blue']+kDeepSea['blue'][::-1]}
 
   p = ROOT.TColor.CreateGradientColorTable(len(stops), stops,
                                            np.array(palette['red'], np.double),
