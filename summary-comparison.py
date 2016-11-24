@@ -48,14 +48,14 @@ def fill_hist(hist,args,plot_array,label,skipNegativeSig=True):
       h.SetMinimum(-1.0)
       h.SetMaximum(1.0)
 
-def draw_hist(hist, nSigs=1):
+def draw_hist(hist, nSigs=1, markercolor=0, drawOpts="TEXT45 COLZ"):
     # hist.SetMaximum(args.histmax)
     # hist.SetMinimum(args.histmin)
     hist.SetMarkerSize(600)
-    hist.SetMarkerColor(ROOT.kWhite)
+    hist.SetMarkerColor(markercolor)
     #ROOT.gStyle.SetPalette(51)
     ROOT.gStyle.SetPaintTextFormat("1.{0:d}f".format(nSigs));
-    hist.Draw("TEXT45 COLZ")
+    hist.Draw(drawOpts)
 
 def draw_labels(lumi):
     txt = ROOT.TLatex()
@@ -207,24 +207,53 @@ if __name__ == '__main__':
               'm_lsp':     [],
               'ratio':    []}
 
+  plot_arraylarge={'significance':      [],
+              'signal':   [],
+              'bkgd':     [],
+              'm_gluino':  [],
+              'm_lsp':     [],
+              'ratio':    []}
+
+  plot_arraysmall={'significance':      [],
+              'signal':   [],
+              'bkgd':     [],
+              'm_gluino':  [],
+              'm_lsp':     [],
+              'ratio':    []}
+
   for base_r in base_summary:
     comp_r = next((item for item in comp_summary if item['m_gluino'] == base_r['m_gluino'] and item['m_lsp'] == base_r['m_lsp']), None)
+    saveTo = plot_arraylarge
     for key in ['significance', 'signal', 'bkgd', 'ratio']:
       val = -1
       try: val = (comp_r[key] - base_r[key])/base_r[key]
       except: pass
+
+      if abs(val) < 0.15 and key == 'significance': saveTo = plot_arraysmall
+
       plot_array[key].append(val)
+      saveTo[key].append(val)
     for key in ['m_gluino', 'm_lsp']:
       plot_array[key].append(base_r[key])
+      saveTo[key].append(base_r[key])
 
   c = init_canvas(args)
   labels = ['significance']
   ylabels = ['% Change in Significance']
   nSigs = [3]
   for label,ylabel,nSig in zip(labels,ylabels,nSigs):
-    h = init_hist(args,ylabel)
+    h = init_hist(args, ylabel)
+    hlarge = init_hist(args, ylabel)
+    hsmall = init_hist(args, ylabel)
+
     fill_hist(h,args,plot_array,label, label=='significance')
-    draw_hist(h, nSig)
+    fill_hist(hlarge,args, plot_arraylarge, label, label=='significance')
+    fill_hist(hsmall,args, plot_arraysmall, label, label=='significance')
+
+    draw_hist(h, nSig, ROOT.kWhite, "COLZ")
+    draw_hist(hlarge, nSig, ROOT.kWhite, "TEXT45 SAME")
+    draw_hist(hsmall, nSig, ROOT.kBlack, "TEXT45 SAME")
+
     draw_labels(args.lumi)
     draw_text(args.text_file)
     draw_line(args.top_mass)
