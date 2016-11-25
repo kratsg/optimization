@@ -252,7 +252,7 @@ if __name__ == '__main__':
 
     draw_hist(h, nSig, ROOT.kWhite, "COLZ")
     draw_hist(hlarge, nSig, ROOT.kWhite, "TEXT45 SAME")
-    draw_hist(hsmall, nSig, ROOT.kBlack, "TEXT45 SAME")
+    draw_hist(hsmall, nSig, ROOT.kGray+2, "TEXT45 SAME")
 
     draw_labels(args.lumi)
     draw_text(args.text_file)
