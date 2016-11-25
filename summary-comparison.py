@@ -257,7 +257,7 @@ if __name__ == '__main__':
     draw_labels(args.lumi)
     draw_text(args.text_file)
     draw_line(args.top_mass)
-    savefilename = args.out_directory + "/" + args.output + "_" + label
+    savefilename = args.out_directory + "/" + args.output + "_summary_" + label
     #p = exclusion()
     #p.Draw()
     c.SaveAs(savefilename + ".pdf")
