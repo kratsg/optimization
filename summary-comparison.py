@@ -229,6 +229,8 @@ if __name__ == '__main__':
       try: val = (comp_r[key] - base_r[key])/base_r[key]
       except: pass
 
+      # set val to a little larger than 0, bins with val=0.0 are not drawn. what the fuck ROOT
+      if val == 0.0: val = 0.0001
       if abs(val) < 0.15 and key == 'significance': saveTo = plot_arraysmall
 
       plot_array[key].append(val)
