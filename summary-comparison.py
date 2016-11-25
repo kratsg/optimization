@@ -239,7 +239,7 @@ if __name__ == '__main__':
 
   c = init_canvas(args)
   labels = ['significance']
-  ylabels = ['% Change in Significance']
+  ylabels = ['Fractional Change in Significance']
   nSigs = [3]
   for label,ylabel,nSig in zip(labels,ylabels,nSigs):
     h = init_hist(args, ylabel)
