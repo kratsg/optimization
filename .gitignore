@@ -1,8 +1,18 @@
-*
-
 !.gitignore
 !requirements.txt
 !*.py
 !README.md
 !mass-windows.txt
 !example_script.sh
+
+.DS_Store
+
+
+# Compiled python modules.
+*.pyc
+
+# Setuptools distribution folder.
+/dist/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
