@@ -41,7 +41,7 @@ import itertools
 from time import clock
 from collections import defaultdict
 import numexpr as ne
-import utils
+from optimize import utils
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
 from joblib import Parallel, delayed, load, dump
