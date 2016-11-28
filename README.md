@@ -80,10 +80,11 @@ I use [`virtualenvwrapper`](https://virtualenvwrapper.readthedocs.org/en/latest/
 pip install virtualenvwrapper
 echo "source /usr/local/bin/virtualenvwrapper.sh" >> ~/.bash_profile
 source ~/.bash_profile
-mkvirtualenv ROOT
-workon ROOT
+mkvirtualenv optimization
+workon optimization
 git clone git@github.com:kratsg/Optimization
 cd Optimization
+pip install numpy
 pip install -r requirements.txt
 python optimize.py -h
 ```
@@ -95,6 +96,7 @@ Start a new environment with `mkvirtualenv NameOfEnv` and everytime you open a n
 ```bash
 git clone git@github.com:kratsg/Optimization
 cd Optimization
+pip install numpy
 pip install -r requirements.txt
 python optimize.py -h
 ```
