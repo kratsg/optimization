@@ -18,6 +18,7 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
   - [Installing](#installing)
     - [Using virtual environment](#using-virtual-environment)
     - [Without using virtual environment](#without-using-virtual-environment)
+    - [Errors with root-numpy and TMVA](#errors-with-root-numpy-and-tmva)
   - [Using](#using)
     - [Grab some optimization ntuples](#grab-some-optimization-ntuples)
     - [Generate a supercuts template](#generate-a-supercuts-template)
@@ -100,6 +101,16 @@ pip install numpy
 pip install -r requirements.txt
 python optimize.py -h
 ```
+
+#### Errors with root-numpy and TMVA
+
+ROOT changed the TMVA version so to make `root-numpy` behave nicely, just run
+
+```bash
+NOTMVA=1 pip install root-numpy
+```
+
+which will install it without TMVA support. Then comment out the relevant line. `root-numpy` also requires `numpy` so you'll want to have that installed beforehand as well.
 
 ### Using
 
