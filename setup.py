@@ -65,17 +65,18 @@ setup(
       'mock==1.0.1',
       'nose==1.3.4',
       'numexpr==2.4.3',
-      'numpy==1.9.1',
       'pudb==2015.1',
       'pyparsing==2.0.3',
       'python-dateutil==2.4.0',
       'pytz==2014.10',
-      'root-numpy==4.2.0',
       'rootpy==0.8.0',
       'six==1.9.0',
       'snakeviz==0.4.0',
       'tornado==4.2',
       'urwid==1.3.0',
       'wsgiref==0.1.2'
-    ]
+    ],
+    extras_require={
+      'with-root-numpy': ('root-numpy',),
+    }
 )
