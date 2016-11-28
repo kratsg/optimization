@@ -6,7 +6,7 @@ if sys.version_info < (2, 6):
     sys.exit("optimize only supports python 2.6 and above")
 
 # do the setup
-from distutils.core import setup
+from setuptools import setup
 from optimize import __version__
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -69,14 +69,12 @@ setup(
       'pyparsing==2.0.3',
       'python-dateutil==2.4.0',
       'pytz==2014.10',
-      'rootpy==0.8.0',
+      'root-numpy>=4.6.0',
+      'rootpy>=0.8.0',
       'six==1.9.0',
       'snakeviz==0.4.0',
       'tornado==4.2',
       'urwid==1.3.0',
       'wsgiref==0.1.2'
-    ],
-    extras_require={
-      'with-root-numpy': ('root-numpy',),
-    }
+    ]
 )
