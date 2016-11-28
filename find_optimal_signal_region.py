@@ -27,6 +27,7 @@ parser.add_argument("--numSRs", required=False, type=int, help="Number of signal
 args = parser.parse_args()
 
 import ROOT
+ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(True)
 import csv
 import glob

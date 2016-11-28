@@ -163,6 +163,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   import ROOT
+  ROOT.PyConfig.IgnoreCommandLineOptions = True
   ROOT.gROOT.SetBatch(args.batch_mode)
 
   from rootpy.plotting.style import set_style, get_style

@@ -36,6 +36,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   import ROOT
+  ROOT.PyConfig.IgnoreCommandLineOptions = True
   ROOT.gROOT.SetBatch(args.batch_mode)
 
   import json

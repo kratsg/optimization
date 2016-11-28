@@ -1,5 +1,6 @@
 import csv
 import ROOT
+ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 def init_palette():
   from rootpy.plotting.style import set_style, get_style

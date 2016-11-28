@@ -33,6 +33,7 @@ from itertools import combinations
 import operator
 import optimize
 import ROOT
+ROOT.PyConfig.IgnoreCommandLineOptions = True
 import sys
 from collections import defaultdict
 

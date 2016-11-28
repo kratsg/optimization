@@ -24,6 +24,7 @@ parser.add_argument("--basedir", required=False, type=str, help="base directory"
 args = parser.parse_args()
 
 import ROOT
+ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(True)
 import csv
 import glob
