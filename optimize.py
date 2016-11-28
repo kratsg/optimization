@@ -41,7 +41,7 @@ import itertools
 from time import clock
 from collections import defaultdict
 import numexpr as ne
-from optimize import utils
+from root_optimize import utils
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
 from joblib import Parallel, delayed, load, dump
@@ -61,6 +61,7 @@ import tempfile
 
 # Set up ROOT
 import ROOT
+ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 #root_numpy
 import root_numpy as rnp
