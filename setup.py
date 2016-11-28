@@ -50,10 +50,10 @@ setup(
         'Development Status :: 4 - Beta',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Physics',
-        'Topic :: Scientific/Engineering :: Visualization'
+        'Topic :: Scientific/Engineering :: Visualization',
         'Topic :: Software Development',
         'Topic :: Scientific/Engineering',
-        'Topic :: Utilities'
+        'Topic :: Utilities',
     ],
     install_requires=[
       'Pygments==2.0.2',
