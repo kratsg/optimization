@@ -539,7 +539,7 @@ def do_hash(args):
   return True
 
 #@echo(write=logger.debug)
-def get_summary(args, filename, mass_windows):
+def get_summary(filename, mass_windows, stop_masses=[]):
   ''' Primarily used from within do_summary
         - given a significance file, the mass windows, produce a summary dictionary for it
   '''
@@ -559,7 +559,7 @@ def get_summary(args, filename, mass_windows):
     did = utils.get_did(os.path.basename(filename))
 
     m_gluino, m_stop, m_lsp = [int(item) for item in mass_windows.get(did, (0, 0, 0))]
-    if not m_stop in args.stop_masses: return {}
+    if not m_stop in stop_masses: return {}
 
     return {'hash': cut_hash,
             'significance': significance,
@@ -580,7 +580,7 @@ def do_summary(args):
   mass_windows = utils.load_mass_windows(args.mass_windows)
   num_cores = min(multiprocessing.cpu_count(),args.num_cores)
   logger.log(25, "Using {0} cores".format(num_cores) )
-  results = Parallel(n_jobs=num_cores)(delayed(get_summary)(args, filename, mass_windows) for filename in glob.glob(os.path.join(args.search_directory, "s*.b*.json")))
+  results = Parallel(n_jobs=num_cores)(delayed(get_summary)(filename, mass_windows, args.stop_masses) for filename in glob.glob(os.path.join(args.search_directory, "s*.b*.json")))
   results = filter(None, results)
   logger.log(25, "Generated summary for {0} items".format(len(results)))
 
