@@ -3,11 +3,11 @@ import io, os, sys
 
 # Check Python version
 if sys.version_info < (2, 6):
-    sys.exit("optimize only supports python 2.6 and above")
+    sys.exit("root_optimize only supports python 2.6 and above")
 
 # do the setup
 from setuptools import setup
-from optimize import __version__
+from root_optimize import __version__
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -23,13 +23,13 @@ def read(*filenames, **kwargs):
 long_description = read(os.path.join(here, 'README.md'))
 
 setup(
-    name='optimize',
+    name='root_optimize',
     version=__version__,
     description='Perform optimizations on flat ROOT TTrees',
     author='Giordon Stark',
     author_email='kratsg@gmail.com',
     url='https://github.com/kratsg/Optimization',
-    packages=['optimize'],
+    packages=['root_optimize'],
     license='MIT',
     classifiers=[
         'Intended Audience :: Developers',

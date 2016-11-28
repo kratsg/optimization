@@ -1,4 +1,4 @@
-from optimize import plotting
+from root_optimize import plotting
 import os
 
 if __name__ == '__main__':

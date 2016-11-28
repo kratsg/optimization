@@ -8,7 +8,7 @@ import numpy
 import argparse
 import subprocess
 import os
-from optimize import utils
+from root_optimize import utils
 
 class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
   pass
