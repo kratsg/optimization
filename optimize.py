@@ -272,24 +272,6 @@ def get_ttree(tree_name, filenames, eventWeightBranch):
   return tree
 
 #@echo(write=logger.debug)
-def read_supercuts_file(filename):
-  logger.info("Reading supercuts file {0}".format(filename))
-  logger.info("\tOpening")
-  with open(filename) as f:
-    supercuts = json.load(f)
-
-  logger.info("\tLoaded")
-  selections= set([supercut['selections'] for supercut in supercuts])
-  try:
-    for supercut in supercuts:
-      selections.remove(supercut['selections'])
-  except KeyError:
-    raise KeyError("Found more than one supercut definition on {0}".format(supercut['selections']))
-
-  logger.info("\tFound {1:d} supercut definitions".format(filename, len(supercuts)))
-  return supercuts
-
-#@echo(write=logger.debug)
 def cut_to_selection(cut):
   return cut['selections'].format(*cut['pivot'])
 
@@ -391,7 +373,7 @@ def do_cuts(args):
     dids[utils.get_did(fname)].append(fname)
 
   # load in the supercuts file
-  supercuts = read_supercuts_file(args.supercuts)
+  supercuts = utils.read_supercuts_file(args.supercuts)
 
   # build the containing canvas for all histograms drawn in `apply_selection`
   canvas = ROOT.TCanvas('test', 'test', 200, 10, 100, 100)
@@ -516,7 +498,7 @@ def do_hash(args):
     raise IOError("Output directory already exists: {0}".format(args.output_directory))
 
   # next, read in the supercuts file
-  data = read_supercuts_file(args.supercuts)
+  data = utils.read_supercuts_file(args.supercuts)
 
   # either user provides a bunch of hashes, or we provide a summary.json file which contains the optimal cuts for us
   hash_values = args.hash_values
