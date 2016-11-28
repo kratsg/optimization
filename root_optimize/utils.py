@@ -1,6 +1,9 @@
 import csv
 import re
 import json
+import hashlib
+import itertools
+import numpy as np
 
 import logging
 logger = logging.getLogger("optimize")
@@ -37,3 +40,29 @@ def read_supercuts_file(filename):
 
   logger.info("\tFound {1:d} supercut definitions".format(filename, len(supercuts)))
   return supercuts
+
+#@echo(write=logger.debug)
+def get_cut(superCuts, index=0):
+  # reached bottom of iteration, yield what we've done
+  if index >= len(superCuts): yield superCuts
+  else:
+    # start of iteration, make a copy of the input dictionary
+    # if index == 0: superCuts = copy.deepcopy(superCuts)
+    # reference to item
+    item = superCuts[index]
+    # are we doing a fixed cut? they should specify only pivot
+    try:
+      # if they don't want a fixed cut, then they need start, stop, step in st3
+      for pivot in itertools.product(*(np.arange(*st3) for st3 in item['st3'])):
+        # set the pivot value
+        item['pivot'] = pivot
+        item['fixed'] = False
+        # recursively call, yield the result which is the superCuts
+        for cut in get_cut(superCuts, index+1): yield cut
+    except KeyError:
+      item['fixed'] = True
+      for cut in get_cut(superCuts, index+1): yield cut
+
+#@echo(write=logger.debug)
+def get_cut_hash(cut):
+  return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()

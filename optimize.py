@@ -178,32 +178,6 @@ def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False):
     return apply_selection(tree, cuts, eventWeightBranch)
 
 #@echo(write=logger.debug)
-def get_cut(superCuts, index=0):
-  # reached bottom of iteration, yield what we've done
-  if index >= len(superCuts): yield superCuts
-  else:
-    # start of iteration, make a copy of the input dictionary
-    # if index == 0: superCuts = copy.deepcopy(superCuts)
-    # reference to item
-    item = superCuts[index]
-    # are we doing a fixed cut? they should specify only pivot
-    try:
-      # if they don't want a fixed cut, then they need start, stop, step in st3
-      for pivot in itertools.product(*(np.arange(*st3) for st3 in item['st3'])):
-        # set the pivot value
-        item['pivot'] = pivot
-        item['fixed'] = False
-        # recursively call, yield the result which is the superCuts
-        for cut in get_cut(superCuts, index+1): yield cut
-    except KeyError:
-      item['fixed'] = True
-      for cut in get_cut(superCuts, index+1): yield cut
-
-#@echo(write=logger.debug)
-def get_cut_hash(cut):
-  return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
-
-#@echo(write=logger.debug)
 def get_scaleFactor(weights, did):
   weight = weights.get(did, None)
   if weight is None:
@@ -341,8 +315,8 @@ def do_cut(args, did, files, supercuts, weights):
 
     # iterate over the cuts available
     cuts = {}
-    for cut in get_cut(copy.deepcopy(supercuts)):
-      cut_hash = get_cut_hash(cut)
+    for cut in utils.get_cut(copy.deepcopy(supercuts)):
+      cut_hash = utils.get_cut_hash(cut)
       rawEvents, weightedEvents = apply_cuts(tree, cut, args.eventWeightBranch, args.numpy)
       scaledEvents = weightedEvents*sample_scaleFactor
       cuts[cut_hash] = {'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents}
@@ -508,8 +482,8 @@ def do_hash(args):
 
   logger.info("Finding cuts for {0:d} hashes.".format(len(hash_values)))
   # now loop over all cuts until we find all the hashes
-  for cut in get_cut(copy.deepcopy(data)):
-    cut_hash = get_cut_hash(cut)
+  for cut in utils.get_cut(copy.deepcopy(data)):
+    cut_hash = utils.get_cut_hash(cut)
     logger.info("\tChecking {0:s}".format(cut_hash))
     if cut_hash in hash_values:
       with open(os.path.join(args.output_directory, "{0}.json".format(cut_hash)), 'w+') as f:
