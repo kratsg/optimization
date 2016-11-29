@@ -7,6 +7,7 @@ import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 import csv
+import copy
 import re
 import json
 import hashlib
