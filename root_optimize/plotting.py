@@ -3,9 +3,10 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import csv
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
+
+import csv
 
 def init_palette():
   from rootpy.plotting.style import set_style, get_style

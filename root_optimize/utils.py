@@ -3,6 +3,9 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import ROOT
+ROOT.PyConfig.IgnoreCommandLineOptions = True
+
 import csv
 import re
 import json
@@ -12,8 +15,7 @@ import numpy as np
 import numexpr as ne
 import os
 
-import ROOT
-ROOT.PyConfig.IgnoreCommandLineOptions = True
+import root_numpy as rnp
 
 import logging
 logger = logging.getLogger("optimize.utils")
@@ -213,9 +215,7 @@ def get_cut_hash(cut):
   return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
 
 #@echo(write=logger.debug)
-def apply_selection(tree, cuts, eventWeightBranch):
-  # use a global canvas
-  global canvas
+def apply_selection(tree, cuts, eventWeightBranch, canvas):
   selection = cuts_to_selection(cuts)
   # draw with selection
   tree.Draw(eventWeightBranch, '{0:s}*{1:s}'.format(eventWeightBranch, selection))
@@ -235,7 +235,7 @@ def apply_cut(arr, cut):
   return ne.evaluate(cut_to_selection(cut), local_dict=arr)
 
 #@echo(write=logger.debug)
-def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False):
+def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False, canvas=None):
   if doNumpy:
     # here, the tree is an rnp.tree2array() np.array
     entireSelection = '{0:s}*{1:s}'.format(eventWeightBranch, cuts_to_selection(cuts))
@@ -245,6 +245,73 @@ def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False):
     return np.sum(events!=0).astype(float), np.sum(events).astype(float)
   else:
     # here, the tree is a ROOT.TTree
-    return apply_selection(tree, cuts, eventWeightBranch)
+    return apply_selection(tree, cuts, eventWeightBranch, canvas)
 
+#@echo(write=logger.debug)
+def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, doNumpy):
+  start = clock()
+  try:
+    # load up the tree for the files
+    tree = get_ttree(tree_name, files, eventWeightBranch)
+    # if using numpy optimization, load the tree as a numpy array to apply_cuts on
+    if doNumpy:
+      # this part is tricky, a user might specify multiple branches
+      #   in their selection string, so we will remove non-alphanumeric characters (underscores are safe)
+      #   and remove anything else that is an empty string (hence the filter)
+      #   and then flatten the entire list, removing duplicate branch names
+      '''
+        totalSelections = []
+        for supercut in supercuts:
+          selection = supercut['selections']
+          # filter out non-alphanumeric
+          selection = p.sub(' ', selection.format("-", "-", "-", "-", "-", "-", "-", "-", "-", "-"))
+          # split on spaces, since we substituted non alphanumeric with spaces
+          selections = selection.split(' ')
+          # remove empty elements
+          filter(None, selections)
+          totalSelections.append(selections)
 
+        # flatten the thing
+        totalSelections = itertools.chain.from_iterable(totalSelections)
+        # remove duplicates
+        totalSelections = list(set(totalSelections))
+      '''
+      branchesSpecified = list(set(itertools.chain.from_iterable(selection_to_branches(supercut['selections'], tree) for supercut in supercuts)))
+      eventWeightBranchesSpecified = list(set(selection_to_branches(eventWeightBranch, tree)))
+
+      # get actual list of branches in the file
+      availableBranches = tree_get_branches(tree, eventWeightBranchesSpecified)
+
+      # remove anything that doesn't exist
+      branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
+      branchesSkipped = list(set(branchesSpecified) - set(branchesToUse))
+      if branchesSkipped:
+        logger.info("The following branches have been skipped...")
+        for branch in branchesSkipped:
+          logger.info("\t{0:s}".format(branch))
+      tree = rnp.tree2array(tree, branches=eventWeightBranchesSpecified+branchesToUse)
+
+    # get the scale factor
+    sample_scaleFactor = get_scaleFactor(weights, did)
+
+    # build the containing canvas for all histograms drawn in `apply_selection`
+    canvas = ROOT.TCanvas('test{0:d}'.format(did), 'test{0:d}'.format(did), 200, 10, 100, 100)
+
+    # iterate over the cuts available
+    cuts = {}
+    for cut in get_cut(copy.deepcopy(supercuts)):
+      cut_hash = get_cut_hash(cut)
+      rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch, doNumpy, canvas=canvas)
+      scaledEvents = weightedEvents*sample_scaleFactor
+      cuts[cut_hash] = {'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents}
+    logger.info("Applied {0:d} cuts".format(len(cuts)))
+    with open('{0:s}/{1:s}.json'.format(output_directory, did), 'w+') as f:
+      f.write(json.dumps(cuts, sort_keys=True, indent=4))
+      result = True
+      del canvas
+  except:
+    logger.exception("Caught an error - skipping {0:s}".format(did))
+    result = False
+    del canvas
+  end = clock()
+  return (result, end-start)

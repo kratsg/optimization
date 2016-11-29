@@ -10,9 +10,6 @@
 # redirect python output using the newer print function with file description
 #   print(string, f=fd)
 from __future__ import print_function
-# used to redirect ROOT output
-#   see http://stackoverflow.com/questions/21541238/get-ipython-doesnt-work-in-a-startup-script-for-ipython-ipython-notebook
-import tempfile
 
 import os, sys
 # grab the stdout and have python write to this instead
@@ -39,104 +36,20 @@ import glob
 import itertools
 from time import clock
 from collections import defaultdict
+
 # root_optimize
 from root_optimize import utils
+print('here2')
 from root_optimize.main import get_summary
+print('here3')
 from root_optimize.json import NoIndent, NoIndentEncoder
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
 from joblib import Parallel, delayed, load, dump
 import multiprocessing
-import tempfile
-
-'''
-  with tempfile.NamedTemporaryFile() as tmpFile:
-    if not args.debug:
-      ROOT.gSystem.RedirectOutput(tmpFile.name, "w")
-
-    # execute code here
-
-    if not args.debug:
-      ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
-'''
-
-# Set up ROOT
-import ROOT
-ROOT.PyConfig.IgnoreCommandLineOptions = True
-
-#root_numpy
-import root_numpy as rnp
-import numpy as np
-
-#@echo(write=logger.debug)
-def do_cut(args, did, files, supercuts, weights):
-  start = clock()
-  try:
-    # load up the tree for the files
-    tree = utils.get_ttree(args.tree_name, files, args.eventWeightBranch)
-    # if using numpy optimization, load the tree as a numpy array to apply_cuts on
-    if args.numpy:
-      # this part is tricky, a user might specify multiple branches
-      #   in their selection string, so we will remove non-alphanumeric characters (underscores are safe)
-      #   and remove anything else that is an empty string (hence the filter)
-      #   and then flatten the entire list, removing duplicate branch names
-      '''
-        totalSelections = []
-        for supercut in supercuts:
-          selection = supercut['selections']
-          # filter out non-alphanumeric
-          selection = p.sub(' ', selection.format("-", "-", "-", "-", "-", "-", "-", "-", "-", "-"))
-          # split on spaces, since we substituted non alphanumeric with spaces
-          selections = selection.split(' ')
-          # remove empty elements
-          filter(None, selections)
-          totalSelections.append(selections)
-
-        # flatten the thing
-        totalSelections = itertools.chain.from_iterable(totalSelections)
-        # remove duplicates
-        totalSelections = list(set(totalSelections))
-      '''
-      branchesSpecified = list(set(itertools.chain.from_iterable(utils.selection_to_branches(supercut['selections'], tree) for supercut in supercuts)))
-      eventWeightBranchesSpecified = list(set(utils.selection_to_branches(args.eventWeightBranch, tree)))
-
-      # get actual list of branches in the file
-      availableBranches = utils.tree_get_branches(tree, eventWeightBranchesSpecified)
-
-      # remove anything that doesn't exist
-      branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
-      branchesSkipped = list(set(branchesSpecified) - set(branchesToUse))
-      if branchesSkipped:
-        logger.info("The following branches have been skipped...")
-        for branch in branchesSkipped:
-          logger.info("\t{0:s}".format(branch))
-      tree = rnp.tree2array(tree, branches=eventWeightBranchesSpecified+branchesToUse)
-
-    # get the scale factor
-    sample_scaleFactor = utils.get_scaleFactor(weights, did)
-
-    # iterate over the cuts available
-    cuts = {}
-    for cut in utils.get_cut(copy.deepcopy(supercuts)):
-      cut_hash = utils.get_cut_hash(cut)
-      rawEvents, weightedEvents = utils.apply_cuts(tree, cut, args.eventWeightBranch, args.numpy)
-      scaledEvents = weightedEvents*sample_scaleFactor
-      cuts[cut_hash] = {'raw': rawEvents, 'weighted': weightedEvents, 'scaled': scaledEvents}
-    logger.info("Applied {0:d} cuts".format(len(cuts)))
-    with open('{0:s}/{1:s}.json'.format(args.output_directory, did), 'w+') as f:
-      f.write(json.dumps(cuts, sort_keys=True, indent=4))
-      result = True
-  except:
-    logger.exception("Caught an error - skipping {0:s}".format(did))
-    result = False
-  end = clock()
-  return (result, end-start)
 
 #@echo(write=logger.debug)
 def do_cuts(args):
-  # make the canvas global
-  global canvas
-
   # before doing anything, let's ensure the directory we make is ok
   if not os.path.exists(args.output_directory):
     os.makedirs(args.output_directory)
@@ -151,9 +64,6 @@ def do_cuts(args):
   # load in the supercuts file
   supercuts = utils.read_supercuts_file(args.supercuts)
 
-  # build the containing canvas for all histograms drawn in `apply_selection`
-  canvas = ROOT.TCanvas('test', 'test', 200, 10, 100, 100)
-
   # load up the weights file
   if not os.path.isfile(args.weightsFile):
     raise ValueError('The supplied weights file `{0}` does not exist or I cannot find it.'.format(args.weightsFile))
@@ -163,7 +73,7 @@ def do_cuts(args):
   # parallelize
   num_cores = min(multiprocessing.cpu_count(), args.num_cores)
   logger.log(25, "Using {0} cores".format(num_cores) )
-  results = Parallel(n_jobs=num_cores)(delayed(do_cut)(args, did, files, supercuts, weights) for did, files in dids.iteritems())
+  results = Parallel(n_jobs=num_cores)(delayed(utils.do_cut)(did, files, supercuts, weights, args.tree_name, args.output_directory, args.eventWeightBranch, args.numpy) for did, files in dids.iteritems())
 
   for did, result in zip(dids, results):
     logger.log(25, 'DID {0:s}: {1:s}'.format(did, 'ok' if result[0] else 'not ok'))
@@ -459,6 +369,13 @@ if __name__ == "__main__":
       logger.setLevel(25 - args.verbose*5)
     else:
       logger.setLevel(logging.NOTSET + 1)
+
+    # Set up ROOT
+    import ROOT
+    ROOT.PyConfig.IgnoreCommandLineOptions = True
+    # used to redirect ROOT output
+    #   see http://stackoverflow.com/questions/21541238/get-ipython-doesnt-work-in-a-startup-script-for-ipython-ipython-notebook
+    import tempfile
 
     with tempfile.NamedTemporaryFile() as tmpFile:
       if not args.debug:
