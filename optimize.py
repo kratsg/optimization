@@ -38,9 +38,7 @@ from collections import defaultdict
 
 # root_optimize
 from root_optimize import utils
-print('here2')
 from root_optimize.main import get_summary
-print('here3')
 from root_optimize.json import NoIndent, NoIndentEncoder
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
