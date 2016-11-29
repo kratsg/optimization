@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-,
 from __future__ import absolute_import
 from __future__ import print_function
 
@@ -7,6 +9,11 @@ import json
 import hashlib
 import itertools
 import numpy as np
+import numexpr as ne
+import os
+
+import ROOT
+ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 import logging
 logger = logging.getLogger("optimize.utils")
@@ -91,6 +98,95 @@ def read_supercuts_file(filename):
   return supercuts
 
 #@echo(write=logger.debug)
+def get_scaleFactor(weights, did):
+  weight = weights.get(did, None)
+  if weight is None:
+    logger.warning("Could not find the weights for did=%s" % did)
+    return 1.0
+  scaleFactor = 1.0
+  cutflow = weight.get('num events')
+  if cutflow == 0:
+    raise ValueError('Num events = 0!')
+  scaleFactor /= cutflow
+  logger.info("___________________________________________________________________")
+  logger.info(" {0:8s} Type of Scaling Applied       |        Scale Factor      ".format(did))
+  logger.info("========================================|==========================")
+  logger.info("Cutflow:           {0:20.10f} | {1:0.10f}".format(cutflow, scaleFactor))
+  scaleFactor *= weight.get('cross section')
+  logger.info("Cross Section:     {0:20.10f} | {1:0.10f}".format(weight.get('cross section'), scaleFactor))
+  scaleFactor *= weight.get('filter efficiency')
+  logger.info("Filter Efficiency: {0:20.10f} | {1:0.10f}".format(weight.get('filter efficiency'), scaleFactor))
+  scaleFactor *= weight.get('k-factor')
+  logger.info("k-factor:          {0:20.10f} | {1:0.10f}".format(weight.get('k-factor'), scaleFactor))
+  logger.info( "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
+  return scaleFactor
+
+#@echo(write=logger.debug)
+def get_significance(signal, bkgd, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty, rawBkgd):
+  # if not enough events, return string of which one did not have enough
+  if signal < insignificanceThreshold:
+    #sigDetails['insignificance'] = "signal"
+    sig = -1
+  elif bkgd < insignificanceThreshold:
+    #sigDetails['insignificance'] = "bkgd"
+    sig = -2
+  elif rawBkgd < 1/(pow(bkgdStatUncertainty,2)): #require sqrt(numBkgd)/numBkgd < bkgdStatUncertainty
+    #sigDetails['insignificance'] = "bkgdstat"
+    sig = -3
+  else:
+    # otherwise, calculate!
+    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(signal, bkgd, bkgdUncertainty)
+  return sig
+
+#@echo(write=logger.debug)
+def get_ttree(tree_name, filenames, eventWeightBranch):
+  # this is a dict that holds the tree
+
+  logger.info("Initializing TChain: {0}".format(tree_name))
+  # start by making a TChain
+  tree = ROOT.TChain(tree_name)
+  for fname in filenames:
+    if not os.path.isfile(fname):
+      raise ValueError('The supplied input file `{0}` does not exist or I cannot find it.'.format(fname))
+    else:
+      logger.info("\tAdding {0}".format(fname))
+      tree.Add(fname)
+
+    # Print some information
+    logger.info('\tNumber of input events: %s' % tree.GetEntries())
+
+  # make sure the branches are compatible between the two
+  branches = set(i.GetName() for i in tree.GetListOfBranches())
+
+  # user can pass in a selection for the branch
+  for ewBranch in selection_to_branches(eventWeightBranch, tree):
+    if not ewBranch in branches:
+      raise ValueError('The event weight branch does not exist: {0}'.format(ewBranch))
+
+  return tree
+
+#@echo(write=logger.debug)
+def cut_to_selection(cut):
+  return cut['selections'].format(*cut['pivot'])
+
+#@echo(write=logger.debug)
+def cuts_to_selection(cuts):
+  return "({})".format(")*(".join(map(cut_to_selection, cuts)))
+
+alphachars = re.compile('\W+')
+#@echo(write=logger.debug)
+def selection_to_branches(selection_string, tree):
+  global alphachars
+  # filter out all selection criteria
+  raw_branches = filter(None, alphachars.sub(' ', selection_string.format(*['-']*10)).split(' '))
+  # filter out those that are just numbers in string
+  return [branch for branch in raw_branches if not branch.isdigit()]
+
+#@echo(write=logger.debug)
+def tree_get_branches(tree, eventWeightBranch):
+  return [i.GetName() for i in tree.GetListOfBranches() if not i.GetName() in eventWeightBranch]
+
+#@echo(write=logger.debug)
 def get_cut(superCuts, index=0):
   # reached bottom of iteration, yield what we've done
   if index >= len(superCuts): yield superCuts
@@ -115,3 +211,40 @@ def get_cut(superCuts, index=0):
 #@echo(write=logger.debug)
 def get_cut_hash(cut):
   return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
+
+#@echo(write=logger.debug)
+def apply_selection(tree, cuts, eventWeightBranch):
+  # use a global canvas
+  global canvas
+  selection = cuts_to_selection(cuts)
+  # draw with selection
+  tree.Draw(eventWeightBranch, '{0:s}*{1:s}'.format(eventWeightBranch, selection))
+  # raw and weighted counts
+  rawCount = 0
+  weightedCount = 0
+  # get drawn histogram
+  if 'htemp' in canvas:
+    htemp = canvas.GetPrimitive('htemp')
+    rawCount = htemp.GetEntries()
+    weightedCount = htemp.Integral()
+  canvas.Clear()
+  return rawCount, weightedCount
+
+#@echo(write=logger.debug)
+def apply_cut(arr, cut):
+  return ne.evaluate(cut_to_selection(cut), local_dict=arr)
+
+#@echo(write=logger.debug)
+def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False):
+  if doNumpy:
+    # here, the tree is an rnp.tree2array() np.array
+    entireSelection = '{0:s}*{1:s}'.format(eventWeightBranch, cuts_to_selection(cuts))
+    events = ne.evaluate(entireSelection, local_dict=tree)
+    #events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree, cut) for cut in cuts))]
+    # count number of events that pass, not summing the weights since `events!=0` returns a boolean array
+    return np.sum(events!=0).astype(float), np.sum(events).astype(float)
+  else:
+    # here, the tree is a ROOT.TTree
+    return apply_selection(tree, cuts, eventWeightBranch)
+
+
