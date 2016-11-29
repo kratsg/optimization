@@ -14,6 +14,7 @@ import itertools
 import numpy as np
 import numexpr as ne
 import os
+from time import clock
 
 import root_numpy as rnp
 

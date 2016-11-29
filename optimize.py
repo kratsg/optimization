@@ -34,7 +34,6 @@ import fnmatch
 import math
 import glob
 import itertools
-from time import clock
 from collections import defaultdict
 
 # root_optimize
