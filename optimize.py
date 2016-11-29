@@ -10,6 +10,11 @@
 # redirect python output using the newer print function with file description
 #   print(string, f=fd)
 from __future__ import print_function
+from __future__ import absolute_import
+
+import logging
+logger = logging.getLogger("root_optimize.main")
+
 
 import os, sys
 # grab the stdout and have python write to this instead
