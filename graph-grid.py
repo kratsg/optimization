@@ -66,7 +66,7 @@ if __name__ == '__main__':
     if args.do_run1:
       gr = plotting.get_run1(args.run1_excl,1,3,args.run1_color)
       gr.Draw("C")
-      gr_1sigma = get_run1(args.run1_1sigma,3,1,args.run1_color)
+      gr_1sigma = plotting.get_run1(args.run1_1sigma,3,1,args.run1_color)
       gr_1sigma.Draw("C")
       plotting.draw_run1_text(args.run1_color)
       savefilename += "_wrun1"
