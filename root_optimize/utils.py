@@ -296,7 +296,7 @@ def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWei
     sample_scaleFactor = get_scaleFactor(weights, did)
 
     # build the containing canvas for all histograms drawn in `apply_selection`
-    canvas = ROOT.TCanvas('test{0:d}'.format(did), 'test{0:d}'.format(did), 200, 10, 100, 100)
+    canvas = ROOT.TCanvas('test{0:s}'.format(did), 'test{0:s}'.format(did), 200, 10, 100, 100)
 
     # iterate over the cuts available
     cuts = {}
@@ -309,10 +309,9 @@ def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWei
     with open('{0:s}/{1:s}.json'.format(output_directory, did), 'w+') as f:
       f.write(json.dumps(cuts, sort_keys=True, indent=4))
       result = True
-      del canvas
+    del canvas
   except:
     logger.exception("Caught an error - skipping {0:s}".format(did))
     result = False
-    del canvas
   end = clock()
   return (result, end-start)
