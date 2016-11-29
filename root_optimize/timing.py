@@ -33,4 +33,3 @@ def now():
 start = time()
 atexit.register(endlog)
 log("Start Program")
-

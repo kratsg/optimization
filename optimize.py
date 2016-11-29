@@ -650,7 +650,7 @@ if __name__ == "__main__":
 
   try:
     # start execution of actual program
-    import timing
+    from root_optimize import timing
 
     # set verbosity for python printing
     if args.verbose < 5:
@@ -679,4 +679,4 @@ if __name__ == "__main__":
     logger.exception("{0}\nAn exception was caught!".format("-"*20))
 else:
   # being imported, so we start timing here
-  import timing
+  from root_optimize import timing
