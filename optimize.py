@@ -34,7 +34,6 @@ from collections import defaultdict
 
 # root_optimize
 from root_optimize import utils
-from root_optimize.main import get_summary
 from root_optimize.json import NoIndent, NoIndentEncoder
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
@@ -203,7 +202,7 @@ def do_summary(args):
   mass_windows = utils.load_mass_windows(args.mass_windows)
   num_cores = min(multiprocessing.cpu_count(),args.num_cores)
   logger.log(25, "Using {0} cores".format(num_cores) )
-  results = Parallel(n_jobs=num_cores)(delayed(get_summary)(filename, mass_windows, args.stop_masses) for filename in glob.glob(os.path.join(args.search_directory, "s*.b*.json")))
+  results = Parallel(n_jobs=num_cores)(delayed(utils.get_summary)(filename, mass_windows, args.stop_masses) for filename in glob.glob(os.path.join(args.search_directory, "s*.b*.json")))
   results = filter(None, results)
   logger.log(25, "Generated summary for {0} items".format(len(results)))
 
