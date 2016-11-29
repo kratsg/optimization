@@ -216,7 +216,7 @@ def do_summary(args):
 
   return True
 
-if __name__ == "__main__":
+def main():
   class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
     pass
 
@@ -386,3 +386,6 @@ if __name__ == "__main__":
       ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
 
     logger.exception("{0}\nAn exception was caught!".format("-"*20))
+
+if __name__ == "__main__":
+  main()
