@@ -1,7 +1,10 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 import logging
 logger = logging.getLogger("root_optimize.main")
 
-import utils
+from . import utils
 import json
 import os
 
