@@ -69,53 +69,6 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 import root_numpy as rnp
 import numpy as np
 
-
-def format_arg_value(arg_val):
-  """ Return a string representing a (name, value) pair.
-
-  >>> format_arg_value(('x', (1, 2, 3)))
-  'x=(1, 2, 3)'
-  """
-  arg, val = arg_val
-  return "%s=%r" % (arg, val)
-
-# http://wordaligned.org/articles/echo
-def echo(*echoargs, **echokwargs):
-  logger.debug(echoargs)
-  logger.debug(echokwargs)
-  def echo_wrap(fn):
-    """ Echo calls to a function.
-
-    Returns a decorated version of the input function which "echoes" calls
-    made to it by writing out the function's name and the arguments it was
-    called with.
-    """
-
-    # Unpack function's arg count, arg names, arg defaults
-    code = fn.func_code
-    argcount = code.co_argcount
-    argnames = code.co_varnames[:argcount]
-    fn_defaults = fn.func_defaults or list()
-    argdefs = dict(zip(argnames[-len(fn_defaults):], fn_defaults))
-
-    def wrapped(*v, **k):
-      # Collect function arguments by chaining together positional,
-      # defaulted, extra positional and keyword arguments.
-      positional = map(format_arg_value, zip(argnames, v))
-      defaulted = [format_arg_value((a, argdefs[a]))
-                   for a in argnames[len(v):] if a not in k]
-      nameless = map(repr, v[argcount:])
-      keyword = map(format_arg_value, k.items())
-      args = positional + defaulted + nameless + keyword
-      write("%s(%s)\n" % (fn.__name__, ", ".join(args)))
-      return fn(*v, **k)
-    return wrapped
-
-  write = echokwargs.get('write', sys.stdout.write)
-  if len(echoargs) == 1 and callable(echoargs[0]):
-    return echo_wrap(echoargs[0])
-  return echo_wrap
-
 # http://stackoverflow.com/a/25935321/1532974
 class NoIndent(object):
   def __init__(self, value):
