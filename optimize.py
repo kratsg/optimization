@@ -29,11 +29,7 @@ import json
 import hashlib
 import copy
 import operator
-import re
-import fnmatch
-import math
 import glob
-import itertools
 from collections import defaultdict
 
 # root_optimize
@@ -132,13 +128,6 @@ def do_optimize(args):
         f.write(json.dumps(sorted(significances, key=operator.itemgetter('significance_scaled'), reverse=True)[:args.max_num_hashes], sort_keys=True, indent=4))
 
   return True
-
-#@echo(write=logger.debug)
-def match_branch(branch, list_of_branches):
-  if branch in list_of_branches: return True
-  for b in list_of_branches:
-    if re.compile(fnmatch.translate(b)).search(branch): return True
-  return False
 
 #@echo(write=logger.debug)
 def do_generate(args):

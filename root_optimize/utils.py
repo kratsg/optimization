@@ -10,6 +10,7 @@ import csv
 import copy
 import re
 import json
+import fnmatch
 import hashlib
 import itertools
 import numpy as np
@@ -82,6 +83,13 @@ def get_did(filename):
     logger.warning('Can\'t figure out the DID! Using input filename: {0}'.format(filename))
     return filename.split("/")[-1]
   return m.group(1)
+
+#@echo(write=logger.debug)
+def match_branch(branch, list_of_branches):
+  if branch in list_of_branches: return True
+  for b in list_of_branches:
+    if re.compile(fnmatch.translate(b)).search(branch): return True
+  return False
 
 #@echo(write=logger.debug)
 def read_supercuts_file(filename):
