@@ -46,7 +46,7 @@ from joblib import Parallel, delayed, load, dump
 import multiprocessing
 
 #@echo(write=logger.debug)
-def do_cuts(args):
+def do_cuts(args, timing):
   # before doing anything, let's ensure the directory we make is ok
   if not os.path.exists(args.output_directory):
     os.makedirs(args.output_directory)
@@ -375,7 +375,7 @@ def main():
       ROOT.gROOT.SetBatch(args.batch_mode)
 
       # call the function and do stuff
-      args.func(args)
+      args.func(args, timing)
 
       if not args.debug:
         ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
