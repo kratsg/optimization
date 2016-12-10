@@ -46,7 +46,9 @@ from joblib import Parallel, delayed, load, dump
 import multiprocessing
 
 #@echo(write=logger.debug)
-def do_cuts(args, timing):
+def do_cuts(args):
+  from root_optimize.timing import secondsToStr
+
   # before doing anything, let's ensure the directory we make is ok
   if not os.path.exists(args.output_directory):
     os.makedirs(args.output_directory)
@@ -75,7 +77,7 @@ def do_cuts(args, timing):
   for did, result in zip(dids, results):
     logger.log(25, 'DID {0:s}: {1:s}'.format(did, 'ok' if result[0] else 'not ok'))
 
-  logger.log(25, "Total CPU elapsed time: {0}".format(timing.secondsToStr(sum(result[1] for result in results))))
+  logger.log(25, "Total CPU elapsed time: {0}".format(secondsToStr(sum(result[1] for result in results))))
 
   return True
 
@@ -375,7 +377,7 @@ def main():
       ROOT.gROOT.SetBatch(args.batch_mode)
 
       # call the function and do stuff
-      args.func(args, timing)
+      args.func(args)
 
       if not args.debug:
         ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
