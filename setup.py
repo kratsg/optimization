@@ -76,5 +76,8 @@ setup(
       'tornado==4.2',
       'urwid==1.3.0',
       'wsgiref==0.1.2'
-    ]
+    ],
+    entry_points = {
+      'console_scripts': ['rooptimize=root_optimize.command_line:main']
+    }
 )
