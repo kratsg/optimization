@@ -20,7 +20,7 @@ def read(*filenames, **kwargs):
             buf.append(f.read())
     return sep.join(buf)
 
-long_description = read(os.path.join(here, 'README.md'))
+long_description = read(os.path.join(here, 'README.rst'))
 
 setup(
     name='root_optimize',
