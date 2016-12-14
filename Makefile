@@ -20,3 +20,7 @@ install: clean
 
 test: install
 	@$(PYTHON) setup.py test
+
+README.rst:
+	pandoc README.md -f markdown -t rst -o README.rst
+
