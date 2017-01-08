@@ -381,6 +381,8 @@ Variable | Type | Description | Default
 --o, --output | string | output directory to store significances calculated | significances
 --lumi | float | apply the luminosity when calculating significances, to avoid having to redo all the cuts | 1.0
 -n, --max-num-hashes | int | maximum number of hashes to dump in the significance files | 25
+--rescale | string | a file containing groups and dids to apply a scale factor to | None
+--did-to-group | string | json dict mapping did to group. Needed for --rescale | None
 
 #### Output
 
