@@ -89,9 +89,9 @@ def do_optimize(args):
   rescale = None
   did_to_group = None
   if args.rescale:
-    rescale = json.load(args.rescale)
+    rescale = json.load(file(args.rescale))
     if args.did_to_group is None: raise ValueError('If you are going to rescale, you need to pass in the --did-to-group mapping dict.')
-    did_to_group = json.load(args.did_to_group)
+    did_to_group = json.load(file(args.did_to_group))
 
   logger.log(25, 'Reading in all background files to calculate total background')
 
