@@ -86,6 +86,13 @@ def do_optimize(args):
   else:
     raise IOError("Output directory already exists: {0:s}".format(args.output_directory))
 
+  rescale = None
+  did_to_group = None
+  if args.rescale:
+    rescale = json.load(args.rescale)
+    if args.did_to_group is None: raise ValueError('If you are going to rescale, you need to pass in the --did-to-group mapping dict.')
+    did_to_group = json.load(args.did_to_group)
+
   logger.log(25, 'Reading in all background files to calculate total background')
 
   total_bkgd = defaultdict(lambda: {'raw': 0., 'weighted': 0., 'scaled': 0.})
@@ -103,6 +110,15 @@ def do_optimize(args):
         for cuthash, counts_dict in bkgd_data.iteritems():
           for counts_type, counts in counts_dict.iteritems():
             total_bkgd[cuthash][counts_type] += counts
+            if counts_type == 'scaled' and rescale:
+              if did in rescale:
+                scale_factor = rescale.get(did, 1.0)
+                total_bkgd[cuthash][counts_type] *= scale_factor
+                logger.log(25, '\t\tApplying scale factor for DID#{0:s}: {1:0.2f}'.format(did, scale_factor))
+              if did_to_group[did] in rescale:
+                scale_factor = rescale.get(did_to_group[did], 1.0)
+                logger.log(25, '\t\tApplying scale factor for group "{0:s}": {1:0.2f}'.format(did_to_group[did], scale_factor))
+                total_bkgd[cuthash][counts_type] *= scale_factor
 
   # create hash for background
   bkgdHash = hashlib.md5(str(sorted(bkgd_dids))).hexdigest()
@@ -255,6 +271,8 @@ def main():
   tree_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
   supercuts_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
   parallel_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  rescale_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
+  did_to_group_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
 
   # general arguments for all
   main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug to enable output for debugging.')
@@ -271,6 +289,10 @@ def main():
   tree_parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='name of event weight branch in the ntuples. It must exist.', default='event_weight')
 
   parallel_parser.add_argument('--ncores', type=int, required=False, dest='num_cores', metavar='<n>', help='Number of cores to use for parallelization. Defaults to max.', default=multiprocessing.cpu_count())
+
+  rescale_parser.add_argument('--rescale', required=False, type=str, dest='rescale', metavar='<file.json>', help='json dict of groups and dids to apply a scale factor to. If not provided, no scaling will be done.', default=None)
+
+  did_to_group_parser.add_argument('--did-to-group', required=False, type=str, dest='did_to_group', metavar='<file.json>', help='json dict mapping a did to a group.', default=None)
 
   ''' add subparsers '''
   subparsers = parser.add_subparsers(dest='command', help='actions available')
@@ -298,7 +320,7 @@ def main():
 
 
   # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
-  optimize_parser = subparsers.add_parser("optimize", parents=[main_parser],
+  optimize_parser = subparsers.add_parser("optimize", parents=[main_parser, rescale_parser, did_to_group_parser],
                                           description='Process ROOT ntuples and Optimize Cuts. v.{0}'.format(__version__),
                                           usage='%(prog)s  --signal={DID1}.json {DID2}.json [..] --bkgd={DID3}.json {DID4}.json {DID5}.json [...] [options]', help='Calculate significances for a series of computed cuts',
                                           formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
