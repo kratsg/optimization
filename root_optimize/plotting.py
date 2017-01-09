@@ -56,12 +56,12 @@ def fill_hist(hist,plot_array,label,skipNegativeSig=True):
       else:
         hist.SetBinContent(b,0.01)
 
-def draw_hist(hist, nSigs=1):
+def draw_hist(hist, nSigs=1, markercolor=0, drawOpts="TEXT45 COLZ"):
     hist.SetMarkerSize(800)
-    hist.SetMarkerColor(ROOT.kWhite)
+    hist.SetMarkerColor(markercolor)
     #gStyle.SetPalette(51)
     ROOT.gStyle.SetPaintTextFormat("1.{0:d}f".format(nSigs));
-    hist.Draw("TEXT45 COLZ")
+    hist.Draw(drawOpts)
 
 def draw_labels(lumi):
     txt = ROOT.TLatex()
@@ -97,7 +97,10 @@ def draw_text(path):
 def draw_line(x_min, x_max, y_max, topmass=173.34):
   l=ROOT.TLine(1000,1000,2000,2000)
   l.SetLineStyle(2)
-  l.DrawLine(x_min,x_min-2*topmass,y_max+2*topmass,y_max)
+  if x_max - 2*topmass > y_max:
+    l.DrawLine(x_min, x_min-2*topmass, y_max+2*topmass, y_max)
+  else:
+    l.DrawLine(x_min, x_min-2*topmass, x_max, x_max-2*topmass)
 
 from array import *
 def get_run1(filename,linestyle,linewidth,linecolor):
