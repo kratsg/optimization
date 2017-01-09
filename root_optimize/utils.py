@@ -69,6 +69,17 @@ def echo(*echoargs, **echokwargs):
     return echo_wrap(echoargs[0])
   return echo_wrap
 
+# http://stackoverflow.com/a/31953563/1532974
+# Do not allow duplicate log messages, such as inside loops
+class DuplicateFilter(object):
+    def __init__(self):
+        self.msgs = set()
+
+    def filter(self, record):
+        rv = record.msg not in self.msgs
+        self.msgs.add(record.msg)
+        return rv
+
 #@echo(write=logger.debug)
 def load_mass_windows(filename):
   with open(filename, 'r') as f:

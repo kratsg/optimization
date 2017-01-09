@@ -97,6 +97,11 @@ def do_optimize(args):
 
   total_bkgd = defaultdict(lambda: {'raw': 0., 'weighted': 0., 'scaled': 0.})
   bkgd_dids = []
+
+  # make sure messages are only logged once, not multiple times
+  duplicate_log_filter = utils.DuplicateFilter()
+  logger.addFilter(duplicate_log_filter)
+
   # for each bkgd file, open, read, load, and combine
   for bkgd in args.bkgd:
     # expand out patterns if needed
@@ -117,8 +122,12 @@ def do_optimize(args):
                 logger.log(25, '\t\tApplying scale factor for DID#{0:s}: {1:0.2f}'.format(did, scale_factor))
               if did_to_group[did] in rescale:
                 scale_factor = rescale.get(did_to_group[did], 1.0)
-                logger.log(25, '\t\tApplying scale factor for group "{0:s}": {1:0.2f}'.format(did_to_group[did], scale_factor))
+                logger.log(25, '\t\tApplying scale factor for DID#{0:s} because it belongs in group "{1:s}": {2:0.2f}'.format(did, did_to_group[did], scale_factor))
                 total_bkgd[cuthash][counts_type] *= scale_factor
+
+  # remove the filter and clear up memory of stored logs
+  logger.removeFilter(duplicate_log_filter)
+  del duplicate_log_filter
 
   # create hash for background
   bkgdHash = hashlib.md5(str(sorted(bkgd_dids))).hexdigest()
