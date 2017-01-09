@@ -45,8 +45,12 @@ def fill_hist(hist,args,plot_array,label,skipNegativeSig=True):
       zz=ROOT.Long(0)
       hist.GetBinXYZ(b,xx,yy,zz)
       hist.SetBinContent(b,z)
-      h.SetMinimum(-1.0)
-      h.SetMaximum(1.0)
+      #h.SetMinimum(-2.0)
+      #h.SetMaximum(2.0)
+      levels = np.linspace(-2, 2, 255, dtype=np.double)
+      levels[0] = np.finfo('d').min
+      levels[-1] = np.finfo('d').max
+      h.SetContour(254, levels)
 
 def draw_hist(hist, nSigs=1, markercolor=0, drawOpts="TEXT45 COLZ"):
     # hist.SetMaximum(args.histmax)
