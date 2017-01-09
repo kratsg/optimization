@@ -47,7 +47,7 @@ def fill_hist(hist,args,plot_array,label,skipNegativeSig=True):
       hist.SetBinContent(b,z)
       #h.SetMinimum(-2.0)
       #h.SetMaximum(2.0)
-      levels = np.linspace(-2, 2, 255, dtype=np.double)
+      levels = np.linspace(-1, 1, 255, dtype=np.double)
       levels[0] = np.finfo('d').min
       levels[-1] = np.finfo('d').max
       h.SetContour(254, levels)
@@ -95,7 +95,10 @@ def draw_text(path):
 def draw_line(topmass=173.34):
   l=ROOT.TLine(1000,1000,2000,2000)
   l.SetLineStyle(2)
-  l.DrawLine(args.g_min,args.g_min-2*topmass,args.l_max+2*topmass,args.l_max)
+  if args.g_max - 2*topmass > args.l_max:
+    l.DrawLine(args.g_min, args.g_min-2*topmass, args.l_max+2*topmass, args.l_max)
+  else:
+    l.DrawLine(args.g_min,args.g_min-2*topmass,args.g_max,args.g_max-2*topmass)
 
 from array import *
 def get_run1(filename,linestyle,linewidth,linecolor):
@@ -156,7 +159,7 @@ if __name__ == '__main__':
   parser.add_argument('--g-min', type=float, required=False, help='Minimum gluino mass', default=800)
   parser.add_argument('--g-max', type=float, required=False, help='Maximum gluino mass', default=2500)
   parser.add_argument('--l-min', type=float, required=False, help='Minimum LSP mass', default=0)
-  parser.add_argument('--l-max', type=float, required=False, help='Maximum LSP mass', default=1500)
+  parser.add_argument('--l-max', type=float, required=False, help='Maximum LSP mass', default=2300)
   parser.add_argument('--bin-size', type=float, required=False, help='Size of bins to use', default=100)
   parser.add_argument('--x-dim', type=float, required=False, help='x-dimension of figure', default=800)
   parser.add_argument('--y-dim', type=float, required=False, help='y-dimension of figure', default=600)
