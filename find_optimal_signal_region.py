@@ -34,15 +34,13 @@ import glob
 import re
 import json
 from collections import defaultdict
+from root_optimize import plotting
 
 def init_canvas():
   c = ROOT.TCanvas("c", "", 0, 0, 800, 600)
   c.SetRightMargin(0.16)
   c.SetTopMargin(0.07)
   return c
-
-def init_hist(label):
-  return ROOT.TH2F("grid", ";m_{#tilde{g}} [GeV]; m_{#tilde{#chi}^{0}_{1}} [GeV];%s" % label, 12, 800, 2000, 13, 0, 1300)
 
 def set_bin(h, x, y, val):
   # now, let's find the bin to fill
@@ -65,7 +63,7 @@ def draw_hist(h, textFormat="1.0f"):
   h.SetMarkerColor(ROOT.kWhite)
   #ROOT.gStyle.SetPalette(51)
   ROOT.gStyle.SetPaintTextFormat(textFormat)
-  h.Draw("TEXT COLZ")
+  h.Draw("TEXT45 COLZ")
 
 def draw_text(args):
   txt = ROOT.TLatex()
@@ -174,7 +172,7 @@ print winners
 
 # do optimal signal regions
 c = init_canvas()
-h = init_hist("Optimal Signal Region")
+h = plotting.init_hist("Optimal Signal Region", 200, 2500, 0, 2300, 100)
 for did, vals in significances.iteritems():
   winningSR = vals['winner']
   mgluino, mstop, mlsp = mdict[did]
@@ -190,7 +188,7 @@ save_canvas(c, '{0}_optimalSR_grid_lumi{1}'.format(os.path.join(args.output_dir,
 
 # now make a plot of the actual significances
 c = init_canvas()
-h = init_hist("Significance of optimal SR")
+h = plotting.init_hist("Significance of optimal SR", 200, 2500, 0, 2300, 100)
 for did, vals in significances.iteritems():
   winningSR = vals['winner']
   mgluino, mstop, mlsp = mdict[did]
