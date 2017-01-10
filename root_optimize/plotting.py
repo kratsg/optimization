@@ -26,7 +26,7 @@ def init_canvas(x, y, name="c", topMargin=0.07, rightMargin=0.16):
     return c
 
 def axis_labels(x_label="m_{#tilde{g}} [GeV]", y_label="m_{#tilde{#chi}^{0}_{1}} [GeV]", z_label="", title=""):
-    return ';'.join([x_label, y_label, z_label, title])
+    return ';'.join([title, x_label, y_label, z_label])
 
 def init_hist(label, x_min, x_max, y_min, y_max, bin_size, name="grid"):
     return ROOT.TH2F(name,
