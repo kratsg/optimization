@@ -21,7 +21,7 @@ if __name__ == '__main__':
   parser.add_argument('--g-min', type=float, required=False, help='Minimum gluino mass', default=200)
   parser.add_argument('--g-max', type=float, required=False, help='Maximum gluino mass', default=2500)
   parser.add_argument('--l-min', type=float, required=False, help='Minimum LSP mass', default=0)
-  parser.add_argument('--l-max', type=float, required=False, help='Maximum LSP mass', default=1500)
+  parser.add_argument('--l-max', type=float, required=False, help='Maximum LSP mass', default=2300)
   parser.add_argument('--bin-size', type=float, required=False, help='Size of bins to use', default=100)
   parser.add_argument('--x-dim', type=float, required=False, help='x-dimension of figure', default=800)
   parser.add_argument('--y-dim', type=float, required=False, help='y-dimension of figure', default=600)
