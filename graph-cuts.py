@@ -1,3 +1,4 @@
+from root_optimize import plotting
 import os
 import csv
 import json
@@ -90,11 +91,6 @@ def draw_text(path):
         for row in reader:
             txt.DrawLatex(float(row[0]), float(row[1]), row[2])
 
-def draw_line(topmass=173.34):
-  l=ROOT.TLine(1000,1000,2000,2000)
-  l.SetLineStyle(2)
-  l.DrawLine(args.g_min,args.g_min-2*topmass,args.l_max+2*topmass,args.l_max)
-
 from array import *
 def exclusion():
   x = array('d',[1400,1600,1600,1400])
@@ -124,10 +120,10 @@ if __name__ == '__main__':
   parser.add_argument('--text-file', type=str, required=False, help='text csv file', default=None)
   parser.add_argument('--out-directory', type=str, required=False, help='output directory', default='plots')
   parser.add_argument('-o', '--output', type=str, required=False, help='Name to put in output filenames', default='output')
-  parser.add_argument('--g-min', type=float, required=False, help='Minimum gluino mass', default=800)
+  parser.add_argument('--g-min', type=float, required=False, help='Minimum gluino mass', default=200)
   parser.add_argument('--g-max', type=float, required=False, help='Maximum gluino mass', default=2500)
   parser.add_argument('--l-min', type=float, required=False, help='Minimum LSP mass', default=0)
-  parser.add_argument('--l-max', type=float, required=False, help='Maximum LSP mass', default=1500)
+  parser.add_argument('--l-max', type=float, required=False, help='Maximum LSP mass', default=2300)
   parser.add_argument('--bin-size', type=float, required=False, help='Size of bins to use', default=100)
   parser.add_argument('--x-dim', type=float, required=False, help='x-dimension of figure', default=800)
   parser.add_argument('--y-dim', type=float, required=False, help='y-dimension of figure', default=600)
@@ -201,9 +197,9 @@ if __name__ == '__main__':
       hist.GetZaxis().SetNdivisions(nSteps, False)
 
       draw_hist(hist, int(abs(st3[1]-st3[0] <= 1)))
-      draw_labels(args.lumi)
-      draw_text(args.text_file)
-      draw_line(args.top_mass)
+      plotting.draw_labels(args.lumi)
+      plotting.draw_text(args.text_file)
+      plotting.draw_line(args.g_min, args.l_min, args.g_max, args.l_max, args.top_mass)
       #p = exclusion()
       #p.Draw()
 
