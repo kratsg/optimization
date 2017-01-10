@@ -94,13 +94,25 @@ def draw_text(path):
         for row in reader:
             txt.DrawLatex(float(row[0]), float(row[1]), row[2])
 
-def draw_line(x_min, x_max, y_max, topmass=173.34):
+def draw_line(x_min, y_min, x_max, y_max, topmass=173.34):
   l=ROOT.TLine(1000,1000,2000,2000)
   l.SetLineStyle(2)
-  if x_max - 2*topmass > y_max:
-    l.DrawLine(x_min, x_min-2*topmass, y_max+2*topmass, y_max)
+  if x_min - 2*topmass > y_min:
+    line_min_x = x_min
+    line_min_y = x_min-2*topmass
   else:
+    line_min_x = y_min + 2*topmass
+    line_min_y = y_min
+
+  if x_max - 2*topmass > y_max:
+    line_max_x = y_max + 2*topmass
+    line_max_y = y_max
+  else:
+    line_max_x = x_max
+    line_max_y = x_max - 2*topmass
     l.DrawLine(x_min, x_min-2*topmass, x_max, x_max-2*topmass)
+
+  l.DrawLine(line_min_x, line_min_y, line_max_x, line_max_y)
 
 from array import *
 def get_run1(filename,linestyle,linewidth,linecolor):

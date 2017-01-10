@@ -18,7 +18,7 @@ if __name__ == '__main__':
   parser.add_argument('--text-file', type=str, required=False, help='text csv file', default=None)
   parser.add_argument('--out-directory', type=str, required=False, help='output directory', default='plots')
   parser.add_argument('-o', '--output', type=str, required=False, help='Name to put in output filenames', default='output')
-  parser.add_argument('--g-min', type=float, required=False, help='Minimum gluino mass', default=800)
+  parser.add_argument('--g-min', type=float, required=False, help='Minimum gluino mass', default=200)
   parser.add_argument('--g-max', type=float, required=False, help='Maximum gluino mass', default=2500)
   parser.add_argument('--l-min', type=float, required=False, help='Minimum LSP mass', default=0)
   parser.add_argument('--l-max', type=float, required=False, help='Maximum LSP mass', default=1500)
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     plotting.draw_hist(h, nSig)
     plotting.draw_labels(args.lumi)
     plotting.draw_text(args.text_file)
-    plotting.draw_line(args.g_min, args.g_max, args.l_max, args.top_mass)
+    plotting.draw_line(args.g_min, args.l_min, args.g_max, args.l_max, args.top_mass)
     savefilename = os.path.join(args.out_directory, '_'.join([args.output, label]))
     if args.do_run1:
       gr = plotting.get_run1(args.run1_excl,1,3,args.run1_color)
