@@ -7,6 +7,7 @@ import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 import csv
+import numpy as np
 
 def init_palette():
   from rootpy.plotting.style import set_style, get_style
@@ -75,10 +76,6 @@ def draw_labels(lumi):
     txt.SetTextFont(72)
     txt.SetTextSize(0.05)
     txt.DrawText(0.2,0.87,"ATLAS")
-    txt.SetTextFont(12)
-    txt.SetTextAngle(38)
-    txt.SetTextSize(0.02)
-    txt.DrawText(0.33,0.63,"Kinematically Forbidden")
 
 def draw_text(path):
 
@@ -110,9 +107,19 @@ def draw_line(x_min, y_min, x_max, y_max, topmass=173.34):
   else:
     line_max_x = x_max
     line_max_y = x_max - 2*topmass
-    l.DrawLine(x_min, x_min-2*topmass, x_max, x_max-2*topmass)
 
   l.DrawLine(line_min_x, line_min_y, line_max_x, line_max_y)
+  # slope should be one as it's: LSP < Gluino - 2*topmass
+  slope = float(line_max_y - line_min_y)/(line_max_x - line_min_x)
+
+  # Draw Kinematically Forbidden as well
+  txt = ROOT.TLatex()
+  #txt.SetNDC()
+  txt.SetTextFont(12)
+  txt.SetTextAngle(np.degrees(np.arctan(slope)))
+  txt.SetTextSize(0.02)
+  txt.DrawText((line_max_x+line_min_x)/2., (line_max_x+line_min_x)/2. - 2*topmass + 125, "Kinematically Forbidden")
+
 
 from array import *
 def get_run1(filename,linestyle,linewidth,linecolor):
