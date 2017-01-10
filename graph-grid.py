@@ -39,6 +39,39 @@ if __name__ == '__main__':
   ROOT.PyConfig.IgnoreCommandLineOptions = True
   ROOT.gROOT.SetBatch(args.batch_mode)
 
+  from rootpy.plotting.style import set_style, get_style
+  atlas = get_style('ATLAS')
+  atlas.cd()
+  ROOT.gStyle.SetPalette(51)
+
+  # based on kDeepSea, kCherry (https://root.cern.ch/doc/v606/TColor_8cxx_source.html#l01672)
+
+  import numpy as np
+  NCont = 255
+  stops = np.linspace(0.0, 1.0, 11, dtype=np.double)
+
+  kDeepSea = {'red':   [ 24./255.,  32./255.,  27./255.,  25./255.,  29./255.],
+              'green': [ 37./255.,  74./255., 113./255., 160./255., 221./255. ],
+              'blue':  [  98./255., 129./255., 154./255., 184./255., 221./255. ]}
+
+  kCherry = {'red':    [ 188./255., 196./255., 214./255., 223./255., 235./255., 255./255. ],
+             'green':  [  37./255.,  67./255.,  91./255., 132./255., 185./255., 255./255. ],
+             'blue':   [  45./255.,  66./255.,  98./255., 137./255., 187./255., 255./255. ]}
+
+  palette = {'red': kCherry['red']+kDeepSea['red'][::-1],
+             'green': kCherry['green']+kDeepSea['green'][::-1],
+             'blue': kCherry['blue']+kDeepSea['blue'][::-1]}
+
+  p = ROOT.TColor.CreateGradientColorTable(len(stops), stops,
+                                           np.array(palette['red'], np.double),
+                                           np.array(palette['green'], np.double),
+                                           np.array(palette['blue'], np.double), NCont, 1.0);
+  if p == -1: raise ValueError('CreateGradientColorTable is not set-up right!')
+  ROOT.gStyle.SetNumberContours(NCont)
+  set_style(atlas)
+
+  #plotting.init_palette()
+
   import json
   summary = json.load(file(args.summary))
 
@@ -49,8 +82,6 @@ if __name__ == '__main__':
               'mlsp':     [r['m_lsp'] for r in summary],
               'ratio':    [r['ratio'] for r in summary]}
 
-  plotting.init_palette()
-
   c = plotting.init_canvas(args.x_dim, args.y_dim)
   labels = ['sig','signal','bkgd', 'ratio']
   zlabels = ['Significance in optimal cut','Exp. num. signal in optimal cut','Exp. num. bkgd in optimal cut', 'Signal/Background']
@@ -58,6 +89,11 @@ if __name__ == '__main__':
   for label,zlabel,nSig in zip(labels,zlabels,nSigs):
     h = plotting.init_hist(zlabel, args.g_min, args.g_max, args.l_min, args.l_max, args.bin_size)
     plotting.fill_hist(h,plot_array,label, label=='sig')
+    levels = np.linspace(-10, 10, 255, dtype=np.double)
+    levels[0] = np.finfo('d').min
+    levels[-1] = np.finfo('d').max
+    h.SetContour(254, levels)
+
     plotting.draw_hist(h, nSig)
     plotting.draw_labels(args.lumi)
     plotting.draw_text(args.text_file)
