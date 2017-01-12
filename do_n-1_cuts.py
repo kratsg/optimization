@@ -31,7 +31,7 @@ args = parser.parse_args()
 import json
 from itertools import combinations
 import operator
-import optimize
+from root_optimize import utils
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 import sys
@@ -100,14 +100,14 @@ for fname in args.files:
       differences.append([x for x in supercuts if x not in subercuts][0])
 
       # get the selection we apply to draw it
-      selection = optimize.cuts_to_selection(subercuts)
+      selection = utils.cuts_to_selection(subercuts)
       # get the branch we need to draw
       selection_string = differences[-1]['selections']
 
       print("\tLooking at selection: {0}".format(selection_string))
-      branchesSpecified = set(optimize.selection_to_branches(selection_string, tree))
+      branchesSpecified = set(utils.selection_to_branches(selection_string, tree))
       # get actual list of branches in the file
-      availableBranches = optimize.tree_get_branches(tree, args.eventWeightBranch)
+      availableBranches = utils.tree_get_branches(tree, args.eventWeightBranch)
       # remove anything that doesn't exist
       branchesToUse = [branch for branch in branchesSpecified if branch in availableBranches]
 
