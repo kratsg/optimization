@@ -14,9 +14,16 @@ parser.add_argument('--lumi', required=False, type=int, dest='lumi', metavar='<L
 parser.add_argument('-o', '--output', required=False, type=str, dest='output', metavar='', help='basename to use for output filename', default='output')
 parser.add_argument('-d', '--output-dir', required=False, type=str, dest='output_dir', metavar='', help='directory to put it in', default='plots')
 
-parser.add_argument("--run1_color", required=False, type=int, help="color of run 1 line", default=46)
-parser.add_argument("--run1_csvfile", required=False, type=str, help="csv file containing run 1 exclusion points", default="run1_limit.csv")
-parser.add_argument("--run1_1sigma_csvfile", required=False, type=str, help="csv file containing run 1 exclusion (+1 sigma) points", default="run1_limit_1sigma.csv")
+parser.add_argument('--do-run1', action='store_true', help='Add Run-1 line to graph')
+parser.add_argument('--run1-color', type=int, required=False, help='Color of Run-1 line', default=46)
+parser.add_argument('--run1-excl', type=str, required=False, help='CSV file containing Run-1 exclusion points', default='run1_limit.csv')
+parser.add_argument('--run1-1sigma', type=str, required=False, help='CSV file containing Run-1 exclusion (+1 sigma) points', default='run1_limit_1sigma.csv')
+
+parser.add_argument('--do-run2', action='store_true', help='Add Run-2 line to graph')
+parser.add_argument('--run2-color', type=int, required=False, help='Color of Run-2 line', default=46)
+parser.add_argument('--run2-excl', type=str, required=False, help='CSV file containing Run-2 exclusion points', default='run2_limit.csv')
+parser.add_argument('--run2-1sigma', type=str, required=False, help='CSV file containing Run-2 exclusion (+1 sigma) points', default='run2_limit_1sigma.csv')
+
 
 parser.add_argument("--basedir", required=False, type=str, help="base directory", default="SR")
 parser.add_argument("--massWindows", required=False, type=str, help="Location of mass windows file", default="mass_windows.txt")
@@ -114,21 +121,6 @@ def get_run1(filename,linestyle,linewidth,linecolor):
   gr.SetLineStyle(linestyle)
   return gr
 
-def draw_run1_text(color):
-    txt = ROOT.TLatex()
-    txt.SetNDC()
-    txt.SetTextFont(22)
-    txt.SetTextSize(0.04)
-    txt.SetTextColor(color)
-    txt.DrawText(0.2,0.2,"Run 1 Limit")
-
-def draw_run1(args):
-  gr = get_run1(args.run1_csvfile, 1, 3, args.run1_color)
-  gr.Draw("C")
-  gr_1sigma = get_run1(args.run1_1sigma_csvfile, 3, 1, args.run1_color)
-  gr_1sigma.Draw("C")
-  draw_run1_text(args.run1_color)
-
 def save_canvas(c, filename):
   c.SaveAs(filename + ".pdf")
   print "Saving file " + filename
@@ -198,13 +190,19 @@ for did, vals in significances.iteritems():
 draw_hist(h, "1.1f")
 draw_text(args)
 draw_line()
-# THIS DOESN'T WORK WHY???
-#draw_run1(args)
-gr = get_run1(args.run1_csvfile, 1, 3, args.run1_color)
-gr.Draw("C")
-gr_1sigma = get_run1(args.run1_1sigma_csvfile, 3, 1, args.run1_color)
-gr_1sigma.Draw("C")
-draw_run1_text(args.run1_color)
+
+if args.do_run1:
+  gr = plotting.get_run1(args.run1_excl,1,3,args.run1_color)
+  gr.Draw("C")
+  gr_1sigma = plotting.get_run1(args.run1_1sigma,3,1,args.run1_color)
+  gr_1sigma.Draw("C")
+  plotting.draw_run1_text(args.run1_color)
+if args.do_run2:
+  gr = plotting.get_run2(args.run2_excl,1,3,args.run2_color)
+  gr.Draw("C")
+  gr_1sigma = plotting.get_run2(args.run2_1sigma,3,1,args.run2_color)
+  gr_1sigma.Draw("C")
+  plotting.draw_run2_text(args.run2_color)
 
 save_canvas(c, '{0}_optimalSR_sig_lumi{1}'.format(os.path.join(args.output_dir, args.output), args.lumi))
 
