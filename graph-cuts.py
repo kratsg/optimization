@@ -128,10 +128,6 @@ if __name__ == '__main__':
   parser.add_argument('--x-dim', type=float, required=False, help='x-dimension of figure', default=800)
   parser.add_argument('--y-dim', type=float, required=False, help='y-dimension of figure', default=600)
   parser.add_argument('--top-mass', type=float, required=False, help='Mass of top quark [GeV]. Mainly meant to draw exclusion line.', default=173.34)
-  parser.add_argument('--do-run1', action='store_true', help='Add Run-1 line to graph')
-  parser.add_argument('--run1-color', type=int, required=False, help='Color of Run-1 line', default=46)
-  parser.add_argument('--run1-excl', type=str, required=False, help='CSV file containing Run-1 exclusion points', default='run1_limit.csv')
-  parser.add_argument('--run1-1sigma', type=str, required=False, help='CSV file containing Run-1 exclusion (+1 sigma) points', default='run1_limit_1sigma.csv')
   parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT.')
 
   # parse the arguments, throw errors if missing any

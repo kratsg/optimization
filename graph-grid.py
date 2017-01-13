@@ -30,6 +30,12 @@ if __name__ == '__main__':
   parser.add_argument('--run1-color', type=int, required=False, help='Color of Run-1 line', default=46)
   parser.add_argument('--run1-excl', type=str, required=False, help='CSV file containing Run-1 exclusion points', default='run1_limit.csv')
   parser.add_argument('--run1-1sigma', type=str, required=False, help='CSV file containing Run-1 exclusion (+1 sigma) points', default='run1_limit_1sigma.csv')
+
+  parser.add_argument('--do-run2', action='store_true', help='Add Run-2 line to graph')
+  parser.add_argument('--run2-color', type=int, required=False, help='Color of Run-2 line', default=46)
+  parser.add_argument('--run2-excl', type=str, required=False, help='CSV file containing Run-2 exclusion points', default='run2_limit.csv')
+  parser.add_argument('--run2-1sigma', type=str, required=False, help='CSV file containing Run-2 exclusion (+1 sigma) points', default='run2_limit_1sigma.csv')
+
   parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT.')
 
   # parse the arguments, throw errors if missing any
@@ -70,6 +76,13 @@ if __name__ == '__main__':
       gr_1sigma.Draw("C")
       plotting.draw_run1_text(args.run1_color)
       savefilename += "_wrun1"
+    if args.do_run2:
+      gr = plotting.get_run2(args.run2_excl,1,3,args.run2_color)
+      gr.Draw("C")
+      gr_1sigma = plotting.get_run2(args.run2_1sigma,3,1,args.run2_color)
+      gr_1sigma.Draw("C")
+      plotting.draw_run2_text(args.run2_color)
+      savefilename += "_wrun2"
     #p = exclusion()
     #p.Draw()
     c.SaveAs(savefilename + ".pdf")

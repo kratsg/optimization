@@ -147,6 +147,32 @@ def draw_run1_text(color):
     txt.SetTextColor(color)
     txt.DrawText(0.2,0.2,"Run 1 Limit")
 
+def get_run2(filename,linestyle,linewidth,linecolor):
+  x = array('f')
+  y = array('f')
+  n = 0
+  with open(filename,'r') as csvfile:
+    reader = csv.reader(csvfile, delimiter = ' ')
+    for row in reader:
+      n += 1
+      x.append(float(row[0]))
+      y.append(float(row[1]))
+
+  gr = ROOT.TGraph(n,x,y)
+  gr.SetLineColor(linecolor)
+  gr.SetLineWidth(linewidth)
+  gr.SetLineStyle(linestyle)
+  return gr
+
+def draw_run2_text(color):
+    txt = ROOT.TLatex()
+    txt.SetNDC()
+    txt.SetTextAngle(45)
+    txt.SetTextFont(22)
+    txt.SetTextSize(0.04)
+    txt.SetTextColor(color)
+    txt.DrawText(0.35,0.35,"Run 2 Limit")
+
 def exclusion():
   x = array('d',[1400,1600,1600,1400])
   y = array('d',[600,600,800,600])
