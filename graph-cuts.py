@@ -185,8 +185,9 @@ if __name__ == '__main__':
 
       st3 = supercut['st3'][pivotIndex]
       # number of steps
-      nSteps = len(np.arange(*st3))
-      hist.GetZaxis().SetRangeUser(st3[0], st3[1])
+      steps = np.arange(st3[0], st3[1]+st3[2], st3[2])
+      nSteps = len(steps)-1
+      hist.GetZaxis().SetRangeUser(steps[0], steps[-1])
       hist.GetZaxis().CenterLabels()
       hist.GetZaxis().SetTickLength(0)
       hist.SetContour(nSteps)
