@@ -265,10 +265,9 @@ def main():
           print(subparser.format_help())
       parser.exit()
 
-  __version__ = subprocess.check_output(["git", "describe", "--always"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
-  __short_hash__ = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=os.path.dirname(os.path.realpath(__file__))).strip()
+  from . import __version__
 
-  parser = argparse.ArgumentParser(add_help=False, description='Author: Giordon Stark. v.{0}'.format(__version__),
+  parser = argparse.ArgumentParser(add_help=False, description='Author: Giordon Stark. v{0}'.format(__version__),
                                    formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
                                    epilog='This is the top-level. You have no power here.')
   parser.add_argument('-h', '--help', action=_HelpAction, help='show this help message and exit')  # add custom help
