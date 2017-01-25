@@ -4663,6 +4663,86 @@
         "num events": 47199.75603157282,
         "rel uncert": 0.40794500708580017
     },
+    "373840": {
+        "cross section": 0.014171450398862362,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 25264.455191612244,
+        "rel uncert": 0.22892537713050842
+    },
+    "373841": {
+        "cross section": 0.0016337907873094082,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 25135.63578134775,
+        "rel uncert": 0.3003774583339691
+    },
+    "373842": {
+        "cross section": 0.0005919180111959577,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 25122.5541908741,
+        "rel uncert": 0.33932599425315857
+    },
+    "373844": {
+        "cross section": 0.0016337907873094082,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 25139.063494443893,
+        "rel uncert": 0.3003774583339691
+    },
+    "373845": {
+        "cross section": 0.0005919180111959577,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 25119.163331985474,
+        "rel uncert": 0.33932599425315857
+    },
+    "373846": {
+        "cross section": 0.00021904900495428592,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 25111.88457208872,
+        "rel uncert": 0.38524898886680603
+    },
+    "373847": {
+        "cross section": 0.008089760318398476,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 25217.47404038906,
+        "rel uncert": 0.2443721890449524
+    },
+    "373848": {
+        "cross section": 0.0027583648916333914,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 25160.47172611952,
+        "rel uncert": 0.28245753049850464
+    },
+    "373849": {
+        "cross section": 0.0009802603162825108,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 24106.64306741953,
+        "rel uncert": 0.31952109932899475
+    },
+    "373850": {
+        "cross section": 0.0005919180111959577,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.0,
+        "num events": 25123.680100142956,
+        "rel uncert": 0.33932599425315857
+    },
     "407009": {
         "cross section": 696.219970703125,
         "errors": [],
