@@ -57,9 +57,9 @@ setup(
     ],
     install_requires=[
       'joblib~=0.8',
-      'numexpr~=2.4',
-      'root-numpy~=4.6',
-      'rootpy~=0.8'
+      'numexpr~=2.6',
+      'root-numpy~=4.7',
+      'rootpy~=0.9'
     ],
     entry_points = {
       'console_scripts': ['rooptimize=root_optimize.command_line:main']
