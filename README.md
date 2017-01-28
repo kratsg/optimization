@@ -132,7 +132,7 @@ setup_venv(){
 }
 ```
 
-which provides a setup_venv script to allow you to use virtual environments for your python installations which help encapsulate your work. It means that your site packages (eg: for tarballing) will be located in `$HOME/.virtualenvs/<NAME>/lib/python2.7/site-packages` where `<NAME>` is the name of the virtual environment you make.
+which provides a setup_venv script to allow you to use virtual environments for your python installations which help encapsulate your work. This should be run when you need to use your python setup, and should be called after an `lsetup root` (or `lsetup python`) command. It means that your site packages (eg: for tarballing) will be located in `$HOME/.virtualenvs/<NAME>/lib/python2.7/site-packages` where `<NAME>` is the name of the virtual environment you make.
 
 #### Errors with root-numpy and TMVA
 
