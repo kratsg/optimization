@@ -134,6 +134,17 @@ setup_venv(){
 
 which provides a setup_venv script to allow you to use virtual environments for your python installations which help encapsulate your work. This should be run when you need to use your python setup, and should be called after an `lsetup root` (or `lsetup python`) command. It means that your site packages (eg: for tarballing) will be located in `$HOME/.virtualenvs/<NAME>/lib/python2.7/site-packages` where `<NAME>` is the name of the virtual environment you make.
 
+Finally, to install this using `pip`, just run
+
+```bash
+lsetup root
+workon <NAME>
+pip install numpy
+CC=$(which gcc) CXX=$(which g++) pip install root-optimize
+```
+
+Note that `root-numpy` needs to be built on the compilers that ROOT is built with, hence the export statements... while `numpy` can't be built with those. For right now, there's no easy workaround because Python, PyROOT, and ROOT are built with different compilers in ATLAS-software world.
+
 #### Errors with root-numpy and TMVA
 
 ROOT changed the TMVA version so to make `root-numpy` behave nicely, just run
