@@ -18,6 +18,7 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
   - [Installing](#installing)
     - [Using virtual environment](#using-virtual-environment)
     - [Without using virtual environment](#without-using-virtual-environment)
+    - [On a CVMFS-enabled machine](#on-a-cvmfs-enabled-machine)
     - [Errors with root-numpy and TMVA](#errors-with-root-numpy-and-tmva)
   - [Using](#using)
     - [Grab some optimization ntuples](#grab-some-optimization-ntuples)
@@ -101,6 +102,37 @@ pip install numpy
 pip install -r requirements.txt
 python optimize.py -h
 ```
+
+#### On a CVMFS-enabled machine
+
+```bash
+# set up at least python2.7
+lsetup root
+# get pip
+wget https://bootstrap.pypa.io/get-pip.py
+# install pip locally to $HOME/.local
+python get-pip.py --user --ignore-installed
+# make sure your path has the binaries in $HOME/.local
+echo 'export PATH=$HOME/.local/bin:$HOME/.local:$PATH' >> $HOME/.bash_profile
+# update the python binary path for pip
+perl -pi -e 's/\#\!.*/\#\!\/usr\/bin\/env python/g if $. == 1' $HOME/.local/bin/pip
+# get virtualenvwrapper for virtualization
+pip install --user virtualenvwrapper
+# update the python binary path for virtualenv
+perl -pi -e 's/\#\!.*/\#\!\/usr\/bin\/env python/g if $. == 1' $HOME/.local/bin/virtualenv
+```
+
+At this point, you should have pretty much everything ready to go. The last thing you need to do is add the following lines to your bash profile:
+
+```bash
+setup_venv(){
+  export WORKON_HOME=$HOME/.virtualenvs
+  export PROJECT_HOME=$HOME/Devel
+  source $HOME/.local/bin/virtualenvwrapper.sh
+}
+```
+
+which provides a setup_venv script to allow you to use virtual environments for your python installations which help encapsulate your work. It means that your site packages (eg: for tarballing) will be located in `$HOME/.virtualenvs/<NAME>/lib/python2.7/site-packages` where `<NAME>` is the name of the virtual environment you make.
 
 #### Errors with root-numpy and TMVA
 
