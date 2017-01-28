@@ -56,24 +56,10 @@ setup(
         'Topic :: Utilities',
     ],
     install_requires=[
-      'Pygments==2.0.2',
-      'backports.ssl-match-hostname==3.4.0.2',
-      'certifi==2015.04.28',
-      'joblib==0.8.4',
-      'mock==1.0.1',
-      'nose==1.3.4',
-      'numexpr==2.4.3',
-      'pudb==2015.1',
-      'pyparsing==2.0.3',
-      'python-dateutil==2.4.0',
-      'pytz==2014.10',
-      'root-numpy>=4.6.0',
-      'rootpy>=0.8.0',
-      'six==1.9.0',
-      'snakeviz==0.4.0',
-      'tornado==4.2',
-      'urwid==1.3.0',
-      'wsgiref==0.1.2'
+      'joblib~=0.8',
+      'numexpr~=2.4',
+      'root-numpy~=4.6',
+      'rootpy~=0.8'
     ],
     entry_points = {
       'console_scripts': ['rooptimize=root_optimize.command_line:main']
