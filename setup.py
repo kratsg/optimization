@@ -58,10 +58,8 @@ setup(
     install_requires=[
       'Pygments==2.0.2',
       'backports.ssl-match-hostname==3.4.0.2',
-      'brewer2mpl==1.4.1',
       'certifi==2015.04.28',
       'joblib==0.8.4',
-      'matplotlib==1.4.2',
       'mock==1.0.1',
       'nose==1.3.4',
       'numexpr==2.4.3',
