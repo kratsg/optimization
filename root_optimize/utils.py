@@ -89,10 +89,15 @@ def load_mass_windows(filename):
 did_regex = re.compile('\.(?:00)?(\d{6})\.')
 def get_did(filename):
   global did_regex
-  m = did_regex.search(filename.split("/")[-1])
+  # does the basename match?
+  m = did_regex.search(os.path.basename(filename))
   if m is None:
-    logger.warning('Can\'t figure out the DID! Using input filename: {0}'.format(filename))
-    return filename.split("/")[-1]
+    # no, check if the dirname matches
+    m = did_regex.search(os.path.basename(os.path.dirname(filename)))
+    if m is None:
+      # no, we have no idea what this shit is, use the basename of the filename
+      logger.warning('Can\'t figure out DID from dirname: {0:s}! Using the input basename instead: {1:s}'.format(os.path.basename(os.path.dirname(filename)), os.path.basename(filename)))
+      return os.path.basename(filename)
   return m.group(1)
 
 #@echo(write=logger.debug)
