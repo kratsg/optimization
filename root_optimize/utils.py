@@ -21,7 +21,7 @@ from time import clock
 import root_numpy as rnp
 
 import logging
-logger = logging.getLogger("optimize.utils")
+logger = logging.getLogger("root_optimize.utils")
 
 def format_arg_value(arg_val):
   """ Return a string representing a (name, value) pair.

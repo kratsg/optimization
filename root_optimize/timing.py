@@ -7,7 +7,7 @@ import atexit
 from time import time
 import logging
 
-logger = logging.getLogger("timing")
+logger = logging.getLogger("root_optimize.timing")
 logger.setLevel(10) # we use info
 print = logger.info
 

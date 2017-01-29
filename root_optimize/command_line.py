@@ -21,7 +21,7 @@ STDOUT = os.fdopen(os.dup(sys.stdout.fileno()), 'w')
 import logging
 root_logger = logging.getLogger()
 root_logger.addHandler(logging.StreamHandler(STDOUT))
-logger = logging.getLogger("root_optimize.main")
+logger = logging.getLogger("root_optimize")
 
 # import all libraries
 import argparse
