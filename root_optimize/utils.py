@@ -86,7 +86,7 @@ def load_mass_windows(filename):
     return {l[0]: tuple(l[1:4]) for l in csv.reader(f, delimiter='\t')}
 
 #@echo(write=logger.debug)
-did_regex = re.compile('\.?(?:00)?(\d{6,8})\.?')
+did_regex = re.compile('\.(?:00)?(\d{6})\.')
 def get_did(filename):
   global did_regex
   m = did_regex.search(filename.split("/")[-1])
