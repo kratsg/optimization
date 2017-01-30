@@ -82,13 +82,15 @@ I use [`virtualenvwrapper`](https://virtualenvwrapper.readthedocs.org/en/latest/
 pip install virtualenvwrapper
 echo "source /usr/local/bin/virtualenvwrapper.sh" >> ~/.bash_profile
 source ~/.bash_profile
+```
+
+and then at this point, you can set up and install:
+
+```bash
 mkvirtualenv optimization
 workon optimization
-git clone git@github.com:kratsg/Optimization
-cd Optimization
-pip install numpy
-pip install -r requirements.txt
-python optimize.py -h
+pip install root-optimize
+rooptimize -h
 ```
 
 Start a new environment with `mkvirtualenv NameOfEnv` and everytime you open a new shell, you just need to type `workon NameOfEnv`. Type `workon` alone to see a list of environments you've created already. Read the [virtualenvwrapper docs](https://virtualenvwrapper.readthedocs.org/en/latest/) for more information.
@@ -96,54 +98,48 @@ Start a new environment with `mkvirtualenv NameOfEnv` and everytime you open a n
 #### Without using virtual environment
 
 ```bash
-git clone git@github.com:kratsg/Optimization
-cd Optimization
-pip install numpy
-pip install -r requirements.txt
-python optimize.py -h
+pip install root-optimize
+rooptimize -h
 ```
 
 #### On a CVMFS-enabled machine
 
+
+First, set up ROOT, python, and pip using [lcgenv](https://gitlab.cern.ch/GENSER/lcgenv):
+
 ```bash
-# set up at least python2.7
-lsetup root
-# get pip
-wget https://bootstrap.pypa.io/get-pip.py
-# install pip locally to $HOME/.local
-python get-pip.py --user --ignore-installed
-# make sure your path has the binaries in $HOME/.local
-echo 'export PATH=$HOME/.local/bin:$HOME/.local:$PATH' >> $HOME/.bash_profile
-# update the python binary path for pip
-perl -pi -e 's/\#\!.*/\#\!\/usr\/bin\/env python/g if $. == 1' $HOME/.local/bin/pip
-# get virtualenvwrapper for virtualization
+lsetup root "lcgenv -p LCG_87 x86_64-slc6-gcc49-opt pip"
 pip install --user virtualenvwrapper
-# update the python binary path for virtualenv
-perl -pi -e 's/\#\!.*/\#\!\/usr\/bin\/env python/g if $. == 1' $HOME/.local/bin/virtualenv
 ```
 
-At this point, you should have pretty much everything ready to go. The last thing you need to do is add the following lines to your bash profile:
+which gets us virtual environments to work with. To make sure these are sourced correctly, you need to add `$HOME/.local/bin` to your path:
 
 ```bash
-setup_venv(){
+echo 'export PATH=$HOME/.local/bin:$PATH' >> $HOME/.bash_profile
+```
+
+Lastly, all that's left to do is have a function in your bash profile you can run to set up the paths correctly
+
+```bash
+venv(){
   export WORKON_HOME=$HOME/.virtualenvs
   export PROJECT_HOME=$HOME/Devel
   source $HOME/.local/bin/virtualenvwrapper.sh
 }
 ```
 
-which provides a setup_venv script to allow you to use virtual environments for your python installations which help encapsulate your work. This should be run when you need to use your python setup, and should be called after an `lsetup root` (or `lsetup python`) command. It means that your site packages (eg: for tarballing) will be located in `$HOME/.virtualenvs/<NAME>/lib/python2.7/site-packages` where `<NAME>` is the name of the virtual environment you make.
+which provides a `venv` function to allow you to use virtual environments for your python installations which help encapsulate your work. This should be run when you need to use your python setup, and should be called after an `lsetup root` (or `lsetup python`) command. It means that your site packages (eg: for tarballing) will be located in `$HOME/.virtualenvs/<NAME>/lib/python2.7/site-packages` where `<NAME>` is the name of the virtual environment you make.
 
-Finally, to install this using `pip`, just run
+Go ahead and close that shell down and start with a clean slate. Now, you simply need to follow the instructions in the [Using virtual environment](#using-virtual-environment) subsection above. In future shells, you can do the following pattern to set up python, ROOT, and then go into your virtual environment:
 
 ```bash
-lsetup root
-workon <NAME>
-pip install numpy
-CC=$(which gcc) CXX=$(which g++) pip install root-optimize
+lsetup root "lcgenv -p LCG_87 x86_64-slc6-gcc49-opt pip"
+venv
+workon optimization
+rooptimize -h
 ```
 
-Note that `root-numpy` needs to be built on the compilers that ROOT is built with, hence the export statements... while `numpy` can't be built with those. For right now, there's no easy workaround because Python, PyROOT, and ROOT are built with different compilers in ATLAS-software world.
+and you're good to go!
 
 #### Errors with root-numpy and TMVA
 
