@@ -5279,6 +5279,38 @@
         "num events": 19273112.0,
         "rel uncert": 0.0
     },
+    "410249": {
+        "cross section": 330.19000244140625,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.1483999490737915,
+        "num events": 2744639.6468057157,
+        "rel uncert": 1.0
+    },
+    "410250": {
+        "cross section": 158.94000244140625,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.1483999490737915,
+        "num events": 1985071.6446368007,
+        "rel uncert": 1.0
+    },
+    "410251": {
+        "cross section": 158.82000732421875,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.1483999490737915,
+        "num events": 1983016.3049526524,
+        "rel uncert": 1.0
+    },
+    "410252": {
+        "cross section": 76.33300018310547,
+        "errors": [],
+        "filter efficiency": 1.0,
+        "k-factor": 1.1483999490737915,
+        "num events": 633746.0813166102,
+        "rel uncert": 1.0
+    },
     "410500": {
         "cross section": 730.280029296875,
         "errors": [],
