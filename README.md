@@ -166,13 +166,13 @@ tar -xzvf TA07_MBJ10V1.tar.gz
 A straightforward example is simply just
 
 ```bash
-python optimize.py generate "Gtt_0L_a/fetch/data-optimizationTree/user.lgagnon:user.lgagnon.370101.Gtt.DAOD_SUSY10.e4049_s2608_r6765_r6282_p2411_tag_10_v1_output_xAOD.root-0.root"
+rooptimize generate "Gtt_0L_a/fetch/data-optimizationTree/user.lgagnon:user.lgagnon.370101.Gtt.DAOD_SUSY10.e4049_s2608_r6765_r6282_p2411_tag_10_v1_output_xAOD.root-0.root"
 ```
 
 which will create a `supercuts.json` file for you to edit so that you can run the optimizations. As a more advanced example, I only wanted to generate a file using a subset of the branches in my file as well as setting some of them to be a fixed cut that I would configure, so I ran
 
 ```bash
-python optimize.py generate "Gtt_0L_a/fetch/data-optimizationTree/user.lgagnon:user.lgagnon.370101.Gtt.DAOD_SUSY10.e4049_s2608_r6765_r6282_p2411_tag_10_v1_output_xAOD.root-0.root" --fixedBranches multiplicity_topTag* -o dump.json -b -vv --skipBranches *_jet_rc*
+rooptimize generate "Gtt_0L_a/fetch/data-optimizationTree/user.lgagnon:user.lgagnon.370101.Gtt.DAOD_SUSY10.e4049_s2608_r6765_r6282_p2411_tag_10_v1_output_xAOD.root-0.root" --fixedBranches multiplicity_topTag* -o dump.json -b -vv --skipBranches *_jet_rc*
 ```
 
 which will write branches that match `multiplicity_topTag*` to have a fixed cut when I eventually run `optimize` over it; and will also skip branches that match `*_jet_rc*` so they won't be considered at all for cuts.
@@ -182,17 +182,17 @@ which will write branches that match `multiplicity_topTag*` to have a fixed cut 
 After that, we just specify all of our ROOT files. The script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified either as a pattern or just explicitly writing them out. We will group every output by the DID passed in, so please try not to deviate from the default sample names or this breaks the code quite badly.
 
 ```bash
-python optimize.py cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_a -b
-python optimize.py cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_b -b
-python optimize.py cut TA07_MBJ10V1/*_1L/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_1L -b
+rooptimize cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_a -b
+rooptimize cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_b -b
+rooptimize cut TA07_MBJ10V1/*_1L/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_1L -b
 ```
 
 By default, we use `TTree::Draw` in order to calculate the number of events passing a given cut. We will also attempt to parallelize the computations as much as possible. In cases where you have a fast computer and the ntuples are reasonably small (can fit in memory), you might benefit from using a `numpy` boost by adding the `--numpy` flag like so
 
 ```bash
-python optimize.py cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_a -b --numpy
-python optimize.py cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_b -b --numpy
-python optimize.py cut TA07_MBJ10V1/*_1L/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_1L -b --numpy
+rooptimize cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_a -b --numpy
+rooptimize cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_b -b --numpy
+rooptimize cut TA07_MBJ10V1/*_1L/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_1L -b --numpy
 ```
 
 #### Calculating the significances
@@ -200,8 +200,8 @@ python optimize.py cut TA07_MBJ10V1/*_1L/fetch/data-optimizationTree/*.root --su
 After that, we just (at a bare minimum) specify the `signal` and `bkgd` json cut files. The following example takes the `0L_a` files and calculates significances for two different values of luminosity
 
 ```bash
-python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a_lumi1 --lumi=1
-python optimize.py optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a_lumi2 --lumi=2
+rooptimize optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a_lumi1 --lumi=1
+rooptimize optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a_lumi2 --lumi=2
 ```
 
 and this will automatically combine background and produce a significances file for each signal DID passed in.
@@ -211,7 +211,7 @@ and this will automatically combine background and produce a significances file 
 When the optimizations have finished running, you'll want to take the given hash(es) and figure out what cut it corresponds to, you can do this with
 
 ```bash
-python optimize.py hash e31dcf5ba4786d9e8ffa9e642729a6b9 4e16fdc03c171913bc309d57739c7225 8fa0e0ab6bf6a957d545df68dba97a53 --supercuts=supercuts_small.json
+rooptimize hash e31dcf5ba4786d9e8ffa9e642729a6b9 4e16fdc03c171913bc309d57739c7225 8fa0e0ab6bf6a957d545df68dba97a53 --supercuts=supercuts_small.json
 ```
 
 which will create `outputHash/<hash>.json` files detailing the cuts involved.
@@ -221,7 +221,7 @@ which will create `outputHash/<hash>.json` files detailing the cuts involved.
 This is one of those pieces of python code we always want to run as fast as possible. Optimization should not take long. To figure out those dead-ends, I use [snakeviz](https://jiffyclub.github.io/snakeviz/). The `requirements.txt` file contains this dependency. To run it, I first profile the code by running it:
 
 ```bash
-python -m cProfile -o profiler.log python optimize.py cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_0L -b --numpy
+python -m cProfile -o profiler.log rooptimize cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_0L -b --numpy
 ```
 
 then I use the `snakeviz` script to help me visualize this
@@ -241,13 +241,13 @@ See [example_script.sh](example_script.sh) for an idea how how to run everything
 ### Top-Level
 
 ```bash
-python optimize.py
+rooptimize
 ```
 
 or
 
 ```bash
-python optimize.py -h
+rooptimize -h
 ```
 
 ```
