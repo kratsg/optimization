@@ -251,18 +251,19 @@ rooptimize -h
 ```
 
 ```
-usage: rooptimize [-h] [-a] {generate,cut,optimize,hash} ...
+usage: rooptimize [-h] [-a] {generate,cut,optimize,hash,summary} ...
 
 Author: Giordon Stark. vX.Y.Z
 
 positional arguments:
-  {generate,cut,optimize,hash}
+  {generate,cut,optimize,hash,summary}
                               actions available
     generate                  Write supercuts template
     cut                       Apply the cuts
     optimize                  Calculate significances for a series of computed
                               cuts
     hash                      Translate hash to cut
+    summary                   Summarize Optimization Results
 
 optional arguments:
   -h, --help                  show this help message and exit
