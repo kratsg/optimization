@@ -5264,12 +5264,12 @@
         "rel uncert": 1.0
     },
     "410232": {
-        "cross section": 0.0,
+        "cross section": 696.33,
         "errors": [],
-        "filter efficiency": 0.0,
-        "k-factor": 0.0,
+        "filter efficiency": 0.54388,
+        "k-factor": 1.0,
         "num events": 19273112.0,
-        "rel uncert": 0.0
+        "rel uncert": 1.0
     },
     "410249": {
         "cross section": 330.19000244140625,
