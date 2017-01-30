@@ -280,6 +280,7 @@ There is only one required position argument: the `action`. You can choose from
 - [cut](#actioncut)
 - [optimize](#actionoptimize)
 - [hash](#actionhash)
+- [summary](#actionsummary)
 
 We also provide an optional argument `-a, --allhelp` which will print all the help documentation at once instead of just the top-level `-h, --help`.
 
