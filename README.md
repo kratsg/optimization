@@ -251,7 +251,7 @@ rooptimize -h
 ```
 
 ```
-usage: optimize.py [-h] [-a] {generate,cut,optimize,hash} ...
+usage: rooptimize [-h] [-a] {generate,cut,optimize,hash} ...
 
 Author: Giordon Stark. v.eea1e27
 
@@ -288,7 +288,7 @@ We also provide an optional argument `-a, --allhelp` which will print all the he
 Generate helps you quickly start. Given the ROOT ntuples, generate a supercuts.json template.
 
 ```bash
-usage: optimize.py generate --signal=signal.root [..] --bkgd=bkgd.root [...] [options]
+usage: rooptimize generate --signal=signal.root [..] --bkgd=bkgd.root [...] [options]
 ```
 
 #### Required Parameters
@@ -335,7 +335,7 @@ This script will generate a supercuts json file. See [Supercuts File](#supercuts
 Cut helps you by generating the cuts from a supercuts file and applying them to create an output file of counts. Process ROOT ntuples and apply cuts.
 
 ```bash
-usage: optimize.py cut <file.root> ... [options]
+usage: rooptimize cut <file.root> ... [options]
 ```
 
 #### Required Parameters
@@ -391,7 +391,7 @@ This code will group your input files by DIDs and will try its best to do its jo
 Optimize helps you find your optimal cuts. Process cuts and determine significance.
 
 ```bash
-usage: optimize.py optimize  --signal=signal.root [..] --bkgd=bkgd.root [...] [options]
+usage: rooptimize optimize  --signal=signal.root [..] --bkgd=bkgd.root [...] [options]
 ```
 
 **Note**: You can specify multiple backgrounds and multiple signals. Each signal will be run over separately and each background will be merged and treated as a single background.
@@ -403,7 +403,7 @@ Variable | Type | Description
 --signal | string | path(s) to json files containing signal cuts
 --bkgd | string | path(s) to json files containing background cuts
 
-**Note**: this will search for files under the `search_directory` option, default is `cuts` to search for files produced by `optimize.py cut`.
+**Note**: this will search for files under the `search_directory` option, default is `cuts` to search for files produced by `rooptimize cut`.
 
 #### Optional Parameters
 
@@ -500,7 +500,7 @@ Note that `--max-num-hashes` determines how many hashes you will actually see in
 Hash to cut translation. Given a hash from optimization, dump the cuts associated with it.
 
 ```bash
-usage: optimize.py hash <hash> [<hash> ...] [options]
+usage: rooptimize hash <hash> [<hash> ...] [options]
 ```
 
 #### Required Parameters
@@ -537,14 +537,14 @@ signal_direction | string | `? = >` or `? = <`, cuts obey the rule `value ? pivo
 Optimize results to summary json. Given the finished results of an optimization, produce a json summarizing it entirely.
 
 ```bash
-usage: optimize.py summary --searchDirectory significances/ --massWindows massWindows.txt [options]
+usage: rooptimize summary --searchDirectory significances/ --massWindows massWindows.txt [options]
 ```
 
 #### Required Parameters
 
 Variable | Type | Description
 ---------|------|------------
---searchDirectory | str | The directory containing the significances produced from `optimize.py optimize`
+--searchDirectory | str | The directory containing the significances produced from `rooptimize optimize`
 --massWindows | str | The file containing the mapping between DID and mass
 
 #### Optional Parameters
