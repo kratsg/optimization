@@ -253,7 +253,7 @@ rooptimize -h
 ```
 usage: rooptimize [-h] [-a] {generate,cut,optimize,hash} ...
 
-Author: Giordon Stark. v.eea1e27
+Author: Giordon Stark. vX.Y.Z
 
 positional arguments:
   {generate,cut,optimize,hash}
