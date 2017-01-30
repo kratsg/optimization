@@ -112,10 +112,11 @@ lsetup root "lcgenv -p LCG_87 x86_64-slc6-gcc49-opt pip"
 pip install --user virtualenvwrapper
 ```
 
-which gets us virtual environments to work with. To make sure these are sourced correctly, you need to add `$HOME/.local/bin` to your path:
+which gets us virtual environments to work with. To make sure these are sourced correctly, you need to add `$HOME/.local/bin` to your path and `$HOME/.local/lib/python2.7/site-packages` to your python path:
 
 ```bash
 echo 'export PATH=$HOME/.local/bin:$PATH' >> $HOME/.bash_profile
+echo 'export PYTHONPATH=$HOME/.local/lib/python2.7/site-packages:$PYTHONPATH' >> $HOME/.bash_profile
 ```
 
 Lastly, all that's left to do is have a function in your bash profile you can run to set up the paths correctly
