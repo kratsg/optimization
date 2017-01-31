@@ -86,7 +86,7 @@ def load_mass_windows(filename):
     return {l[0]: tuple(l[1:4]) for l in csv.reader(f, delimiter='\t')}
 
 #@echo(write=logger.debug)
-did_regex = re.compile('\.(?:00)?(\d{6})\.')
+did_regex = re.compile('(?:00)?([1-9]\d{5})(?=\.[a-zA-Z_]+\.?)')
 def get_did(filename):
   global did_regex
   # does the basename match?
