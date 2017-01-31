@@ -9,7 +9,7 @@ register:
 sdist: clean
 	@$(PYTHON) setup.py sdist
 
-upload: tag clean
+upload: clean
 	@$(PYTHON) setup.py sdist upload
 
 clean:
