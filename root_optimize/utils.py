@@ -21,7 +21,7 @@ from time import clock
 import root_numpy as rnp
 
 import logging
-logger = logging.getLogger("root_optimize.utils")
+logger = logging.getLogger(__name__)
 
 def format_arg_value(arg_val):
   """ Return a string representing a (name, value) pair.
@@ -89,11 +89,11 @@ def load_mass_windows(filename):
 did_regex = re.compile('(?:00)?([1-9]\d{5})(?=\.[a-zA-Z_]+\.?)')
 def get_did(filename):
   global did_regex
-  # does the basename match?
-  m = did_regex.search(os.path.basename(filename))
+  # check if the dirname matches
+  m = did_regex.search(os.path.basename(os.path.dirname(filename)))
   if m is None:
-    # no, check if the dirname matches
-    m = did_regex.search(os.path.basename(os.path.dirname(filename)))
+    # no, does the basename match?
+    m = did_regex.search(os.path.basename(filename))
     if m is None:
       # no, we have no idea what this shit is, use the basename of the filename
       logger.warning('Can\'t figure out DID from dirname: {0:s}! Using the input basename instead: {1:s}'.format(os.path.basename(os.path.dirname(filename)), os.path.basename(filename)))

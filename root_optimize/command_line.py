@@ -12,16 +12,9 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import os, sys
-# grab the stdout and have python write to this instead
-# ROOT will write to the original stdout
-STDOUT = os.fdopen(os.dup(sys.stdout.fileno()), 'w')
-
 # for logging, set it up
 import logging
-root_logger = logging.getLogger()
-root_logger.addHandler(logging.StreamHandler(STDOUT))
-logger = logging.getLogger("root_optimize")
+logger = logging.getLogger(__name__)
 
 # import all libraries
 import argparse
@@ -31,6 +24,8 @@ import hashlib
 import copy
 import operator
 import glob
+import os
+import sys
 from collections import defaultdict
 
 # root_optimize
