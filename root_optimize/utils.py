@@ -17,6 +17,7 @@ import numpy as np
 import numexpr as ne
 import os
 from time import clock
+import tqdm
 
 import root_numpy as rnp
 
@@ -236,6 +237,13 @@ def get_cut(superCuts, index=0):
       item['fixed'] = True
       for cut in get_cut(superCuts, index+1): yield cut
 
+def get_n_cuts(supercuts):
+  total = 1
+  for supercut in supercuts:
+    if 'st3' in supercut:
+      total *= reduce(lambda x,y: x*y, (np.ceil((st3[1]-st3[0])/st3[2]) for st3 in supercut['st3']))
+  return total
+
 #@echo(write=logger.debug)
 def get_cut_hash(cut):
   return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
@@ -274,7 +282,7 @@ def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False, canvas=None):
     return apply_selection(tree, cuts, eventWeightBranch, canvas)
 
 #@echo(write=logger.debug)
-def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, doNumpy):
+def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, doNumpy, i):
   start = clock()
   try:
     # load up the tree for the files
@@ -325,7 +333,7 @@ def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWei
 
     # iterate over the cuts available
     cuts = {}
-    for cut in get_cut(copy.deepcopy(supercuts)):
+    for cut in tqdm.tqdm(get_cut(copy.deepcopy(supercuts)), total=get_n_cuts(supercuts), position=i):
       cut_hash = get_cut_hash(cut)
       rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch, doNumpy, canvas=canvas)
       scaledEvents = weightedEvents*sample_scaleFactor
