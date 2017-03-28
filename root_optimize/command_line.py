@@ -27,6 +27,8 @@ import glob
 import os
 import sys
 from collections import defaultdict
+import tempfile
+import tqdm
 
 # root_optimize
 from . import utils
@@ -63,7 +65,30 @@ def do_cuts(args):
   # parallelize
   num_cores = min(multiprocessing.cpu_count(), args.num_cores)
   logger.log(25, "Using {0} cores".format(num_cores) )
-  results = Parallel(n_jobs=num_cores)(delayed(utils.do_cut)(did, files, supercuts, weights, args.tree_name, args.output_directory, args.eventWeightBranch, args.numpy, i) for i, (did, files) in enumerate(dids.iteritems()))
+
+  from numpy import memmap, uint64
+  pids = memmap(os.path.join(tempfile.mkdtemp(), 'pids'), dtype=uint64, shape=num_cores, mode='w+')
+
+  overall_progress = tqdm.tqdm(total=len(dids), desc='Num. files', position=num_cores, leave=True, unit='files')
+  class CallBack(object):
+    completed = defaultdict(int)
+
+    def __init__(self, index, parallel):
+      self.index = index
+      self.parallel = parallel
+
+    def __call__(self, index):
+      CallBack.completed[self.parallel] += 1
+      overall_progress.update()
+      if self.parallel._original_iterable:
+        self.parallel.dispatch_next()
+
+  import joblib.parallel
+  joblib.parallel.CallBack = CallBack
+
+  results = Parallel(n_jobs=num_cores)(delayed(utils.do_cut)(did, files, supercuts, weights, args.tree_name, args.output_directory, args.eventWeightBranch, args.numpy, pids) for did, files in dids.iteritems())
+
+  overall_progress.close()
 
   for did, result in zip(dids, results):
     logger.log(25, 'DID {0:s}: {1:s}'.format(did, 'ok' if result[0] else 'not ok'))
@@ -388,7 +413,6 @@ def main():
     ROOT.PyConfig.IgnoreCommandLineOptions = True
     # used to redirect ROOT output
     #   see http://stackoverflow.com/questions/21541238/get-ipython-doesnt-work-in-a-startup-script-for-ipython-ipython-notebook
-    import tempfile
 
     with tempfile.NamedTemporaryFile() as tmpFile:
       if not args.debug:

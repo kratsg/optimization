@@ -282,7 +282,13 @@ def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False, canvas=None):
     return apply_selection(tree, cuts, eventWeightBranch, canvas)
 
 #@echo(write=logger.debug)
-def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, doNumpy, i):
+def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, doNumpy, pids):
+
+  # handle pid registration
+  if os.getpid() not in pids: pids[np.argmax(pids==0)] = os.getpid()
+  # this gives us the position of this particular process in our list of processes
+  position = np.where(pids==os.getpid())[0][0]
+
   start = clock()
   try:
     # load up the tree for the files
@@ -333,7 +339,7 @@ def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWei
 
     # iterate over the cuts available
     cuts = {}
-    for cut in tqdm.tqdm(get_cut(copy.deepcopy(supercuts)), total=get_n_cuts(supercuts), position=i):
+    for cut in tqdm.tqdm(get_cut(copy.deepcopy(supercuts)), desc='Working on DID {0:s}'.format(did), total=get_n_cuts(supercuts), position=position, leave=True, mininterval=10, maxinterval=60, unit='cuts'):
       cut_hash = get_cut_hash(cut)
       rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch, doNumpy, canvas=canvas)
       scaledEvents = weightedEvents*sample_scaleFactor
