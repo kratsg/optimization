@@ -27,6 +27,8 @@ import glob
 import os
 import sys
 from collections import defaultdict
+import tempfile
+import tqdm
 
 # root_optimize
 from . import utils
@@ -63,7 +65,34 @@ def do_cuts(args):
   # parallelize
   num_cores = min(multiprocessing.cpu_count(), args.num_cores)
   logger.log(25, "Using {0} cores".format(num_cores) )
-  results = Parallel(n_jobs=num_cores)(delayed(utils.do_cut)(did, files, supercuts, weights, args.tree_name, args.output_directory, args.eventWeightBranch, args.numpy) for did, files in dids.iteritems())
+
+  pids = None
+  # if pids is None, do_cut() will disable the progress
+  if not args.hide_subtasks:
+    from numpy import memmap, uint64
+    pids = memmap(os.path.join(tempfile.mkdtemp(), 'pids'), dtype=uint64, shape=num_cores, mode='w+')
+
+  overall_progress = tqdm.tqdm(total=len(dids), desc='Num. files', position=0, leave=True, unit='file', dynamic_ncols=True)
+  class CallBack(object):
+    completed = defaultdict(int)
+
+    def __init__(self, index, parallel):
+      self.index = index
+      self.parallel = parallel
+
+    def __call__(self, index):
+      CallBack.completed[self.parallel] += 1
+      overall_progress.update()
+      overall_progress.refresh()
+      if self.parallel._original_iterable:
+        self.parallel.dispatch_next()
+
+  import joblib.parallel
+  joblib.parallel.CallBack = CallBack
+
+  results = Parallel(n_jobs=num_cores)(delayed(utils.do_cut)(did, files, supercuts, weights, args.tree_name, args.output_directory, args.eventWeightBranch, args.numpy, pids) for did, files in dids.iteritems())
+
+  overall_progress.close()
 
   for did, result in zip(dids, results):
     logger.log(25, 'DID {0:s}: {1:s}'.format(did, 'ok' if result[0] else 'not ok'))
@@ -278,9 +307,7 @@ def main():
   did_to_group_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
 
   # general arguments for all
-  main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug to enable output for debugging.')
-  main_parser.add_argument('--debug', dest='debug', action='store_true', help='Enable ROOT output and full-on debugging. Use this if you need to debug the application.')
-  main_parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT.')
+  main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels.')
   # positional argument, require the first argument to be the input filename (hence adding the argument group)
   requiredNamed_files = files_parser.add_argument_group('required named arguments')
   requiredNamed_files.add_argument('files', type=str, nargs='+', metavar='<file.root>', help='ROOT files containing the optimization ntuples')
@@ -320,6 +347,7 @@ def main():
   cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='json file containing weights by DID', default='weights.json')
   cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='cuts')
   cuts_parser.add_argument('--numpy', required=False, action='store_true', help='Enable numpy optimization to speed up the cuts processing')
+  cuts_parser.add_argument('--hide-subtasks', action='store_true', help='Enable to hide the subtask progress on cuts. This might be if you get annoyed by how buggy it is.')
 
 
   # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
@@ -383,31 +411,11 @@ def main():
     else:
       logger.setLevel(logging.NOTSET + 1)
 
-    # Set up ROOT
-    import ROOT
-    ROOT.PyConfig.IgnoreCommandLineOptions = True
-    # used to redirect ROOT output
-    #   see http://stackoverflow.com/questions/21541238/get-ipython-doesnt-work-in-a-startup-script-for-ipython-ipython-notebook
-    import tempfile
-
-    with tempfile.NamedTemporaryFile() as tmpFile:
-      if not args.debug:
-        ROOT.gSystem.RedirectOutput(tmpFile.name, "w")
-
-      # if flag is shown, set batch_mode to true, else false
-      ROOT.gROOT.SetBatch(args.batch_mode)
-
+    with utils.stdout_redirect_to_tqdm() as save_stdout:
       # call the function and do stuff
       args.func(args)
 
-      if not args.debug:
-        ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
-
   except Exception, e:
-    # stop redirecting if we crash as well
-    if not args.debug:
-      ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
-
     logger.exception("{0}\nAn exception was caught!".format("-"*20))
 
 if __name__ == "__main__":

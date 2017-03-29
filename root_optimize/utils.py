@@ -16,7 +16,10 @@ import itertools
 import numpy as np
 import numexpr as ne
 import os
+import sys
 from time import clock
+import tqdm
+import contextlib
 
 import root_numpy as rnp
 
@@ -79,6 +82,50 @@ class DuplicateFilter(object):
         rv = record.msg not in self.msgs
         self.msgs.add(record.msg)
         return rv
+
+# http://stackoverflow.com/a/38739634/1532974
+class TqdmLoggingHandler(logging.Handler):
+  def __init__ (self, level = logging.NOTSET):
+    super (self.__class__, self).__init__(level)
+
+  def emit (self, record):
+    try:
+      msg = self.format (record)
+      tqdm.tqdm.write(msg)
+      self.flush()
+    except(KeyboardInterrupt, SystemExit):
+      raise
+    except:
+      self.handleError(record)
+
+# for redirecting sys.stdout to tqdm
+class DummyTqdmFile(object):
+  """Dummy file-like that will write to tqdm"""
+  file = None
+  def __init__(self, file):
+    self.file = file
+
+  def write(self, x):
+    # Avoid print() second call (useless \n)
+    if len(x.rstrip()) > 0:
+      tqdm.write(x, file=self.file)
+
+  def flush(self):
+    pass
+
+@contextlib.contextmanager
+def stdout_redirect_to_tqdm():
+  save_stdout = sys.stdout
+  try:
+    sys.stdout = DummyTqdmFile(sys.stdout)
+    yield save_stdout
+  # Relay exceptions
+  except Exception as exc:
+    raise exc
+  # Always restore sys.stdout if necessary
+  finally:
+    sys.stdout = save_stdout
+
 
 #@echo(write=logger.debug)
 def load_mass_windows(filename):
@@ -236,6 +283,13 @@ def get_cut(superCuts, index=0):
       item['fixed'] = True
       for cut in get_cut(superCuts, index+1): yield cut
 
+def get_n_cuts(supercuts):
+  total = 1
+  for supercut in supercuts:
+    if 'st3' in supercut:
+      total *= reduce(lambda x,y: x*y, (np.ceil((st3[1]-st3[0])/st3[2]) for st3 in supercut['st3']))
+  return total
+
 #@echo(write=logger.debug)
 def get_cut_hash(cut):
   return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
@@ -274,7 +328,15 @@ def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False, canvas=None):
     return apply_selection(tree, cuts, eventWeightBranch, canvas)
 
 #@echo(write=logger.debug)
-def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, doNumpy):
+def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, doNumpy, pids):
+
+  position = -1
+  if pids is not None:
+    # handle pid registration
+    if os.getpid() not in pids: pids[np.argmax(pids==0)] = os.getpid()
+    # this gives us the position of this particular process in our list of processes
+    position = np.where(pids==os.getpid())[0][0]
+
   start = clock()
   try:
     # load up the tree for the files
@@ -325,7 +387,7 @@ def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWei
 
     # iterate over the cuts available
     cuts = {}
-    for cut in get_cut(copy.deepcopy(supercuts)):
+    for cut in tqdm.tqdm(get_cut(copy.deepcopy(supercuts)), desc='Working on DID {0:s}'.format(did), total=get_n_cuts(supercuts), disable=(position==-1), position=position+1, leave=True, mininterval=5, maxinterval=10, unit='cuts', dynamic_ncols=True):
       cut_hash = get_cut_hash(cut)
       rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch, doNumpy, canvas=canvas)
       scaledEvents = weightedEvents*sample_scaleFactor
