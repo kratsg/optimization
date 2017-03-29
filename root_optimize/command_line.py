@@ -303,9 +303,7 @@ def main():
   did_to_group_parser = argparse.ArgumentParser(add_help=False, formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
 
   # general arguments for all
-  main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels. Use --debug to enable output for debugging.')
-  main_parser.add_argument('--debug', dest='debug', action='store_true', help='Enable ROOT output and full-on debugging. Use this if you need to debug the application.')
-  main_parser.add_argument('-b', '--batch', dest='batch_mode', action='store_true', help='Enable batch mode for ROOT.')
+  main_parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output of various levels.')
   # positional argument, require the first argument to be the input filename (hence adding the argument group)
   requiredNamed_files = files_parser.add_argument_group('required named arguments')
   requiredNamed_files.add_argument('files', type=str, nargs='+', metavar='<file.root>', help='ROOT files containing the optimization ntuples')
@@ -408,30 +406,11 @@ def main():
     else:
       logger.setLevel(logging.NOTSET + 1)
 
-    # Set up ROOT
-    import ROOT
-    ROOT.PyConfig.IgnoreCommandLineOptions = True
-    # used to redirect ROOT output
-    #   see http://stackoverflow.com/questions/21541238/get-ipython-doesnt-work-in-a-startup-script-for-ipython-ipython-notebook
-
-    with tempfile.NamedTemporaryFile() as tmpFile:
-      if not args.debug:
-        ROOT.gSystem.RedirectOutput(tmpFile.name, "w")
-
-      # if flag is shown, set batch_mode to true, else false
-      ROOT.gROOT.SetBatch(args.batch_mode)
-
+    with utils.stdout_redirect_to_tqdm() as save_stdout:
       # call the function and do stuff
       args.func(args)
 
-      if not args.debug:
-        ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
-
   except Exception, e:
-    # stop redirecting if we crash as well
-    if not args.debug:
-      ROOT.gROOT.ProcessLine("gSystem->RedirectOutput(0);")
-
     logger.exception("{0}\nAn exception was caught!".format("-"*20))
 
 if __name__ == "__main__":
