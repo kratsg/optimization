@@ -66,8 +66,11 @@ def do_cuts(args):
   num_cores = min(multiprocessing.cpu_count(), args.num_cores)
   logger.log(25, "Using {0} cores".format(num_cores) )
 
-  from numpy import memmap, uint64
-  pids = memmap(os.path.join(tempfile.mkdtemp(), 'pids'), dtype=uint64, shape=num_cores, mode='w+')
+  pids = None
+  # if pids is None, do_cut() will disable the progress
+  if not args.hide_subtasks:
+    from numpy import memmap, uint64
+    pids = memmap(os.path.join(tempfile.mkdtemp(), 'pids'), dtype=uint64, shape=num_cores, mode='w+')
 
   overall_progress = tqdm.tqdm(total=len(dids), desc='Num. files', position=0, leave=True, unit='file', dynamic_ncols=True)
   class CallBack(object):

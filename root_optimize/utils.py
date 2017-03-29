@@ -330,10 +330,12 @@ def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False, canvas=None):
 #@echo(write=logger.debug)
 def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, doNumpy, pids):
 
-  # handle pid registration
-  if os.getpid() not in pids: pids[np.argmax(pids==0)] = os.getpid()
-  # this gives us the position of this particular process in our list of processes
-  position = np.where(pids==os.getpid())[0][0]
+  position = -1
+  if pids is not None:
+    # handle pid registration
+    if os.getpid() not in pids: pids[np.argmax(pids==0)] = os.getpid()
+    # this gives us the position of this particular process in our list of processes
+    position = np.where(pids==os.getpid())[0][0]
 
   start = clock()
   try:
@@ -385,7 +387,7 @@ def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWei
 
     # iterate over the cuts available
     cuts = {}
-    for cut in tqdm.tqdm(get_cut(copy.deepcopy(supercuts)), desc='Working on DID {0:s}'.format(did), total=get_n_cuts(supercuts), position=position+1, leave=True, mininterval=5, maxinterval=10, unit='cuts', dynamic_ncols=True):
+    for cut in tqdm.tqdm(get_cut(copy.deepcopy(supercuts)), desc='Working on DID {0:s}'.format(did), total=get_n_cuts(supercuts), disable=(position==-1), position=position+1, leave=True, mininterval=5, maxinterval=10, unit='cuts', dynamic_ncols=True):
       cut_hash = get_cut_hash(cut)
       rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch, doNumpy, canvas=canvas)
       scaledEvents = weightedEvents*sample_scaleFactor
