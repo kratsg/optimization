@@ -385,7 +385,7 @@ def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWei
 
     # iterate over the cuts available
     cuts = {}
-    for cut in tqdm.tqdm(get_cut(copy.deepcopy(supercuts)), desc='Working on DID {0:s}'.format(did), total=get_n_cuts(supercuts), position=position, leave=True, mininterval=10, maxinterval=60, unit='cuts'):
+    for cut in tqdm.tqdm(get_cut(copy.deepcopy(supercuts)), desc='Working on DID {0:s}'.format(did), total=get_n_cuts(supercuts), position=position+1, leave=True, mininterval=5, maxinterval=10, unit='cuts'):
       cut_hash = get_cut_hash(cut)
       rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch, doNumpy, canvas=canvas)
       scaledEvents = weightedEvents*sample_scaleFactor
