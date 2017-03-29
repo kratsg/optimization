@@ -16,8 +16,10 @@ import itertools
 import numpy as np
 import numexpr as ne
 import os
+import sys
 from time import clock
 import tqdm
+import contextlib
 
 import root_numpy as rnp
 
@@ -80,6 +82,50 @@ class DuplicateFilter(object):
         rv = record.msg not in self.msgs
         self.msgs.add(record.msg)
         return rv
+
+# http://stackoverflow.com/a/38739634/1532974
+class TqdmLoggingHandler(logging.Handler):
+  def __init__ (self, level = logging.NOTSET):
+    super (self.__class__, self).__init__(level)
+
+  def emit (self, record):
+    try:
+      msg = self.format (record)
+      tqdm.tqdm.write(msg)
+      self.flush()
+    except(KeyboardInterrupt, SystemExit):
+      raise
+    except:
+      self.handleError(record)
+
+# for redirecting sys.stdout to tqdm
+class DummyTqdmFile(object):
+  """Dummy file-like that will write to tqdm"""
+  file = None
+  def __init__(self, file):
+    self.file = file
+
+  def write(self, x):
+    # Avoid print() second call (useless \n)
+    if len(x.rstrip()) > 0:
+      tqdm.write(x, file=self.file)
+
+  def flush(self):
+    pass
+
+@contextlib.contextmanager
+def stdout_redirect_to_tqdm():
+  save_stdout = sys.stdout
+  try:
+    sys.stdout = DummyTqdmFile(sys.stdout)
+    yield save_stdout
+  # Relay exceptions
+  except Exception as exc:
+    raise exc
+  # Always restore sys.stdout if necessary
+  finally:
+    sys.stdout = save_stdout
+
 
 #@echo(write=logger.debug)
 def load_mass_windows(filename):
