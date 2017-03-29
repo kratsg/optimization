@@ -45,6 +45,9 @@ def do_cuts(args):
   # before doing anything, let's ensure the directory we make is ok
   if not os.path.exists(args.output_directory):
     os.makedirs(args.output_directory)
+  elif args.overwrite:
+    import shutil
+    shutil.rmtree(args.output_directory)
   else:
     raise IOError("Output directory already exists: {0:s}".format(args.output_directory))
 
@@ -346,6 +349,7 @@ def main():
                                       epilog='cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.')
   cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='json file containing weights by DID', default='weights.json')
   cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='cuts')
+  cuts_parser.add_argument('-f', '--overwrite', required=False, action='store_true', help='If flagged, will remove the output directory before creating it, if it already exists')
   cuts_parser.add_argument('--numpy', required=False, action='store_true', help='Enable numpy optimization to speed up the cuts processing')
   cuts_parser.add_argument('--hide-subtasks', action='store_true', help='Enable to hide the subtask progress on cuts. This might be if you get annoyed by how buggy it is.')
 
