@@ -69,7 +69,7 @@ def do_cuts(args):
   from numpy import memmap, uint64
   pids = memmap(os.path.join(tempfile.mkdtemp(), 'pids'), dtype=uint64, shape=num_cores, mode='w+')
 
-  overall_progress = tqdm.tqdm(total=len(dids), desc='Num. files', position=num_cores, leave=True, unit='files')
+  overall_progress = tqdm.tqdm(total=len(dids), desc='Num. files', position=0, leave=True, unit='file')
   class CallBack(object):
     completed = defaultdict(int)
 
@@ -80,6 +80,7 @@ def do_cuts(args):
     def __call__(self, index):
       CallBack.completed[self.parallel] += 1
       overall_progress.update()
+      overall_progress.refresh()
       if self.parallel._original_iterable:
         self.parallel.dispatch_next()
 
