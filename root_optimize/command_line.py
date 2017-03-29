@@ -69,7 +69,7 @@ def do_cuts(args):
   from numpy import memmap, uint64
   pids = memmap(os.path.join(tempfile.mkdtemp(), 'pids'), dtype=uint64, shape=num_cores, mode='w+')
 
-  overall_progress = tqdm.tqdm(total=len(dids), desc='Num. files', position=0, leave=True, unit='file')
+  overall_progress = tqdm.tqdm(total=len(dids), desc='Num. files', position=0, leave=True, unit='file', dynamic_ncols=True)
   class CallBack(object):
     completed = defaultdict(int)
 
@@ -344,6 +344,7 @@ def main():
   cuts_parser.add_argument('--weightsFile', type=str, required=False, dest='weightsFile', metavar='<weights file>', help='json file containing weights by DID', default='weights.json')
   cuts_parser.add_argument('-o', '--output', required=False, type=str, dest='output_directory', metavar='<directory>', help='output directory to store the <hash>.json files', default='cuts')
   cuts_parser.add_argument('--numpy', required=False, action='store_true', help='Enable numpy optimization to speed up the cuts processing')
+  cuts_parser.add_argument('--hide-subtasks', action='store_true', help='Enable to hide the subtask progress on cuts. This might be if you get annoyed by how buggy it is.')
 
 
   # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
