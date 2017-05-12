@@ -22,6 +22,7 @@ parser.add_argument('--output', required=False, type=str, dest='output', metavar
 parser.add_argument('--tree', type=str, required=False, dest='tree_name', metavar='<tree name>', help='name of the tree containing the ntuples', default='oTree')
 parser.add_argument('--eventWeight', type=str, required=False, dest='eventWeightBranch', metavar='<branch name>', help='name of event weight branch in the ntuples. It must exist.', default='event_weight')
 parser.add_argument('--boundaries', type=str, required=False, dest='boundaries', metavar='<file.json>', help='name of json file containing boundary definitions', default='boundaries.json')
+parser.add_argument('--translations', type=str, required=False, dest='translations', metavar='<file.json>', help='Dictionary of selections mapping to a draw() to use', default='translations.json')
 
 parser.add_argument('-f', '--force', action='store_true', dest='overwrite', help='Overwrite the directory if it exists')
 
@@ -44,6 +45,7 @@ from rootpy.tree import Tree, TreeChain
 
 supercuts = json.load(file(args.supercuts, 'r'))
 boundaries = json.load(file(args.boundaries, 'r'))
+translations = json.load(file(args.translations, 'r'))
 
 for fname in args.files:
   # first open file
@@ -117,14 +119,20 @@ for fname in args.files:
         del differences[-1]
         continue
 
-      # at least one branch in there
-      branchToDraw = branchesToUse[0]
-      # in most cases, these will be the same, we separate for the top tagging case
-      histName = branchToDraw
-
       if len(branchesToUse) > 1:
         print("\t\tWarning: selection has multiple branches.")
-        continue
+        translation = translations.get(selection_string, None)
+        if translation is None:
+          print("\t\tSelection '{0:s}' not in translations".format(selection_string))
+        else:
+          # more than one branch
+          branchToDraw = translation.get('draw')
+          histName = translation.get('histName')
+      else:
+        # exactly one branch
+        branchToDraw = branchesToUse[0]
+        # in most cases, these will be the same, we separate for the top tagging case
+        histName = branchToDraw
 
       print("\t\tDrawing {0}".format(histName))
 
