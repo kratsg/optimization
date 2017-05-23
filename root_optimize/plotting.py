@@ -64,15 +64,21 @@ def draw_hist(hist, nSigs=1, markercolor=0, drawOpts="TEXT45 COLZ"):
     ROOT.gStyle.SetPaintTextFormat("1.{0:d}f".format(nSigs));
     hist.Draw(drawOpts)
 
-def draw_labels(lumi, label="#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}"):
+def draw_labels(lumi, label="#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}", internal=True, simulation=True):
     txt = ROOT.TLatex()
     txt.SetNDC()
-    txt.DrawText(0.32,0.87,"Internal")
-    txt.DrawText(0.2,0.82,"Simulation")
+    if internal and not simulation:
+      txt.DrawText(0.2,0.87,"Internal")
+    elif simulation and not internal:
+      txt.DrawText(0.2,0.82,"Simulation")
+    elif simulation and internal:
+      txt.DrawText(0.2,0.82,"Simulation")
+      txt.DrawText(0.32,0.87,"Internal")
+
     #txt.SetTextSize(0.030)
     txt.SetTextSize(18)
     txt.DrawLatex(0.16,0.95,label)
-    txt.DrawLatex(0.62,0.95,"L_{{int}} = {0:0.2f} fb^{{-1}}, #sqrt{{s}} = 13 TeV".format(lumi))
+    txt.DrawLatex(0.62,0.95,"L_{{int}} = {0:0.1f} fb^{{-1}}, #sqrt{{s}} = 13 TeV".format(lumi))
     txt.SetTextFont(72)
     txt.SetTextSize(0.05)
     txt.DrawText(0.2,0.87,"ATLAS")
