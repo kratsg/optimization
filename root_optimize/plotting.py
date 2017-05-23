@@ -25,7 +25,7 @@ def init_canvas(x, y, name="c", topMargin=0.07, rightMargin=0.16):
     c.SetRightMargin(rightMargin)
     return c
 
-def axis_labels(x_label="m_{#tilde{g}} [GeV]", y_label="m_{#tilde{#chi}^{0}_{1}} [GeV]", z_label="", title=""):
+def axis_labels(x_label="m(#tilde{g}) [GeV]", y_label="m(#tilde{#chi}^{0}_{1}) [GeV]", z_label="", title=""):
     return ';'.join([title, x_label, y_label, z_label])
 
 def init_hist(label, x_min, x_max, y_min, y_max, bin_size, name="grid"):
@@ -57,8 +57,8 @@ def fill_hist(hist,plot_array,label,skipNegativeSig=True):
       else:
         hist.SetBinContent(b,0.01)
 
-def draw_hist(hist, nSigs=1, markercolor=0, drawOpts="TEXT45 COLZ"):
-    hist.SetMarkerSize(800)
+def draw_hist(hist, nSigs=1, markercolor=0, drawOpts="TEXT45 COLZ", markerSize=800):
+    hist.SetMarkerSize(markerSize)
     hist.SetMarkerColor(markercolor)
     #gStyle.SetPalette(51)
     ROOT.gStyle.SetPaintTextFormat("1.{0:d}f".format(nSigs));
@@ -67,13 +67,10 @@ def draw_hist(hist, nSigs=1, markercolor=0, drawOpts="TEXT45 COLZ"):
 def draw_labels(lumi, label="#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}", internal=True, simulation=True):
     txt = ROOT.TLatex()
     txt.SetNDC()
-    if internal and not simulation:
-      txt.DrawText(0.2,0.87,"Internal")
-    elif simulation and not internal:
-      txt.DrawText(0.2,0.82,"Simulation")
-    elif simulation and internal:
-      txt.DrawText(0.2,0.82,"Simulation")
+    if internal:
       txt.DrawText(0.32,0.87,"Internal")
+    if simulation:
+      txt.DrawText(0.2,0.82,"Simulation")
 
     #txt.SetTextSize(0.030)
     txt.SetTextSize(18)
