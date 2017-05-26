@@ -22,7 +22,8 @@ if __name__ == '__main__':
   parser.add_argument('--g-max', type=float, required=False, help='Maximum gluino mass', default=2500)
   parser.add_argument('--l-min', type=float, required=False, help='Minimum LSP mass', default=0)
   parser.add_argument('--l-max', type=float, required=False, help='Maximum LSP mass', default=2300)
-  parser.add_argument('--bin-size', type=float, required=False, help='Size of bins to use', default=100)
+  parser.add_argument('--x-bin-size', type=float, required=False, help='Size of bins to use', default=100)
+  parser.add_argument('--y-bin-size', type=float, required=False, help='Size of bins to use', default=200)
   parser.add_argument('--x-dim', type=float, required=False, help='x-dimension of figure', default=800)
   parser.add_argument('--y-dim', type=float, required=False, help='y-dimension of figure', default=600)
   parser.add_argument('--top-mass', type=float, required=False, help='Mass of top quark [GeV]. Mainly meant to draw exclusion line.', default=173.34)
@@ -62,7 +63,7 @@ if __name__ == '__main__':
   zlabels = ['Significance in optimal cut','Exp. num. signal in optimal cut','Exp. num. bkgd in optimal cut', 'Signal/Background']
   nSigs = [2, 3, 3, 2]
   for label,zlabel,nSig in zip(labels,zlabels,nSigs):
-    h = plotting.init_hist(zlabel, args.g_min, args.g_max, args.l_min, args.l_max, args.bin_size)
+    h = plotting.init_hist(zlabel, args.g_min, args.g_max, args.l_min, args.l_max, args.x_bin_size, args.y_bin_size)
     plotting.fill_hist(h,plot_array,label, label=='sig')
     plotting.draw_hist(h, nSig)
     plotting.draw_labels(args.lumi)

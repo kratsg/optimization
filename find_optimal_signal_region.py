@@ -164,7 +164,7 @@ print winners
 
 # do optimal signal regions
 c = init_canvas()
-h = plotting.init_hist("Optimal Signal Region", 200, 2500, 0, 2300, 100)
+h = plotting.init_hist("Optimal Signal Region", 200, 2500, 0, 2300, 100, 200)
 for did, vals in significances.iteritems():
   winningSR = vals['winner']
   mgluino, mstop, mlsp = mdict[did]
@@ -180,7 +180,7 @@ save_canvas(c, '{0}_optimalSR_grid_lumi{1}'.format(os.path.join(args.output_dir,
 
 # now make a plot of the actual significances
 c = init_canvas()
-h = plotting.init_hist("Significance of optimal SR", 200, 2500, 0, 2300, 100)
+h = plotting.init_hist("Significance of optimal SR", 200, 2500, 0, 2300, 100, 200)
 for did, vals in significances.iteritems():
   winningSR = vals['winner']
   mgluino, mstop, mlsp = mdict[did]

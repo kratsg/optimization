@@ -28,13 +28,13 @@ def init_canvas(x, y, name="c", topMargin=0.07, rightMargin=0.16):
 def axis_labels(x_label="m(#tilde{g}) [GeV]", y_label="m(#tilde{#chi}^{0}_{1}) [GeV]", z_label="", title=""):
     return ';'.join([title, x_label, y_label, z_label])
 
-def init_hist(label, x_min, x_max, y_min, y_max, bin_size, name="grid"):
+def init_hist(label, x_min, x_max, y_min, y_max, x_bin_size, y_bin_size, name="grid"):
     return ROOT.TH2F(name,
                 axis_labels(z_label=label),
-                nbins(x_min, x_max, bin_size),
+                nbins(x_min, x_max, x_bin_size),
                 x_min,
                 x_max,
-                nbins(y_min, y_max, bin_size),
+                nbins(y_min, y_max, y_bin_size),
                 y_min,
                 y_max)
 
@@ -64,7 +64,7 @@ def draw_hist(hist, nSigs=1, markercolor=0, drawOpts="TEXT45 COLZ", markerSize=8
     ROOT.gStyle.SetPaintTextFormat("1.{0:d}f".format(nSigs));
     hist.Draw(drawOpts)
 
-def draw_labels(lumi, label="#tilde{g}-#tilde{g} production, #tilde{g} #rightarrow t #bar{t} + #tilde{#chi}^{0}_{1}", internal=True, simulation=True):
+def draw_labels(lumi, label="#tilde{g}#kern[0.1]{#tilde{g}} production, #tilde{g} #rightarrow t#bar{t} + #tilde{#chi}^{0}_{1}, m(#tilde{q}) >> m(#tilde{g})", internal=True, simulation=True):
     txt = ROOT.TLatex()
     txt.SetNDC()
     if internal:
@@ -75,7 +75,7 @@ def draw_labels(lumi, label="#tilde{g}-#tilde{g} production, #tilde{g} #rightarr
     #txt.SetTextSize(0.030)
     txt.SetTextSize(18)
     txt.DrawLatex(0.16,0.95,label)
-    txt.DrawLatex(0.62,0.95,"L_{{int}} = {0:0.1f} fb^{{-1}}, #sqrt{{s}} = 13 TeV".format(lumi))
+    txt.DrawLatex(0.62,0.95,"#sqrt{{s}} = 13 TeV, {0:0.1f} fb^{{-1}}".format(lumi))
     txt.SetTextFont(72)
     txt.SetTextSize(0.05)
     txt.DrawText(0.2,0.87,"ATLAS")
