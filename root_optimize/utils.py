@@ -18,7 +18,7 @@ import numexpr as ne
 import os
 import sys
 from time import clock
-import tqdm
+from tqdm import tqdm
 import contextlib
 
 import root_numpy as rnp
