@@ -91,7 +91,7 @@ class TqdmLoggingHandler(logging.Handler):
   def emit (self, record):
     try:
       msg = self.format (record)
-      tqdm.tqdm.write(msg)
+      tqdm.write(msg)
       self.flush()
     except(KeyboardInterrupt, SystemExit):
       raise
@@ -387,7 +387,7 @@ def do_cut(did, files, supercuts, weights, tree_name, output_directory, eventWei
 
     # iterate over the cuts available
     cuts = {}
-    for cut in tqdm.tqdm(get_cut(copy.deepcopy(supercuts)), desc='Working on DID {0:s}'.format(did), total=get_n_cuts(supercuts), disable=(position==-1), position=position+1, leave=True, mininterval=5, maxinterval=10, unit='cuts', dynamic_ncols=True):
+    for cut in tqdm(get_cut(copy.deepcopy(supercuts)), desc='Working on DID {0:s}'.format(did), total=get_n_cuts(supercuts), disable=(position==-1), position=position+1, leave=True, mininterval=5, maxinterval=10, unit='cuts', dynamic_ncols=True):
       cut_hash = get_cut_hash(cut)
       rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch, doNumpy, canvas=canvas)
       scaledEvents = weightedEvents*sample_scaleFactor
