@@ -763,4 +763,3 @@ is an example of a perhaps more complicated selection that can be done. In this 
 
 ## Authors
 - [Giordon Stark](https://github.com/kratsg)
-- [Aviv Cukierman](https://github.com/AvivCukierman)
