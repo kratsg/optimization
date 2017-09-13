@@ -67,10 +67,11 @@ def draw_hist(hist, nSigs=1, markercolor=0, drawOpts="TEXT45 COLZ", markerSize=8
 def draw_labels(lumi, label="#tilde{g}#kern[0.1]{#tilde{g}} production, #tilde{g} #rightarrow t#bar{t} + #tilde{#chi}^{0}_{1}, m(#tilde{q}) >> m(#tilde{g})", internal=True, simulation=True):
     txt = ROOT.TLatex()
     txt.SetNDC()
-    if internal:
-      txt.DrawText(0.32,0.87,"Internal")
-    if simulation:
-      txt.DrawText(0.2,0.82,"Simulation")
+    if internal != simulation:  # this is xor
+      txt.DrawText(0.32,0.87,"Internal" if internal else "Simulation")
+    if internal and simulation:
+      txt.DrawText(0.32,0.87,"Simulation")
+      txt.DrawText(0.42,0.87,"Internal")
 
     #txt.SetTextSize(0.030)
     txt.SetTextSize(18)
