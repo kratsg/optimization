@@ -68,10 +68,10 @@ def draw_labels(lumi, label="#tilde{g}#kern[0.1]{#tilde{g}} production, #tilde{g
     txt = ROOT.TLatex()
     txt.SetNDC()
     if internal != simulation:  # this is xor
-      txt.DrawText(0.32,0.87,"Internal" if internal else "Simulation")
+      txt.DrawText(0.325,0.87,"Internal" if internal else "Simulation")
     if internal and simulation:
-      txt.DrawText(0.32,0.87,"Simulation")
-      txt.DrawText(0.42,0.87,"Internal")
+      txt.DrawText(0.325,0.87,"Simulation")
+      txt.DrawText(0.5,0.87,"Internal")
 
     #txt.SetTextSize(0.030)
     txt.SetTextSize(18)
