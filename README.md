@@ -154,14 +154,6 @@ which will install it without TMVA support. Then comment out the relevant line. 
 
 ### Using
 
-#### Grab some optimization ntuples
-
-I grab a set of optimization ntuples from [dropbox](https://www.dropbox.com/sh/s2f5n1oaojnxonn/AABnajIwGGGqMz2RlVO2zjkka?dl=0) and extract them
-
-```bash
-tar -xzvf TA07_MBJ10V1.tar.gz
-```
-
 #### Generate a supercuts template
 
 A straightforward example is simply just
