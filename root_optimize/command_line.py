@@ -197,13 +197,13 @@ def do_generate(args):
   supercuts = []
 
   for b in branches:
-    if match_branch(b, args.skip_branches):
+    if utils.match_branch(b, args.skip_branches):
       logger.log(25, "{0:32s}:\tSkipping as requested".format(b))
       continue
 
     signal_direction = '>'
 
-    if match_branch(b, args.fixed_branches):
+    if utils.match_branch(b, args.fixed_branches):
       supercuts.append({'selections': "{0:s} > {{0}}".format(b),
                         'pivot': 0})
     else:
