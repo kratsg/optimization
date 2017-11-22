@@ -108,7 +108,7 @@ rooptimize -h
 First, set up ROOT, python, and pip using [lcgenv](https://gitlab.cern.ch/GENSER/lcgenv):
 
 ```bash
-lsetup root "lcgenv -p LCG_87 x86_64-slc6-gcc49-opt pip"
+lsetup root "lcgenv -p LCG_87 x86_64-slc6-gcc62-opt pip"
 pip install --user virtualenvwrapper
 ```
 
