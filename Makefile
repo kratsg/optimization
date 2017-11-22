@@ -1,7 +1,7 @@
 # simple makefile to simplify repetitive build env management tasks under posix
 PYTHON := $(shell which python)
 GIT := $(shell which git)
-VERSION := $(shell $(PYTHON) -c "from root_optimize import __version__; print __version__")
+VERSION := $(shell $(PYTHON) -c "exec(open('root_optimize/version.py').read()); print __version__")
 
 register:
 	@$(PYTHON) setup.py register
