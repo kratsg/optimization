@@ -7,7 +7,6 @@ if sys.version_info < (2, 6):
 
 # do the setup
 from setuptools import setup
-from root_optimize import __version__
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -21,6 +20,7 @@ def read(*filenames, **kwargs):
     return sep.join(buf)
 
 long_description = read(os.path.join(here, 'README.rst'))
+exec(open(os.path.join(here, 'root_optimize', 'version.py')).read())
 
 setup(
     name='root_optimize',
