@@ -134,7 +134,7 @@ which provides a `venv` function to allow you to use virtual environments for yo
 Go ahead and close that shell down and start with a clean slate. Now, you simply need to follow the instructions in the [Using virtual environment](#using-virtual-environment) subsection above. In future shells, you can do the following pattern to set up python, ROOT, and then go into your virtual environment:
 
 ```bash
-lsetup root "lcgenv -p LCG_87 x86_64-slc6-gcc49-opt pip"
+lsetup root "lcgenv -p LCG_87 x86_64-slc6-gcc62-opt pip"
 venv
 workon optimization
 rooptimize -h
