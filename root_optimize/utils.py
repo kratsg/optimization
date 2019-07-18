@@ -15,6 +15,7 @@ import hashlib
 import itertools
 import numpy as np
 import numexpr as ne
+import scipy
 import os
 import sys
 from time import clock
@@ -196,6 +197,18 @@ def get_scaleFactor(weights, did):
   logger.info( "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
   return scaleFactor
 
+def significance(signalExp, backgroundExp, relativeBkgUncert):
+    """ Numpy/Scipy port of the RooStats function `BinomialExpZ'
+
+    See: https://root.cern.ch/doc/master/NumberCountingUtils_8cxx_source.html
+    """
+    # pylint: disable=invalid-name
+    mainInf = signalExp + backgroundExp
+    tau = 1.0 / backgroundExp / (relativeBkgUncert * relativeBkgUncert)
+    auxiliaryInf = backgroundExp * tau
+    P_Bi = scipy.special.betainc(mainInf, auxiliaryInf + 1, 1.0 / (1.0 + tau))
+    return - scipy.special.ndtri(P_Bi)
+
 #@echo(write=logger.debug)
 def get_significance(signal, bkgd, insignificanceThreshold, bkgdUncertainty, bkgdStatUncertainty, rawBkgd):
   # if not enough events, return string of which one did not have enough
@@ -210,7 +223,7 @@ def get_significance(signal, bkgd, insignificanceThreshold, bkgdUncertainty, bkg
     sig = -3
   else:
     # otherwise, calculate!
-    sig = ROOT.RooStats.NumberCountingUtils.BinomialExpZ(signal, bkgd, bkgdUncertainty)
+    sig = significance(signal, bkgd, bkgdUncertainty)
   return sig
 
 #@echo(write=logger.debug)
