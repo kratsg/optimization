@@ -123,7 +123,6 @@ def do_cuts(args):
             args.tree_name,
             args.output_directory,
             args.eventWeightBranch,
-            args.numpy,
             pids,
         )
         for did, files in dids.iteritems()
@@ -524,7 +523,7 @@ def rooptimize():
         type=str,
         nargs="+",
         metavar="<file.root>",
-        help="ROOT files containing the optimization ntuples",
+        help="input ntuples",
     )
 
     # these are options for anything that needs to use the supercuts file
@@ -681,12 +680,6 @@ def rooptimize():
         help="If flagged, will remove the output directory before creating it, if it already exists",
     )
     cuts_parser.add_argument(
-        "--numpy",
-        required=False,
-        action="store_true",
-        help="Enable numpy optimization to speed up the cuts processing",
-    )
-    cuts_parser.add_argument(
         "--hide-subtasks",
         action="store_true",
         help="Enable to hide the subtask progress on cuts. This might be if you get annoyed by how buggy it is.",
@@ -708,7 +701,7 @@ def rooptimize():
         type=str,
         nargs="+",
         metavar="{DID}.json",
-        help="ROOT files containing the signal cuts",
+        help="signal file patterns",
     )
     optimize_parser.add_argument(
         "--bkgd",
@@ -716,7 +709,7 @@ def rooptimize():
         type=str,
         nargs="+",
         metavar="{DID}.json",
-        help="ROOT files containing the background cuts",
+        help="background file patterns",
     )
     optimize_parser.add_argument(
         "--searchDirectory",

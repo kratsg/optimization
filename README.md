@@ -1,4 +1,4 @@
-# Optimization - A PyRoot Codebase
+# Optimization - A uproot Codebase
 
 This tool allows you to take a series of ROOT ntuples, signal & background, apply a lot of cuts automatically, and figure out the most optimal selections to maximize significance. It comes packed with a lot of features
 
@@ -19,7 +19,6 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
     - [Using virtual environment](#using-virtual-environment)
     - [Without using virtual environment](#without-using-virtual-environment)
     - [On a CVMFS-enabled machine](#on-a-cvmfs-enabled-machine)
-    - [Errors with root-numpy and TMVA](#errors-with-root-numpy-and-tmva)
   - [Using](#using)
     - [Grab some optimization ntuples](#grab-some-optimization-ntuples)
     - [Generate a supercuts template](#generate-a-supercuts-template)
@@ -62,8 +61,8 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
 
 
 ## Major Dependencies
- - [PyROOT](https://root.cern.ch/drupal/content/pyroot) (which technically requires ROOT)
  - [numpy](http://www.numpy.org/)
+ - [uproot](https://github.com/scikit-hep/uproot)
 
 All other dependencies are listed in [requirements.txt](requirements.txt) and can be installed in one line with `pip install -r requirements.txt`.
 
@@ -104,10 +103,10 @@ rooptimize -h
 #### On a CVMFS-enabled machine
 
 
-First, set up ROOT, python, and pip using [lcgenv](https://gitlab.cern.ch/GENSER/lcgenv):
+First, set up python and pip using [lcgenv](https://gitlab.cern.ch/GENSER/lcgenv):
 
 ```bash
-lsetup root "lcgenv -p LCG_87 x86_64-slc6-gcc62-opt pip"
+lsetup "lcgenv -p LCG_87 x86_64-slc6-gcc62-opt pip"
 pip install --user virtualenvwrapper
 ```
 
@@ -128,7 +127,7 @@ venv(){
 }
 ```
 
-which provides a `venv` function to allow you to use virtual environments for your python installations which help encapsulate your work. This should be run when you need to use your python setup, and should be called after an `lsetup root` (or `lsetup python`) command. It means that your site packages (eg: for tarballing) will be located in `$HOME/.virtualenvs/<NAME>/lib/python2.7/site-packages` where `<NAME>` is the name of the virtual environment you make.
+which provides a `venv` function to allow you to use virtual environments for your python installations which help encapsulate your work. This should be run when you need to use your python setup, and should be called after an `lsetup python` command. It means that your site packages (eg: for tarballing) will be located in `$HOME/.virtualenvs/<NAME>/lib/python2.7/site-packages` where `<NAME>` is the name of the virtual environment you make.
 
 Go ahead and close that shell down and start with a clean slate. Now, you simply need to follow the instructions in the [Using virtual environment](#using-virtual-environment) subsection above. In future shells, you can do the following pattern to set up python, ROOT, and then go into your virtual environment:
 
@@ -140,16 +139,6 @@ rooptimize -h
 ```
 
 and you're good to go!
-
-#### Errors with root-numpy and TMVA
-
-ROOT changed the TMVA version so to make `root-numpy` behave nicely, just run
-
-```bash
-NOTMVA=1 pip install root-numpy
-```
-
-which will install it without TMVA support. Then comment out the relevant line. `root-numpy` also requires `numpy` so you'll want to have that installed beforehand as well.
 
 ### Using
 
@@ -727,7 +716,7 @@ which tells the code to always apply a cut of `multiplicity_jet >= 4` always.
 
 #### More Complicated Selections
 
-One can certainly provide more complicated selections involving multiple pivots and multiple branches. In fact, this makes our optimization increasingly more flexible and faster than any other code in existence. We use the [formulate](https://github.com/scikit-hep/fomrulate/) and [numexpr](https://github.com/pydata/numexpr/) packages to provide the parsing of the selection strings. This supports "standard" selection strings as well as those recognized by `TCut`/`TFormula` as well. Their documentation has examples of what you can do. You still need to specify placeholders for your pivots like below:
+One can certainly provide more complicated selections involving multiple pivots and multiple branches. In fact, this makes our optimization increasingly more flexible and faster than any other code in existence. We use the [formulate](https://github.com/scikit-hep/formulate/) and [numexpr](https://github.com/pydata/numexpr/) packages to provide the parsing of the selection strings. This supports "standard" selection strings as well as those recognized by `TCut`/`TFormula` as well. Their documentation has examples of what you can do. You still need to specify placeholders for your pivots like below:
 
 ```json
 [

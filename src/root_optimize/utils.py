@@ -3,10 +3,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import ROOT
-
-ROOT.PyConfig.IgnoreCommandLineOptions = True
-
 import csv
 import copy
 import re
@@ -282,41 +278,6 @@ def get_significance(
 
 
 # @echo(write=logger.debug)
-def get_ttree(tree_name, filenames, eventWeightBranch):
-    # this is a dict that holds the tree
-
-    logger.info("Initializing TChain: {0}".format(tree_name))
-    # start by making a TChain
-    tree = ROOT.TChain(tree_name)
-    for fname in filenames:
-        if not os.path.isfile(fname):
-            raise ValueError(
-                "The supplied input file `{0}` does not exist or I cannot find it.".format(
-                    fname
-                )
-            )
-        else:
-            logger.info("\tAdding {0}".format(fname))
-            tree.Add(fname)
-
-        # Print some information
-        logger.info("\tNumber of input events: %s" % tree.GetEntries())
-
-    # make sure the branches are compatible between the two
-    branches = set(i.GetName() for i in tree.GetListOfBranches())
-    aliases = set(i.GetName() for i in tree.GetListOfAliases())
-
-    # user can pass in a selection for the branch
-    for ewBranch in selection_to_branches(eventWeightBranch):
-        if not ewBranch in branches and not ewBranch in aliases:
-            raise ValueError(
-                "The event weight branch does not exist: {0}".format(ewBranch)
-            )
-
-    return tree
-
-
-# @echo(write=logger.debug)
 def cut_to_selection(cut):
     return cut["selections"].format(*cut["pivot"])
 
@@ -383,53 +344,22 @@ def get_cut_hash(cut):
 
 
 # @echo(write=logger.debug)
-def apply_selection(tree, cuts, eventWeightBranch, canvas):
-    selection = cuts_to_selection(cuts)
-    # draw with selection
-    tree.Draw(eventWeightBranch, "{0:s}*{1:s}".format(eventWeightBranch, selection))
-    # raw and weighted counts
-    rawCount = 0
-    weightedCount = 0
-    # get drawn histogram
-    if "htemp" in canvas:
-        htemp = canvas.GetPrimitive("htemp")
-        rawCount = htemp.GetEntries()
-        weightedCount = htemp.Integral()
-    canvas.Clear()
-    return rawCount, weightedCount
-
-
-# @echo(write=logger.debug)
 def apply_cut(arr, cut):
     return ne.evaluate(cut_to_selection(cut), local_dict=arr)
 
 
 # @echo(write=logger.debug)
-def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False, canvas=None):
-    if doNumpy:
-        entireSelection = "{0:s}*{1:s}".format(
-            eventWeightBranch, cuts_to_selection(cuts)
-        )
-        events = ne.evaluate(entireSelection, local_dict=tree)
-        # events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree, cut) for cut in cuts))]
-        # count number of events that pass, not summing the weights since `events!=0` returns a boolean array
-        return np.sum(events != 0).astype(float), np.sum(events).astype(float)
-    else:
-        # here, the tree is a ROOT.TTree
-        return apply_selection(tree, cuts, eventWeightBranch, canvas)
+def apply_cuts(tree, cuts, eventWeightBranch):
+    entireSelection = "{0:s}*{1:s}".format(eventWeightBranch, cuts_to_selection(cuts))
+    events = ne.evaluate(entireSelection, local_dict=tree)
+    # events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree, cut) for cut in cuts))]
+    # count number of events that pass, not summing the weights since `events!=0` returns a boolean array
+    return np.sum(events != 0).astype(float), np.sum(events).astype(float)
 
 
 # @echo(write=logger.debug)
 def do_cut(
-    did,
-    files,
-    supercuts,
-    weights,
-    tree_name,
-    output_directory,
-    eventWeightBranch,
-    doNumpy,
-    pids,
+    did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, pids
 ):
 
     position = -1
@@ -442,24 +372,14 @@ def do_cut(
 
     start = clock()
     try:
-        # if using numpy optimization, load the tree as a numpy array to apply_cuts on
-        if doNumpy:
-            branchesSpecified = supercuts_to_branches(supercuts)
-            eventWeightBranchesSpecified = selection_to_branches(eventWeightBranch)
-            tree = uproot.lazyarray(
-                files, tree_name, branchesSpecified + eventWeightBranchesSpecified
-            )
-        else:
-            # load up the tree for the files
-            tree = get_ttree(tree_name, files, eventWeightBranch)
+        branchesSpecified = supercuts_to_branches(supercuts)
+        eventWeightBranchesSpecified = selection_to_branches(eventWeightBranch)
+        tree = uproot.lazyarray(
+            files, tree_name, branchesSpecified + eventWeightBranchesSpecified
+        )
 
         # get the scale factor
         sample_scaleFactor = get_scaleFactor(weights, did)
-
-        # build the containing canvas for all histograms drawn in `apply_selection`
-        canvas = ROOT.TCanvas(
-            "test{0:s}".format(did), "test{0:s}".format(did), 200, 10, 100, 100
-        )
 
         # iterate over the cuts available
         cuts = {}
@@ -476,9 +396,7 @@ def do_cut(
             dynamic_ncols=True,
         ):
             cut_hash = get_cut_hash(cut)
-            rawEvents, weightedEvents = apply_cuts(
-                tree, cut, eventWeightBranch, doNumpy, canvas=canvas
-            )
+            rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch)
             scaledEvents = weightedEvents * sample_scaleFactor
             cuts[cut_hash] = {
                 "raw": rawEvents,
@@ -489,7 +407,6 @@ def do_cut(
         with open("{0:s}/{1:s}.json".format(output_directory, did), "w+") as f:
             f.write(json.dumps(cuts, sort_keys=True, indent=4))
             result = True
-        del canvas
     except:
         logger.exception("Caught an error - skipping {0:s}".format(did))
         result = False
