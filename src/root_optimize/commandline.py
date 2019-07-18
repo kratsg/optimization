@@ -432,7 +432,7 @@ def do_summary(args):
     return True
 
 
-def main():
+def rooptimize():
     class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
         pass
 
@@ -894,4 +894,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    rooptimize()
