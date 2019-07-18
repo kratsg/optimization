@@ -21,8 +21,8 @@ for region in regions:
     supercuts = json.load(file(region))
 
     tree = get_ttree(tree_name, files, eventWeightBranch)
-    branchesSpecified = list(set(itertools.chain.from_iterable(selection_to_branches(supercut['selections'], tree) for supercut in supercuts)))
-    eventWeightBranchesSpecified = list(set(selection_to_branches(eventWeightBranch, tree)))
+    branchesSpecified = list(set(itertools.chain.from_iterable(selection_to_branches(supercut['selections']) for supercut in supercuts)))
+    eventWeightBranchesSpecified = list(set(selection_to_branches(eventWeightBranch)))
 
     # get actual list of branches in the file
     availableBranches = tree_get_branches(tree, eventWeightBranchesSpecified)

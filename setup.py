@@ -57,7 +57,8 @@ setup(
       'numexpr~=2.6',
       'root-numpy~=4.7',
       'rootpy~=0.9',
-      'tqdm~=4.15'
+      'tqdm~=4.15',
+      'formulate'
     ],
     extras_require=extras_require,
     entry_points = {

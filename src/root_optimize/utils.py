@@ -22,6 +22,7 @@ import sys
 from time import clock
 from tqdm import tqdm
 import contextlib
+import formulate
 
 import root_numpy as rnp
 
@@ -307,7 +308,7 @@ def get_ttree(tree_name, filenames, eventWeightBranch):
     aliases = set(i.GetName() for i in tree.GetListOfAliases())
 
     # user can pass in a selection for the branch
-    for ewBranch in selection_to_branches(eventWeightBranch, tree):
+    for ewBranch in selection_to_branches(eventWeightBranch):
         if not ewBranch in branches and not ewBranch in aliases:
             raise ValueError(
                 "The event weight branch does not exist: {0}".format(ewBranch)
@@ -326,16 +327,10 @@ def cuts_to_selection(cuts):
     return "({})".format(")*(".join(map(cut_to_selection, cuts)))
 
 
-alphachars = re.compile("\W+")
+strformat_chars = re.compile("[{}]")
 # @echo(write=logger.debug)
-def selection_to_branches(selection_string, tree):
-    global alphachars
-    # filter out all selection criteria
-    raw_branches = filter(
-        None, alphachars.sub(" ", selection_string.format(*["-"] * 10)).split(" ")
-    )
-    # filter out those that are just numbers in string
-    return [branch for branch in raw_branches if not branch.isdigit()]
+def selection_to_branches(selection_string):
+    return formulate.from_auto(strformat_chars.sub(selection_string)).variables
 
 
 # @echo(write=logger.debug)
@@ -476,13 +471,13 @@ def do_cut(
             branchesSpecified = list(
                 set(
                     itertools.chain.from_iterable(
-                        selection_to_branches(supercut["selections"], tree)
+                        selection_to_branches(supercut["selections"])
                         for supercut in supercuts
                     )
                 )
             )
             eventWeightBranchesSpecified = list(
-                set(selection_to_branches(eventWeightBranch, tree))
+                set(selection_to_branches(eventWeightBranch))
             )
 
             # get actual list of branches in the file

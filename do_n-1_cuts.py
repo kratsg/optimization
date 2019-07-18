@@ -107,7 +107,7 @@ for fname in args.files:
       selection_string = differences[-1]['selections']
 
       print("\tLooking at selection: {0}".format(selection_string))
-      branchesSpecified = set(utils.selection_to_branches(selection_string, tree))
+      branchesSpecified = set(utils.selection_to_branches(selection_string))
       # get actual list of branches in the file
       availableBranches = utils.tree_get_branches(tree, args.eventWeightBranch)
       # remove anything that doesn't exist
