@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import os, io
 
 extras_require = {
-    "develop": ["pytest", "pytest-runner", "flake8", "black", "bumpversion"]
+    "develop": ["pytest", "pytest-runner", "flake8", "black;python_version>='3.6'", "bumpversion"]
 }
 extras_require["complete"] = sorted(set(sum(extras_require.values(), [])))
 
