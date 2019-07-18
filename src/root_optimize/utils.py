@@ -21,6 +21,11 @@ import contextlib
 import formulate
 import uproot
 
+try:
+    from functools import reduce
+except:
+    pass
+
 import logging
 
 logger = logging.getLogger(__name__)
