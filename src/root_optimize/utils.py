@@ -333,11 +333,12 @@ def selection_to_branches(selection_string):
     return formulate.from_auto(strformat_chars.sub(selection_string)).variables
 
 
-# @echo(write=logger.debug)
-def tree_get_branches(tree, eventWeightBranch):
-    branches = [i.GetName() for i in tree.GetListOfBranches()]
-    aliases = [i.GetName() for i in tree.GetListOfAliases()]
-    return [b for b in branches + aliases if not b in eventWeightBranch]
+def supercuts_to_branches(supercuts):
+    return set(
+        itertools.chain.from_iterable(
+            selection_to_branches(supercut["selections"]) for supercut in supercuts
+        )
+    )
 
 
 # @echo(write=logger.debug)
@@ -443,58 +444,16 @@ def do_cut(
 
     start = clock()
     try:
-        # load up the tree for the files
-        tree = get_ttree(tree_name, files, eventWeightBranch)
         # if using numpy optimization, load the tree as a numpy array to apply_cuts on
         if doNumpy:
-            # this part is tricky, a user might specify multiple branches
-            #   in their selection string, so we will remove non-alphanumeric characters (underscores are safe)
-            #   and remove anything else that is an empty string (hence the filter)
-            #   and then flatten the entire list, removing duplicate branch names
-            """
-        totalSelections = []
-        for supercut in supercuts:
-          selection = supercut['selections']
-          # filter out non-alphanumeric
-          selection = p.sub(' ', selection.format("-", "-", "-", "-", "-", "-", "-", "-", "-", "-"))
-          # split on spaces, since we substituted non alphanumeric with spaces
-          selections = selection.split(' ')
-          # remove empty elements
-          filter(None, selections)
-          totalSelections.append(selections)
-
-        # flatten the thing
-        totalSelections = itertools.chain.from_iterable(totalSelections)
-        # remove duplicates
-        totalSelections = list(set(totalSelections))
-      """
-            branchesSpecified = list(
-                set(
-                    itertools.chain.from_iterable(
-                        selection_to_branches(supercut["selections"])
-                        for supercut in supercuts
-                    )
-                )
+            branchesSpecified = supercuts_to_branches(supercuts)
+            eventWeightBranchesSpecified = selection_to_branches(eventWeightBranch)
+            tree = uproot.lazyarray(
+                files, tree_name, branchesSpecified + eventWeightBranchesSpecified
             )
-            eventWeightBranchesSpecified = list(
-                set(selection_to_branches(eventWeightBranch))
-            )
-
-            # get actual list of branches in the file
-            availableBranches = tree_get_branches(tree, eventWeightBranchesSpecified)
-
-            # remove anything that doesn't exist
-            branchesToUse = [
-                branch for branch in branchesSpecified if branch in availableBranches
-            ]
-            branchesSkipped = list(set(branchesSpecified) - set(branchesToUse))
-            if branchesSkipped:
-                logger.info("The following branches have been skipped...")
-                for branch in branchesSkipped:
-                    logger.info("\t{0:s}".format(branch))
-            tree = rnp.tree2array(
-                tree, branches=eventWeightBranchesSpecified + branchesToUse
-            )
+        else:
+            # load up the tree for the files
+            tree = get_ttree(tree_name, files, eventWeightBranch)
 
         # get the scale factor
         sample_scaleFactor = get_scaleFactor(weights, did)
