@@ -1,2 +1,2 @@
-include README.rst
-include LICENSE
+graft src
+global-exclude __pycache__ *.py[cod]

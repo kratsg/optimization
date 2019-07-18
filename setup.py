@@ -1,14 +1,10 @@
-#!/usr/bin/env python
-import io, os, sys
+from setuptools import setup, find_packages
+import os, io
 
-# Check Python version
-if sys.version_info < (2, 6):
-    sys.exit("root_optimize only supports python 2.6 and above")
-
-# do the setup
-from setuptools import setup
-
-here = os.path.abspath(os.path.dirname(__file__))
+extras_require = {
+    "develop": ["pytest", "pytest-runner", "flake8", "black", "bumpversion"]
+}
+extras_require["complete"] = sorted(set(sum(extras_require.values(), [])))
 
 def read(*filenames, **kwargs):
     encoding = kwargs.get('encoding', 'utf-8')
@@ -19,17 +15,18 @@ def read(*filenames, **kwargs):
             buf.append(f.read())
     return sep.join(buf)
 
-long_description = read(os.path.join(here, 'README.rst'))
-exec(open(os.path.join(here, 'root_optimize', 'version.py')).read())
+long_description = read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.rst'))
 
 setup(
     name='root_optimize',
-    version=__version__,
+    version='0.6.1',
+    python_requires='>=2.7',
     description='Perform optimizations on flat ROOT TTrees',
     author='Giordon Stark',
     author_email='kratsg@gmail.com',
-    url='https://github.com/kratsg/Optimization',
-    packages=['root_optimize'],
+    url='https://github.com/kratsg/optimization',
+    package_dir={"": "src"},
+    packages=find_packages(where="src", exclude=["tests"]),
     license='MIT',
     classifiers=[
         'Intended Audience :: Developers',
@@ -62,6 +59,7 @@ setup(
       'rootpy~=0.9',
       'tqdm~=4.15'
     ],
+    extras_require=extras_require,
     entry_points = {
       'console_scripts': ['rooptimize=root_optimize.command_line:main']
     }
