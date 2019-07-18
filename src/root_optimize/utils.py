@@ -24,8 +24,6 @@ from tqdm import tqdm
 import contextlib
 import formulate
 
-import root_numpy as rnp
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -408,7 +406,6 @@ def apply_cut(arr, cut):
 # @echo(write=logger.debug)
 def apply_cuts(tree, cuts, eventWeightBranch, doNumpy=False, canvas=None):
     if doNumpy:
-        # here, the tree is an rnp.tree2array() np.array
         entireSelection = "{0:s}*{1:s}".format(
             eventWeightBranch, cuts_to_selection(cuts)
         )
