@@ -69,7 +69,7 @@ def do_cuts(args):
             )
         )
     else:
-        weights = json.load(file(args.weightsFile))
+        weights = json.load(open(args.weightsFile))
 
     # parallelize
     num_cores = min(multiprocessing.cpu_count(), args.num_cores)
@@ -157,12 +157,12 @@ def do_optimize(args):
     rescale = None
     did_to_group = None
     if args.rescale:
-        rescale = json.load(file(args.rescale))
+        rescale = json.load(open(args.rescale))
         if args.did_to_group is None:
             raise ValueError(
                 "If you are going to rescale, you need to pass in the --did-to-group mapping dict."
             )
-        did_to_group = json.load(file(args.did_to_group))
+        did_to_group = json.load(open(args.did_to_group))
 
     logger.log(25, "Reading in all background files to calculate total background")
 
@@ -354,7 +354,7 @@ def do_hash(args):
         logger.info(
             "Treating hash_values as containing only a summary.json file instead"
         )
-        hash_values = set([r["hash"] for r in json.load(file(args.hash_values[0]))])
+        hash_values = set([r["hash"] for r in json.load(open(args.hash_values[0]))])
 
     logger.info("Finding cuts for {0:d} hashes.".format(len(hash_values)))
     # now loop over all cuts until we find all the hashes
@@ -519,11 +519,7 @@ def rooptimize():
     # positional argument, require the first argument to be the input filename (hence adding the argument group)
     requiredNamed_files = files_parser.add_argument_group("required named arguments")
     requiredNamed_files.add_argument(
-        "files",
-        type=str,
-        nargs="+",
-        metavar="<file.root>",
-        help="input ntuples",
+        "files", type=str, nargs="+", metavar="<file.root>", help="input ntuples"
     )
 
     # these are options for anything that needs to use the supercuts file

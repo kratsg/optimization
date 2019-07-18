@@ -21,6 +21,11 @@ import contextlib
 import formulate
 import uproot
 
+try:
+    from functools import reduce
+except:
+    pass
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -294,12 +299,11 @@ def selection_to_branches(selection_string):
 
 
 def supercuts_to_branches(supercuts):
-        return set(
-                    itertools.chain.from_iterable(
-                        selection_to_branches(supercut["selections"])
-                        for supercut in supercuts
-                    )
-                )
+    return set(
+        itertools.chain.from_iterable(
+            selection_to_branches(supercut["selections"]) for supercut in supercuts
+        )
+    )
 
 
 # @echo(write=logger.debug)
@@ -351,9 +355,7 @@ def apply_cut(arr, cut):
 
 # @echo(write=logger.debug)
 def apply_cuts(tree, cuts, eventWeightBranch):
-    entireSelection = "{0:s}*{1:s}".format(
-        eventWeightBranch, cuts_to_selection(cuts)
-    )
+    entireSelection = "{0:s}*{1:s}".format(eventWeightBranch, cuts_to_selection(cuts))
     events = ne.evaluate(entireSelection, local_dict=tree)
     # events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree, cut) for cut in cuts))]
     # count number of events that pass, not summing the weights since `events!=0` returns a boolean array
@@ -362,14 +364,7 @@ def apply_cuts(tree, cuts, eventWeightBranch):
 
 # @echo(write=logger.debug)
 def do_cut(
-    did,
-    files,
-    supercuts,
-    weights,
-    tree_name,
-    output_directory,
-    eventWeightBranch,
-    pids,
+    did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, pids
 ):
 
     position = -1
@@ -384,7 +379,9 @@ def do_cut(
     try:
         branchesSpecified = supercuts_to_branches(supercuts)
         eventWeightBranchesSpecified = selection_to_branches(eventWeightBranch)
-        tree = uproot.lazyarray(files, tree_name, branchesSpecified + eventWeightBranchesSpecified)
+        tree = uproot.lazyarray(
+            files, tree_name, branchesSpecified + eventWeightBranchesSpecified
+        )
 
         # get the scale factor
         sample_scaleFactor = get_scaleFactor(weights, did)
@@ -404,9 +401,7 @@ def do_cut(
             dynamic_ncols=True,
         ):
             cut_hash = get_cut_hash(cut)
-            rawEvents, weightedEvents = apply_cuts(
-                tree, cut, eventWeightBranch
-            )
+            rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch)
             scaledEvents = weightedEvents * sample_scaleFactor
             cuts[cut_hash] = {
                 "raw": rawEvents,
