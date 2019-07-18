@@ -459,7 +459,7 @@ def rooptimize():
                     print(subparser.format_help())
             parser.exit()
 
-    from . import __version__
+    from .version import __version__
 
     parser = argparse.ArgumentParser(
         add_help=False,
