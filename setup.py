@@ -55,7 +55,6 @@ setup(
     install_requires=[
       'joblib~=0.8',
       'numexpr~=2.6',
-      'root-numpy~=4.7',
       'rootpy~=0.9',
       'tqdm~=4.15',
       'formulate'

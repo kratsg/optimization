@@ -64,7 +64,6 @@ This tool allows you to take a series of ROOT ntuples, signal & background, appl
 ## Major Dependencies
  - [PyROOT](https://root.cern.ch/drupal/content/pyroot) (which technically requires ROOT)
  - [numpy](http://www.numpy.org/)
- - [root\_numpy](http://rootpy.github.io/root_numpy/)
 
 All other dependencies are listed in [requirements.txt](requirements.txt) and can be installed in one line with `pip install -r requirements.txt`.
 
@@ -180,13 +179,7 @@ rooptimize cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercut
 rooptimize cut TA07_MBJ10V1/*_1L/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_1L -b
 ```
 
-By default, we use `TTree::Draw` in order to calculate the number of events passing a given cut. We will also attempt to parallelize the computations as much as possible. In cases where you have a fast computer and the ntuples are reasonably small (can fit in memory), you might benefit from using a `numpy` boost by adding the `--numpy` flag like so
-
-```bash
-rooptimize cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_a -b --numpy
-rooptimize cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_b -b --numpy
-rooptimize cut TA07_MBJ10V1/*_1L/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_1L -b --numpy
-```
+We use `numpy` and `awkward-array` in order to calculate the number of events passing a given cut. We will also attempt to parallelize the computations as much as possible.
 
 #### Calculating the significances
 
@@ -214,7 +207,7 @@ which will create `outputHash/<hash>.json` files detailing the cuts involved.
 This is one of those pieces of python code we always want to run as fast as possible. Optimization should not take long. To figure out those dead-ends, I use [snakeviz](https://jiffyclub.github.io/snakeviz/). The `requirements.txt` file contains this dependency. To run it, I first profile the code by running it:
 
 ```bash
-python -m cProfile -o profiler.log rooptimize cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_0L -b --numpy
+python -m cProfile -o profiler.log rooptimize cut TA06_MBJ05/*_0L/fetch/data-optimizationTree/*.root --supercuts=supercuts.json -o cuts_0L -b
 ```
 
 then I use the `snakeviz` script to help me visualize this
@@ -352,7 +345,6 @@ Variable | Type | Description | Default
 --supercuts | string | path to json dict of supercuts for generating cuts | supercuts.json
 --weightsFile | string | .json file containing weights in proper formatting - see SampleWeights
 --o, --output | directory | output directory to store json files containing cuts | cuts
---numpy | bool | if enabled, use `numpy` and `numexpr` instead of ROOT. [See this section for more information.](#more-complicated-selections)
 
 #### Output
 
@@ -735,7 +727,7 @@ which tells the code to always apply a cut of `multiplicity_jet >= 4` always.
 
 #### More Complicated Selections
 
-One can certainly provide more complicated selections involving multiple pivots and multiple branches. In fact, this makes our optimization increasingly more flexible and faster than any other code in existence. If you use `--numpy`, we use the [numexpr](https://github.com/pydata/numexpr/) package to provide the parsing of the more complicated selection strings (they have examples of what you can do). If you do not use `--numpy`, we default to use `ROOT` and `TTree::Draw` to make the cuts, which means a standard `TCut` or `TFormula` can be used for your selection. Either way, you still need to specify placeholders for your pivots.
+One can certainly provide more complicated selections involving multiple pivots and multiple branches. In fact, this makes our optimization increasingly more flexible and faster than any other code in existence. We use the [formulate](https://github.com/scikit-hep/fomrulate/) and [numexpr](https://github.com/pydata/numexpr/) packages to provide the parsing of the selection strings. This supports "standard" selection strings as well as those recognized by `TCut`/`TFormula` as well. Their documentation has examples of what you can do. You still need to specify placeholders for your pivots like below:
 
 ```json
 [
