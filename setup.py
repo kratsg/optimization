@@ -63,7 +63,7 @@ setup(
         "Topic :: Scientific/Engineering",
         "Topic :: Utilities",
     ],
-    install_requires=["joblib~=0.8", "numexpr~=2.6", "tqdm~=4.15", "formulate"],
+    install_requires=["joblib~=0.8", "numexpr~=2.6", "tqdm~=4.15", "formulate", "uproot"],
     extras_require=extras_require,
     entry_points={
         "console_scripts": ["rooptimize=root_optimize.commandline:rooptimize"]
