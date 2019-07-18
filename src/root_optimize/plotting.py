@@ -111,7 +111,7 @@ def draw_text(path):
     if path is None:
         return
 
-    txt = TLatex()
+    txt = ROOT.TLatex()
     txt.SetNDC()
     txt.SetTextSize(0.030)
 
@@ -155,7 +155,7 @@ def draw_line(x_min, y_min, x_max, y_max, topmass=173.34):
     )
 
 
-from array import *
+from array import array
 
 
 def get_run1(filename, linestyle, linewidth, linecolor):

@@ -19,14 +19,12 @@ logger = logging.getLogger(__name__)
 
 # import all libraries
 import argparse
-import subprocess
 import json
 import hashlib
 import copy
 import operator
 import glob
 import os
-import sys
 from collections import defaultdict
 import tempfile
 import tqdm
@@ -36,7 +34,7 @@ from . import utils
 from .json import NoIndent, NoIndentEncoder
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
-from joblib import Parallel, delayed, load, dump
+from joblib import Parallel, delayed
 import multiprocessing
 
 # @echo(write=logger.debug)
@@ -314,8 +312,6 @@ def do_generate(args):
         if utils.match_branch(b, args.skip_branches):
             logger.log(25, "{0:32s}:\tSkipping as requested".format(b))
             continue
-
-        signal_direction = ">"
 
         if utils.match_branch(b, args.fixed_branches):
             supercuts.append({"selections": "{0:s} > {{0}}".format(b), "pivot": 0})
@@ -889,11 +885,11 @@ def main():
         else:
             logger.setLevel(logging.NOTSET + 1)
 
-        with utils.stdout_redirect_to_tqdm() as save_stdout:
+        with utils.stdout_redirect_to_tqdm():
             # call the function and do stuff
             args.func(args)
 
-    except Exception as e:
+    except Exception:
         logger.exception("{0}\nAn exception was caught!".format("-" * 20))
 
 
