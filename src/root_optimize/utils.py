@@ -23,6 +23,7 @@ from time import clock
 from tqdm import tqdm
 import contextlib
 import formulate
+import uproot
 
 import logging
 
