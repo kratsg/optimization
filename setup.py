@@ -31,7 +31,7 @@ long_description = read(
 setup(
     name="root_optimize",
     version="0.6.1",
-    python_requires=">=2.7",
+    python_requires=">=3",
     description="Perform optimizations on flat ROOT TTrees",
     author="Giordon Stark",
     author_email="kratsg@gmail.com",
@@ -49,12 +49,9 @@ setup(
         "Operating System :: Unix",
         "Operating System :: MacOS",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.6",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Development Status :: 4 - Beta",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Physics",
@@ -63,7 +60,13 @@ setup(
         "Topic :: Scientific/Engineering",
         "Topic :: Utilities",
     ],
-    install_requires=["joblib~=0.8", "numexpr~=2.6", "tqdm~=4.15", "formulate", "uproot"],
+    install_requires=[
+        "joblib~=0.8",
+        "numexpr~=2.6",
+        "tqdm~=4.15",
+        "formulate",
+        "uproot",
+    ],
     extras_require=extras_require,
     entry_points={
         "console_scripts": ["rooptimize=root_optimize.commandline:rooptimize"]
