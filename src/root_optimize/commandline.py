@@ -229,7 +229,7 @@ def do_optimize(args):
     del duplicate_log_filter
 
     # create hash for background
-    bkgdHash = hashlib.md5(str(sorted(bkgd_dids))).hexdigest()
+    bkgdHash = hashlib.md5(str(sorted(bkgd_dids)).encode('utf-8')).hexdigest()
     logger.log(25, "List of backgrounds produces hash: {0:s}".format(bkgdHash))
     # write the backgrounds to a file
     with open(

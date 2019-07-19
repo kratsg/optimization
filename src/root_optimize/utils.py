@@ -12,7 +12,7 @@ import hashlib
 import itertools
 import numpy as np
 import numexpr as ne
-import scipy
+import scipy.special
 import os
 import sys
 from time import clock
