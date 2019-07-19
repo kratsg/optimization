@@ -20,6 +20,7 @@ from tqdm import tqdm
 import contextlib
 import formulate
 import uproot
+from collections import defaultdict
 
 try:
     from functools import reduce
@@ -295,7 +296,7 @@ def cuts_to_selection(cuts):
 strformat_chars = re.compile("[{}]")
 # @echo(write=logger.debug)
 def selection_to_branches(selection_string):
-    return formulate.from_auto(strformat_chars.sub(selection_string)).variables
+    return formulate.from_auto(strformat_chars.sub('', selection_string)).variables
 
 
 def supercuts_to_branches(supercuts):
@@ -345,7 +346,9 @@ def get_n_cuts(supercuts):
 
 # @echo(write=logger.debug)
 def get_cut_hash(cut):
-    return hashlib.md5(str([sorted(obj.items()) for obj in cut])).hexdigest()
+    return hashlib.md5(
+        str([sorted(obj.items()) for obj in cut]).encode("utf-8")
+    ).hexdigest()
 
 
 # @echo(write=logger.debug)
@@ -354,9 +357,9 @@ def apply_cut(arr, cut):
 
 
 # @echo(write=logger.debug)
-def apply_cuts(tree, cuts, eventWeightBranch):
+def apply_cuts(events, cuts, eventWeightBranch):
     entireSelection = "{0:s}*{1:s}".format(eventWeightBranch, cuts_to_selection(cuts))
-    events = ne.evaluate(entireSelection, local_dict=tree)
+    events = ne.evaluate(entireSelection, local_dict=events)
     # events = tree[eventWeightBranch][reduce(np.bitwise_and, (apply_cut(tree, cut) for cut in cuts))]
     # count number of events that pass, not summing the weights since `events!=0` returns a boolean array
     return np.sum(events != 0).astype(float), np.sum(events).astype(float)
@@ -379,35 +382,72 @@ def do_cut(
     try:
         branchesSpecified = supercuts_to_branches(supercuts)
         eventWeightBranchesSpecified = selection_to_branches(eventWeightBranch)
-        tree = uproot.lazyarray(
-            files, tree_name, branchesSpecified + eventWeightBranchesSpecified
+        branches = list(
+            itertools.chain(branchesSpecified, eventWeightBranchesSpecified)
         )
+
+        missingBranches = False
+        for fname in files:
+            tree = uproot.open(fname)[tree_name]
+            for branch in branches:
+                if branch not in tree:
+                    logger.error(
+                        'branch {} not found in {} for {}'.format(
+                            branch, tree_name, fname
+                        )
+                    )
+                    missingBranches |= True
+        if missingBranches:
+            sys.exit(1)
 
         # get the scale factor
         sample_scaleFactor = get_scaleFactor(weights, did)
 
         # iterate over the cuts available
-        cuts = {}
-        for cut in tqdm(
-            get_cut(copy.deepcopy(supercuts)),
-            desc="Working on DID {0:s}".format(did),
-            total=get_n_cuts(supercuts),
+        cuts = defaultdict(lambda: {'raw': 0, 'weighted': 0, 'scaled': 0})
+
+        events_tqdm = tqdm(
+            total=uproot.numentries(files, tree_name),
             disable=(position == -1),
-            position=position + 1,
+            position=2 * position,
             leave=True,
             mininterval=5,
             maxinterval=10,
-            unit="cuts",
+            unit="events",
             dynamic_ncols=True,
+        )
+        for file, start, stop, events in uproot.iterate(
+            files,
+            tree_name,
+            branches=branches,
+            namedecode='utf-8',
+            reportfile=True,
+            reportentries=True,
         ):
-            cut_hash = get_cut_hash(cut)
-            rawEvents, weightedEvents = apply_cuts(tree, cut, eventWeightBranch)
-            scaledEvents = weightedEvents * sample_scaleFactor
-            cuts[cut_hash] = {
-                "raw": rawEvents,
-                "weighted": weightedEvents,
-                "scaled": scaledEvents,
-            }
+            events_tqdm.set_description(
+                "Working on {0:s}".format(file.name.decode('utf-8'))
+            )
+            for cut in tqdm(
+                get_cut(copy.deepcopy(supercuts)),
+                desc="Applying cuts",
+                total=get_n_cuts(supercuts),
+                disable=(position == -1),
+                position=2 * position + 1,
+                leave=True,
+                mininterval=5,
+                maxinterval=10,
+                unit="cuts",
+                dynamic_ncols=True,
+            ):
+                cut_hash = get_cut_hash(cut)
+                rawEvents, weightedEvents = apply_cuts(events, cut, eventWeightBranch)
+                scaledEvents = weightedEvents * sample_scaleFactor
+                cuts[cut_hash]['raw'] += rawEvents
+                cuts[cut_hash]['weighted'] += weightedEvents
+                cuts[cut_hash]['scaled'] += scaledEvents
+
+            events_tqdm.update(stop - start)
+
         logger.info("Applied {0:d} cuts".format(len(cuts)))
         with open("{0:s}/{1:s}.json".format(output_directory, did), "w+") as f:
             f.write(json.dumps(cuts, sort_keys=True, indent=4))

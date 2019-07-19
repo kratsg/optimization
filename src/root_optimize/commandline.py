@@ -28,6 +28,7 @@ import os
 from collections import defaultdict
 import tempfile
 import tqdm
+import uproot
 
 # root_optimize
 from . import utils
@@ -53,10 +54,27 @@ def do_cuts(args):
             "Output directory already exists: {0:s}".format(args.output_directory)
         )
 
+    if len(args.tree_names) == 1 and len(args.files) > 1:
+        args.tree_names *= len(args.files)
+    if len(args.tree_names) != len(args.files):
+        raise ValueError(
+            "You gave us incompatible numbers of files ({}) and tree names ({})".format(
+                len(args.files), len(args.tree_names)
+            )
+        )
+
     # first step is to group by the sample DID
     dids = defaultdict(list)
-    for fname in args.files:
-        dids[utils.get_did(fname)].append(fname)
+    trees = {}
+    for fname, tname in zip(args.files, args.tree_names):
+        did = utils.get_did(fname)
+        dids[did].append(fname)
+        if trees.setdefault(did, tname) != tname:
+            raise ValueError(
+                'Found incompatible tree names ({}, {}) for the same DSID ({})'.format(
+                    tname, trees[did], did
+                )
+            )
 
     # load in the supercuts file
     supercuts = utils.read_supercuts_file(args.supercuts)
@@ -120,12 +138,12 @@ def do_cuts(args):
             files,
             supercuts,
             weights,
-            args.tree_name,
+            trees[did],
             args.output_directory,
             args.eventWeightBranch,
             pids,
         )
-        for did, files in dids.iteritems()
+        for did, files in dids.items()
     )
 
     overall_progress.close()
@@ -183,8 +201,8 @@ def do_optimize(args):
             bkgd_dids.append(did)
             with open(fname, "r") as f:
                 bkgd_data = json.load(f)
-                for cuthash, counts_dict in bkgd_data.iteritems():
-                    for counts_type, counts in counts_dict.iteritems():
+                for cuthash, counts_dict in bkgd_data.items():
+                    for counts_type, counts in counts_dict.items():
                         total_bkgd[cuthash][counts_type] += counts
                         if counts_type == "scaled" and rescale:
                             if did in rescale:
@@ -231,7 +249,7 @@ def do_optimize(args):
             significances = []
             with open(fname, "r") as f:
                 signal_data = json.load(f)
-                for cuthash, counts_dict in signal_data.iteritems():
+                for cuthash, counts_dict in signal_data.items():
                     sig_dict = dict(
                         [("hash", cuthash)]
                         + [
@@ -246,7 +264,7 @@ def do_optimize(args):
                                     total_bkgd[cuthash]["raw"],
                                 ),
                             )
-                            for counts_type, counts in counts_dict.iteritems()
+                            for counts_type, counts in counts_dict.items()
                         ]
                         + [
                             (
@@ -258,7 +276,7 @@ def do_optimize(args):
                                     * total_bkgd[cuthash][counts_type],
                                 },
                             )
-                            for counts_type, counts in counts_dict.iteritems()
+                            for counts_type, counts in counts_dict.items()
                         ]
                     )
                     significances.append(sig_dict)
@@ -295,19 +313,15 @@ def do_generate(args):
     if os.path.isfile(args.output_filename):
         raise IOError("Output file already exists: {0}".format(args.output_filename))
 
-    # this is a dict that holds the tree
-    tree = utils.get_ttree(args.tree_name, [args.file], args.eventWeightBranch)
+    if len(args.tree_names) > 1:
+        raise ValueError("Must only specify one tree name.")
 
-    # list of branches to loop over
-    branches = [
-        i.GetName()
-        for i in tree.GetListOfBranches()
-        if not i.GetName() == args.eventWeightBranch
-    ]
+    # this is a dict that holds the tree
+    tree = uproot.open(args.file)[args.tree_names[0]]
 
     supercuts = []
 
-    for b in branches:
+    for b in tree.keys():
         if utils.match_branch(b, args.skip_branches):
             logger.log(25, "{0:32s}:\tSkipping as requested".format(b))
             continue
@@ -317,7 +331,7 @@ def do_generate(args):
         else:
             supercuts.append(
                 {
-                    "selections": "{0:s} > {{0}}".format(b),
+                    "selections": "{0:s} > {{0}}".format(b.decode('utf-8')),
                     "st3": [NoIndent([0.0, 10.0, 1.0])],
                 }
             )
@@ -370,7 +384,7 @@ def do_hash(args):
                         [
                             {
                                 k: (NoIndent(v) if k == "pivot" else v)
-                                for k, v in d.iteritems()
+                                for k, v in d.items()
                                 if k in ["selections", "pivot", "fixed"]
                             }
                             for d in cut
@@ -536,10 +550,11 @@ def rooptimize():
     tree_parser.add_argument(
         "--tree",
         type=str,
+        nargs="+",
         required=False,
-        dest="tree_name",
+        dest="tree_names",
         metavar="<tree name>",
-        help="name of the tree containing the ntuples",
+        help="names of the tree containing the ntuples",
         default="oTree",
     )
     tree_parser.add_argument(

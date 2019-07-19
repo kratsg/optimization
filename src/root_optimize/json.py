@@ -29,6 +29,6 @@ class NoIndentEncoder(json.JSONEncoder):
 
     def encode(self, o):
         result = super(NoIndentEncoder, self).encode(o)
-        for k, v in self._replacement_map.iteritems():
+        for k, v in self._replacement_map.items():
             result = result.replace('"@@%s@@"' % (k,), v)
         return result
