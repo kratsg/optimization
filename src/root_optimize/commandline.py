@@ -404,50 +404,6 @@ def do_summary(args):
     return True
 
 
-__tree_options = [
-    click.option(
-        '--tree-names',
-        multiple=True,
-        default=['oTree'],
-        help="names of the tree containing the ntuples",
-    ),
-    click.option(
-        '--eventWeight',
-        default='weight_mc',
-        help='event weight in the ntuples. It must exist.',
-    ),
-]
-__supercuts_options = [
-    click.option('--supercuts', default='supercuts.json', type=click.Path())
-]
-__parallel_options = [
-    click.option(
-        '--ncores',
-        default=multiprocessing.cpu_count(),
-        help='Number of cores to use for parallelization. Defaults to max.',
-    )
-]
-__rescale_options = [
-    click.option(
-        '--rescale',
-        help='json dict of groups and dids to apply a scale factor to. If not provided, no scaling will be done.',
-    )
-]
-__did_to_group_options = [
-    click.option('--did-to-group', help='json dict mapping a did to a group')
-]
-
-
-def add_options(*options):
-    def _add_options(func):
-        for optiongroup in options:
-            for option in reversed(optiongroup):
-                func = option(func)
-        return func
-
-    return _add_options
-
-
 # This is the start of the CLI
 # set verbosity for python printing
 with utils.stdout_redirect_to_tqdm():
@@ -467,7 +423,9 @@ with utils.stdout_redirect_to_tqdm():
 
         @rooptimize.command(short_help='Write supercuts template')
         @click.argument('file')
-        @add_options(__tree_options)
+        @click.option(
+            '-t', '--tree-name', default='nominal', help='Tree name to use for file'
+        )
         @click.option(
             '-o',
             '--output',
@@ -480,15 +438,10 @@ with utils.stdout_redirect_to_tqdm():
         @click.option(
             '--skipBranches', multiple=True, help='branches that should be skipped'
         )
-        def generate(
-            file, tree_names, eventweight, output, fixedbranches, skipbranches
-        ):
+        def generate(file, tree_name, output, fixedbranches, skipbranches):
             """Given a single FILE that contains the general structure of the tree, generate a supercuts file that works on it."""
-            if len(tree_names) > 1:
-                raise ValueError("Must only specify one tree name.")
-
             # this is a dict that holds the tree
-            tree = uproot.open(file)[tree_names[0]]
+            tree = uproot.open(file)[tree_name]
 
             supercuts = []
 
@@ -527,7 +480,23 @@ with utils.stdout_redirect_to_tqdm():
             epilog='cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.',
         )
         @click.argument('files', nargs=-1, type=click.Path())
-        @add_options(__tree_options, __supercuts_options, __parallel_options)
+        @click.option(
+            '--tree-names',
+            multiple=True,
+            default=['oTree'],
+            help="names of the tree containing the ntuples",
+        )
+        @click.option(
+            '--eventWeight',
+            default='weight_mc',
+            help='event weight in the ntuples. It must exist.',
+        )
+        @click.option('--supercuts', default='supercuts.json', type=click.Path())
+        @click.option(
+            '--ncores',
+            default=multiprocessing.cpu_count(),
+            help='Number of cores to use for parallelization. Defaults to max.',
+        )
         @click.option(
             '-o',
             '--output',
@@ -549,15 +518,147 @@ with utils.stdout_redirect_to_tqdm():
             default=True,
             help="Show or hide the subtask progress on cuts. This might be needed if you get annoyed by how buggy the output looks.",
         )
-        def cuts(files, tree_names, output, weightsFile, overwrite, show_subtasks):
+        def cuts(
+            files,
+            tree_names,
+            eventweight,
+            output,
+            weightsfile,
+            overwrite,
+            show_subtasks,
+        ):
             """Process ROOT ntuples and apply cuts"""
-            pass
+            # before doing anything, let's ensure the directory we make is ok
+            if not os.path.exists(args.output_directory):
+                os.makedirs(args.output_directory)
+            elif args.overwrite:
+                import shutil
+
+                shutil.rmtree(args.output_directory)
+            else:
+                raise IOError(
+                    "Output directory already exists: {0:s}".format(
+                        args.output_directory
+                    )
+                )
+
+            if len(args.tree_names) == 1 and len(args.files) > 1:
+                args.tree_names *= len(args.files)
+            if len(args.tree_names) != len(args.files):
+                raise ValueError(
+                    "You gave us incompatible numbers of files ({}) and tree names ({})".format(
+                        len(args.files), len(args.tree_names)
+                    )
+                )
+
+            # first step is to group by the sample DID
+            dids = defaultdict(list)
+            trees = {}
+            for fname, tname in zip(args.files, args.tree_names):
+                did = utils.get_did(fname)
+                dids[did].append(fname)
+                if trees.setdefault(did, tname) != tname:
+                    raise ValueError(
+                        'Found incompatible tree names ({}, {}) for the same DSID ({})'.format(
+                            tname, trees[did], did
+                        )
+                    )
+
+            # load in the supercuts file
+            supercuts = utils.read_supercuts_file(args.supercuts)
+
+            # load up the weights file
+            if not os.path.isfile(args.weightsFile):
+                raise ValueError(
+                    "The supplied weights file `{0}` does not exist or I cannot find it.".format(
+                        args.weightsFile
+                    )
+                )
+            else:
+                weights = json.load(open(args.weightsFile))
+
+            # parallelize
+            num_cores = min(multiprocessing.cpu_count(), args.num_cores)
+            logger.log(25, "Using {0} cores".format(num_cores))
+
+            pids = None
+            # if pids is None, do_cut() will disable the progress
+            if not args.hide_subtasks:
+                from numpy import memmap, uint64
+
+                pids = memmap(
+                    os.path.join(tempfile.mkdtemp(), "pids"),
+                    dtype=uint64,
+                    shape=num_cores,
+                    mode="w+",
+                )
+
+            overall_progress = tqdm.tqdm(
+                total=len(dids),
+                desc="Num. files",
+                position=0,
+                leave=True,
+                unit="file",
+                dynamic_ncols=True,
+            )
+
+            class CallBack(object):
+                completed = defaultdict(int)
+
+                def __init__(self, index, parallel):
+                    self.index = index
+                    self.parallel = parallel
+
+                def __call__(self, index):
+                    CallBack.completed[self.parallel] += 1
+                    overall_progress.update()
+                    overall_progress.refresh()
+                    if self.parallel._original_iterable:
+                        self.parallel.dispatch_next()
+
+            import joblib.parallel
+
+            joblib.parallel.CallBack = CallBack
+
+            results = Parallel(n_jobs=num_cores)(
+                delayed(utils.do_cut)(
+                    did,
+                    files,
+                    supercuts,
+                    weights,
+                    trees[did],
+                    args.output_directory,
+                    args.eventWeightBranch,
+                    pids,
+                )
+                for did, files in dids.items()
+            )
+
+            overall_progress.close()
+
+            for did, result in zip(dids, results):
+                logger.log(
+                    25, "DID {0:s}: {1:s}".format(did, "ok" if result[0] else "not ok")
+                )
+
+            logger.log(
+                25,
+                "Total CPU elapsed time: {0}".format(
+                    secondsToStr(sum(result[1] for result in results))
+                ),
+            )
+
+            return True
 
         @rooptimize.command(
             short_help='Calculate significances for a series of computed cuts',
             epilog='optimize will take in numerous signal, background and calculate the significances for each signal and combine backgrounds automatically.',
         )
-        @add_options(__rescale_options, __did_to_group_options)
+        @click.option(
+            '--rescale',
+            help='json dict of groups and dids to apply a scale factor to. If not provided, no scaling will be done.',
+        )
+        @click.option('--did-to-group', help='json dict mapping a did to a group')
         @click.option('--signal', multiple=True, help='signal file pattern')
         @click.option('--bkgd', multiple=True, help='background file pattern')
         @click.option(
@@ -606,7 +707,7 @@ with utils.stdout_redirect_to_tqdm():
             epilog='hash will take in a list of hashes and dump the cuts associated with them',
         )
         @click.argument('hash', nargs=-1)
-        @add_options(__supercuts_options)
+        @click.option('--supercuts', default='supercuts.json', type=click.Path())
         @click.option(
             '-o',
             '--output',
@@ -626,7 +727,11 @@ with utils.stdout_redirect_to_tqdm():
             short_help='Summarize Optimization Results',
             epilog='summary will take in significances and summarize in a json file',
         )
-        @add_options(__parallel_options)
+        @click.option(
+            '--ncores',
+            default=multiprocessing.cpu_count(),
+            help='Number of cores to use for parallelization. Defaults to max.',
+        )
         @click.option(
             '--searchDirectory',
             default='cuts',
