@@ -40,38 +40,6 @@ from .version import __version__
 from joblib import Parallel, delayed
 import multiprocessing
 
-# @echo(write=logger.debug)
-def do_summary(args):
-    # first check if output exists
-    if os.path.exists(args.output):
-        raise IOError("Output already exists: {0:s}".format(args.output))
-    if not os.path.exists(args.mass_windows):
-        raise IOError(
-            "Cannot find the mass_windows file: {0:s}".format(args.mass_windows)
-        )
-
-    mass_windows = utils.load_mass_windows(args.mass_windows)
-    num_cores = min(multiprocessing.cpu_count(), args.num_cores)
-    logger.log(25, "Using {0} cores".format(num_cores))
-    results = Parallel(n_jobs=num_cores)(
-        delayed(utils.get_summary)(filename, mass_windows, args.stop_masses)
-        for filename in glob.glob(os.path.join(args.search_directory, "s*.b*.json"))
-    )
-    results = filter(None, results)
-    logger.log(25, "Generated summary for {0} items".format(len(results)))
-
-    with open(args.output, "w+") as f:
-        f.write(
-            json.dumps(
-                sorted(results, key=operator.itemgetter("did")),
-                sort_keys=True,
-                indent=4,
-            )
-        )
-
-    return True
-
-
 # This is the start of the CLI
 # set verbosity for python printing
 with utils.stdout_redirect_to_tqdm():
@@ -316,8 +284,6 @@ with utils.stdout_redirect_to_tqdm():
                 ),
             )
 
-            return True
-
         @rooptimize.command(
             short_help='Calculate significances for a series of computed cuts',
             epilog='optimize will take in numerous signal, background and calculate the significances for each signal and combine backgrounds automatically.',
@@ -528,8 +494,6 @@ with utils.stdout_redirect_to_tqdm():
                             )
                         )
 
-            return True
-
         @rooptimize.command(
             short_help='Translate hash to cut',
             epilog='hash will take in a list of hashes and dump the cuts associated with them',
@@ -606,7 +570,6 @@ with utils.stdout_redirect_to_tqdm():
                         hash_values
                     )
                 )
-            return True
 
         @rooptimize.command(
             short_help='Summarize Optimization Results',
@@ -629,16 +592,34 @@ with utils.stdout_redirect_to_tqdm():
         @click.option(
             '--stop-masses', multiple=True, default=5000, help='Allowed stop masses'
         )
-        def summary():
+        def summary(ncores, searchdirectory, masswindows, output, stop_masses):
             """Given the results of optimize (significances), generate a table of results for each mass point."""
-            pass
+            # first check if output exists
+            if os.path.exists(output):
+                raise IOError("Output already exists: {0:s}".format(output))
+            if not os.path.exists(masswindows):
+                raise IOError(
+                    "Cannot find the masswindows file: {0:s}".format(masswindows)
+                )
 
-        # set the functions that get called with the given arguments
-        # cuts_parser.set_defaults(func=do_cuts)
-        # optimize_parser.set_defaults(func=do_optimize)
-        # generate_parser.set_defaults(func=do_generate)
-        # hash_parser.set_defaults(func=do_hash)
-        # summary_parser.set_defaults(func=do_summary)
+            mass_windows = utils.load_mass_windows(masswindows)
+            num_cores = min(multiprocessing.cpu_count(), ncores)
+            logger.log(25, "Using {0} cores".format(num_cores))
+            results = Parallel(n_jobs=num_cores)(
+                delayed(utils.get_summary)(filename, masswindows, stop_masses)
+                for filename in glob.glob(os.path.join(searchdirectory, "s*.b*.json"))
+            )
+            results = filter(None, results)
+            logger.log(25, "Generated summary for {0} items".format(len(results)))
+
+            with open(output, "w+") as f:
+                f.write(
+                    json.dumps(
+                        sorted(results, key=operator.itemgetter("did")),
+                        sort_keys=True,
+                        indent=4,
+                    )
+                )
 
     except Exception:
         logger.exception("{0}\nAn exception was caught!".format("-" * 20))
