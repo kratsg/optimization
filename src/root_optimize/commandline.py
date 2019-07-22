@@ -41,70 +41,6 @@ from joblib import Parallel, delayed
 import multiprocessing
 
 # @echo(write=logger.debug)
-def do_hash(args):
-    # first start by making the output directory
-    if not os.path.exists(args.output_directory):
-        os.makedirs(args.output_directory)
-    else:
-        raise IOError(
-            "Output directory already exists: {0}".format(args.output_directory)
-        )
-
-    # next, read in the supercuts file
-    data = utils.read_supercuts_file(args.supercuts)
-
-    # either user provides a bunch of hashes, or we provide a summary.json file which contains the optimal cuts for us
-    hash_values = args.hash_values
-    if args.use_summary:
-        logger.info(
-            "Treating hash_values as containing only a summary.json file instead"
-        )
-        hash_values = set([r["hash"] for r in json.load(open(args.hash_values[0]))])
-
-    logger.info("Finding cuts for {0:d} hashes.".format(len(hash_values)))
-    # now loop over all cuts until we find all the hashes
-    for cut in utils.get_cut(copy.deepcopy(data)):
-        cut_hash = utils.get_cut_hash(cut)
-        logger.info("\tChecking {0:s}".format(cut_hash))
-        if cut_hash in hash_values:
-            with open(
-                os.path.join(args.output_directory, "{0}.json".format(cut_hash)), "w+"
-            ) as f:
-                f.write(
-                    json.dumps(
-                        [
-                            {
-                                k: (NoIndent(v) if k == "pivot" else v)
-                                for k, v in d.items()
-                                if k in ["selections", "pivot", "fixed"]
-                            }
-                            for d in cut
-                        ],
-                        sort_keys=True,
-                        indent=4,
-                        cls=NoIndentEncoder,
-                    )
-                )
-            hash_values.remove(cut_hash)
-            logger.log(
-                25,
-                "\tFound cut for hash {0:32s}. {1:d} hashes left.".format(
-                    cut_hash, len(hash_values)
-                ),
-            )
-        if not hash_values:
-            break
-    # warn the user if there were hashes we could not decode for some reason
-    if hash_values:
-        logger.warning(
-            "There are inputs (hashes) provided we did not decode: {0}".format(
-                hash_values
-            )
-        )
-    return True
-
-
-# @echo(write=logger.debug)
 def do_summary(args):
     # first check if output exists
     if os.path.exists(args.output):
@@ -598,7 +534,7 @@ with utils.stdout_redirect_to_tqdm():
             short_help='Translate hash to cut',
             epilog='hash will take in a list of hashes and dump the cuts associated with them',
         )
-        @click.argument('hash', nargs=-1)
+        @click.argument('hashname', nargs=-1)
         @click.option('--supercuts', default='supercuts.json', type=click.Path())
         @click.option(
             '-o',
@@ -608,12 +544,69 @@ with utils.stdout_redirect_to_tqdm():
         )
         @click.option(
             '--use-summary/--no-use-summary',
-            default=True,
+            default=False,
             help='If flagged, read in the list of hashes from the provided summary.json file',
         )
-        def hash():
-            """Look up the cut(s) for a HASH from an optimization. If --use-summary is flagged, you can pass in a summary.json file instead."""
-            pass
+        def hash(hashname, supercuts, output, use_summary):
+            """Look up the cut(s) for a HASHNAME from an optimization. If --use-summary is flagged, you can pass in a summary.json file instead."""
+            # first start by making the output directory
+            if not os.path.exists(output):
+                os.makedirs(output)
+            else:
+                raise IOError("Output directory already exists: {0}".format(output))
+
+            # next, read in the supercuts file
+            data = utils.read_supercuts_file(supercuts)
+
+            # either user provides a bunch of hashes, or we provide a summary.json file which contains the optimal cuts for us
+            if use_summary:
+                logger.info(
+                    "Treating hashname as containing only a summary.json file instead"
+                )
+                hashname = set([r["hash"] for r in json.load(open(hashname[0]))])
+
+            logger.info("Finding cuts for {0:d} hashes.".format(len(hashname)))
+            hash_values = list(hashname)
+            # now loop over all cuts until we find all the hashes
+            for cut in utils.get_cut(copy.deepcopy(data)):
+                cut_hash = utils.get_cut_hash(cut)
+                logger.info("\tChecking {0:s}".format(cut_hash))
+                if cut_hash in hashname:
+                    with open(
+                        os.path.join(output, "{0}.json".format(cut_hash)), "w+"
+                    ) as f:
+                        f.write(
+                            json.dumps(
+                                [
+                                    {
+                                        k: (NoIndent(v) if k == "pivot" else v)
+                                        for k, v in d.items()
+                                        if k in ["selections", "pivot", "fixed"]
+                                    }
+                                    for d in cut
+                                ],
+                                sort_keys=True,
+                                indent=4,
+                                cls=NoIndentEncoder,
+                            )
+                        )
+                    hash_values.remove(cut_hash)
+                    logger.log(
+                        25,
+                        "\tFound cut for hash {0:32s}. {1:d} hashes left.".format(
+                            cut_hash, len(hash_values)
+                        ),
+                    )
+                if not hash_values:
+                    break
+            # warn the user if there were hashes we could not decode for some reason
+            if hash_values:
+                logger.warning(
+                    "There are inputs (hashes) provided we did not decode: {0}".format(
+                        hash_values
+                    )
+                )
+            return True
 
         @rooptimize.command(
             short_help='Summarize Optimization Results',
