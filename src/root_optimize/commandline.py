@@ -18,6 +18,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # import all libraries
+import click
 import argparse
 import json
 import hashlib
@@ -33,6 +34,7 @@ import uproot
 # root_optimize
 from . import utils
 from .json import NoIndent, NoIndentEncoder
+from .version import __version__
 
 # parallelization (http://blog.dominodatalab.com/simple-parallelization/)
 from joblib import Parallel, delayed
@@ -445,457 +447,217 @@ def do_summary(args):
     return True
 
 
-def rooptimize():
-    class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
-        pass
-
-    class _HelpAction(argparse._HelpAction):
-        def __call__(self, parser, namespace, values, option_string=None):
-            parser.print_help()
-            parser.exit()
-
-    class _AllHelpAction(argparse._HelpAction):
-        def __call__(self, parser, namespace, values, option_string=None):
-            parser.print_help()
-            # retrieve subparsers from parser
-            subparsers_actions = [
-                action
-                for action in parser._actions
-                if isinstance(action, argparse._SubParsersAction)
-            ]
-            # there will probably only be one subparser_action,
-            # but better save than sorry
-            for subparsers_action in subparsers_actions:
-                # get all subparsers and print help
-                for choice, subparser in subparsers_action.choices.items():
-                    print("-" * 80)
-                    print("Subparser '{}'".format(choice))
-                    print(subparser.format_help())
-            parser.exit()
-
-    from .version import __version__
-
-    parser = argparse.ArgumentParser(
-        add_help=False,
-        description="Author: Giordon Stark. v{0}".format(__version__),
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-        epilog="This is the top-level. You have no power here.",
-    )
-    parser.add_argument(
-        "-h", "--help", action=_HelpAction, help="show this help message and exit"
-    )  # add custom help
-    parser.add_argument(
-        "-a",
-        "--allhelp",
-        action=_AllHelpAction,
-        help="show this help message and all subcommand help messages and exit",
-    )  # add custom help
-
-    """ subparsers have common parameters """
-    main_parser = argparse.ArgumentParser(
-        add_help=False,
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-    )
-    files_parser = argparse.ArgumentParser(
-        add_help=False,
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-    )
-    tree_parser = argparse.ArgumentParser(
-        add_help=False,
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-    )
-    supercuts_parser = argparse.ArgumentParser(
-        add_help=False,
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-    )
-    parallel_parser = argparse.ArgumentParser(
-        add_help=False,
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-    )
-    rescale_parser = argparse.ArgumentParser(
-        add_help=False,
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-    )
-    did_to_group_parser = argparse.ArgumentParser(
-        add_help=False,
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-    )
-
-    # general arguments for all
-    main_parser.add_argument(
-        "-v",
-        "--verbose",
-        dest="verbose",
-        action="count",
-        default=0,
-        help="Enable verbose output of various levels.",
-    )
-    # positional argument, require the first argument to be the input filename (hence adding the argument group)
-    requiredNamed_files = files_parser.add_argument_group("required named arguments")
-    requiredNamed_files.add_argument(
-        "files", type=str, nargs="+", metavar="<file.root>", help="input ntuples"
-    )
-
-    # these are options for anything that needs to use the supercuts file
-    supercuts_parser.add_argument(
-        "--supercuts",
-        required=False,
-        type=str,
-        dest="supercuts",
-        metavar="<file.json>",
-        help="json dict of supercuts to generate optimization cuts to apply",
-        default="supercuts.json",
-    )
-    # these are options allowing for various additional configurations in filtering container and types to dump in the trees
-    tree_parser.add_argument(
-        "--tree",
-        type=str,
-        nargs="+",
-        required=False,
-        dest="tree_names",
-        metavar="<tree name>",
+__tree_options = [
+    click.option(
+        '--tree-names',
+        multiple=True,
+        default='oTree',
         help="names of the tree containing the ntuples",
-        default="oTree",
-    )
-    tree_parser.add_argument(
-        "--eventWeight",
-        type=str,
-        required=False,
-        dest="eventWeightBranch",
-        metavar="<branch name>",
-        help="name of event weight branch in the ntuples. It must exist.",
-        default="event_weight",
-    )
-
-    parallel_parser.add_argument(
-        "--ncores",
-        type=int,
-        required=False,
-        dest="num_cores",
-        metavar="<n>",
-        help="Number of cores to use for parallelization. Defaults to max.",
+    ),
+    click.option(
+        '--eventWeight',
+        default='weight_mc',
+        help='event weight in the ntuples. It must exist.',
+    ),
+]
+__supercuts_options = [
+    click.option('--supercuts', default='supercuts.json', type=click.Path())
+]
+__parallel_options = [
+    click.option(
+        '--ncores',
         default=multiprocessing.cpu_count(),
+        help='Number of cores to use for parallelization. Defaults to max.',
     )
+]
+__rescale_options = [
+    click.option(
+        '--rescale',
+        help='json dict of groups and dids to apply a scale factor to. If not provided, no scaling will be done.',
+    )
+]
+__did_to_group_options = [
+    click.option('--did-to-group', help='json dict mapping a did to a group')
+]
 
-    rescale_parser.add_argument(
-        "--rescale",
-        required=False,
-        type=str,
-        dest="rescale",
-        metavar="<file.json>",
-        help="json dict of groups and dids to apply a scale factor to. If not provided, no scaling will be done.",
-        default=None,
-    )
 
-    did_to_group_parser.add_argument(
-        "--did-to-group",
-        required=False,
-        type=str,
-        dest="did_to_group",
-        metavar="<file.json>",
-        help="json dict mapping a did to a group.",
-        default=None,
-    )
+def add_options(*options):
+    def _add_options(func):
+        for optiongroup in options:
+            for option in reversed(optiongroup):
+                func = option(func)
+        return func
 
-    """ add subparsers """
-    subparsers = parser.add_subparsers(dest="command", help="actions available")
+    return _add_options
 
-    # needs: files, tree, eventWeight
-    generate_parser = subparsers.add_parser(
-        "generate",
-        parents=[main_parser, tree_parser],
-        description="Given the ROOT ntuples, generate a supercuts.json template. v.{0}".format(
-            __version__
-        ),
-        usage="%(prog)s <file.root> ... [options]",
-        help="Write supercuts template",
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-        epilog="generate will take in signal, background and generate the supercuts template file for you to edit and use (rather than making it by hand)",
-    )
-    generate_parser.add_argument(
-        "file",
-        type=str,
-        help="A single file that contains the general structure of the optimization tree on which to generate a supercuts file from.",
-    )
-    generate_parser.add_argument(
-        "-o",
-        "--output",
-        required=False,
-        type=str,
-        dest="output_filename",
-        metavar="<file.json>",
-        help="output json file to store the generated supercuts template",
-        default="supercuts.json",
-    )
-    generate_parser.add_argument(
-        "--fixedBranches",
-        type=str,
-        nargs="+",
-        required=False,
-        dest="fixed_branches",
-        metavar="<branch>",
-        help="branches that should have a fixed cut. can use wildcards",
-        default=[],
-    )
-    generate_parser.add_argument(
-        "--skipBranches",
-        type=str,
-        nargs="+",
-        required=False,
-        dest="skip_branches",
-        metavar="<branch>",
-        help="branches that should be skipped. can use wildcards",
-        default=[],
-    )
 
-    # needs: files, tree, eventWeight, supercuts, parallel
-    cuts_parser = subparsers.add_parser(
-        "cut",
-        parents=[
-            main_parser,
-            files_parser,
-            tree_parser,
-            supercuts_parser,
-            parallel_parser,
-        ],
-        description="Process ROOT ntuples and apply cuts. v.{0}".format(__version__),
-        usage="%(prog)s <file.root> ... [options]",
-        help="Apply the cuts",
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-        epilog="cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.",
-    )
-    cuts_parser.add_argument(
-        "--weightsFile",
-        type=str,
-        required=False,
-        dest="weightsFile",
-        metavar="<weights file>",
-        help="json file containing weights by DID",
-        default="weights.json",
-    )
-    cuts_parser.add_argument(
-        "-o",
-        "--output",
-        required=False,
-        type=str,
-        dest="output_directory",
-        metavar="<directory>",
-        help="output directory to store the <hash>.json files",
-        default="cuts",
-    )
-    cuts_parser.add_argument(
-        "-f",
-        "--overwrite",
-        required=False,
-        action="store_true",
-        help="If flagged, will remove the output directory before creating it, if it already exists",
-    )
-    cuts_parser.add_argument(
-        "--hide-subtasks",
-        action="store_true",
-        help="Enable to hide the subtask progress on cuts. This might be if you get annoyed by how buggy it is.",
-    )
-
-    # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
-    optimize_parser = subparsers.add_parser(
-        "optimize",
-        parents=[main_parser, rescale_parser, did_to_group_parser],
-        description="Process ROOT ntuples and Optimize Cuts. v.{0}".format(__version__),
-        usage="%(prog)s  --signal={DID1}.json {DID2}.json [..] --bkgd={DID3}.json {DID4}.json {DID5}.json [...] [options]",
-        help="Calculate significances for a series of computed cuts",
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-        epilog="optimize will take in numerous signal, background and calculate the significances for each signal and combine backgrounds automatically.",
-    )
-    optimize_parser.add_argument(
-        "--signal",
-        required=True,
-        type=str,
-        nargs="+",
-        metavar="{DID}.json",
-        help="signal file patterns",
-    )
-    optimize_parser.add_argument(
-        "--bkgd",
-        required=True,
-        type=str,
-        nargs="+",
-        metavar="{DID}.json",
-        help="background file patterns",
-    )
-    optimize_parser.add_argument(
-        "--searchDirectory",
-        required=False,
-        type=str,
-        dest="search_directory",
-        help="Directory that contains all the {DID}.json files.",
-        default="cuts",
-    )
-    optimize_parser.add_argument(
-        "--bkgdUncertainty",
-        type=float,
-        required=False,
-        dest="bkgdUncertainty",
-        metavar="<sigma>",
-        help="background uncertainty for calculating significance",
-        default=0.3,
-    )
-    optimize_parser.add_argument(
-        "--bkgdStatUncertainty",
-        type=float,
-        required=False,
-        dest="bkgdStatUncertainty",
-        metavar="<sigma>",
-        help="background statistical uncertainty for calculating significance",
-        default=0.3,
-    )
-    optimize_parser.add_argument(
-        "--insignificance",
-        type=float,
-        required=False,
-        dest="insignificanceThreshold",
-        metavar="<min events>",
-        help="minimum number of signal events for calculating significance",
-        default=0.5,
-    )
-    optimize_parser.add_argument(
-        "--lumi",
-        type=float,
-        required=False,
-        dest="lumi",
-        metavar="<scaled lumi>",
-        help="Apply a global luminosity factor (units are ifb)",
-        default=1.0,
-    )
-    optimize_parser.add_argument(
-        "-o",
-        "--output",
-        required=False,
-        type=str,
-        dest="output_directory",
-        metavar="<directory>",
-        help="output directory to store the <hash>.json files",
-        default="significances",
-    )
-    optimize_parser.add_argument(
-        "-n",
-        "--max-num-hashes",
-        required=False,
-        type=int,
-        metavar="<n>",
-        help="Maximum number of hashes to print for each significance file",
-        default=25,
-    )
-
-    # needs: supercuts
-    hash_parser = subparsers.add_parser(
-        "hash",
-        parents=[main_parser, supercuts_parser],
-        description="Given a hash from optimization, dump the cuts associated with it. v.{0}".format(
-            __version__
-        ),
-        usage="%(prog)s <hash> [<hash> ...] [options]",
-        help="Translate hash to cut",
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-        epilog="hash will take in a list of hashes and dump the cuts associated with them",
-    )
-    hash_parser.add_argument(
-        "hash_values",
-        type=str,
-        nargs="+",
-        metavar="<hash>",
-        help="Specify a hash to look up the cut for. If --use-summary is flagged, you can pass in a summary.json file instead.",
-    )
-    hash_parser.add_argument(
-        "-o",
-        "--output",
-        required=False,
-        type=str,
-        dest="output_directory",
-        metavar="<directory>",
-        help="output directory to store the <hash>.json files",
-        default="outputHash",
-    )
-    hash_parser.add_argument(
-        "--use-summary",
-        action="store_true",
-        help="If flagged, read in the list of hashes from the provided summary.json file",
-    )
-
-    summary_parser = subparsers.add_parser(
-        "summary",
-        parents=[main_parser, parallel_parser],
-        description="Given the results of optimize (significances), generate a table of results for each mass point. v.{0}".format(
-            __version__
-        ),
-        usage="%(prog)s --searchDirectory significances/ --massWindows massWindows.txt [options]",
-        help="Summarize Optimization Results",
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-        epilog="summary will take in significances and summarize in a json file",
-    )
-    summary_parser.add_argument(
-        "--searchDirectory",
-        required=True,
-        type=str,
-        dest="search_directory",
-        help="Directory that contains the significances",
-    )
-    summary_parser.add_argument(
-        "--massWindows",
-        required=True,
-        type=str,
-        dest="mass_windows",
-        help="File that maps DID to mass",
-    )
-    summary_parser.add_argument(
-        "--output",
-        required=False,
-        type=str,
-        dest="output",
-        help="Output json to make",
-        default="summary.json",
-    )
-    summary_parser.add_argument(
-        "--stop-masses",
-        required=False,
-        type=int,
-        nargs="+",
-        help="Allowed stop masses",
-        default=[5000],
-    )
-
-    # set the functions that get called with the given arguments
-    cuts_parser.set_defaults(func=do_cuts)
-    optimize_parser.set_defaults(func=do_optimize)
-    generate_parser.set_defaults(func=do_generate)
-    hash_parser.set_defaults(func=do_hash)
-    summary_parser.set_defaults(func=do_summary)
-
-    # print the help if called with no arguments
-    import sys
-
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(1)
-    # parse the arguments, throw errors if missing any
-    args = parser.parse_args()
-
+# This is the start of the CLI
+# set verbosity for python printing
+with utils.stdout_redirect_to_tqdm():
     try:
         # start execution of actual program
         from root_optimize import timing
 
-        # set verbosity for python printing
-        if args.verbose < 5:
-            logger.setLevel(25 - args.verbose * 5)
-        else:
-            logger.setLevel(logging.NOTSET + 1)
+        @click.group(
+            context_settings=dict(help_option_names=['-h', '--help']),
+            epilog='Author: Giordon Stark',
+        )
+        @click.version_option(version=__version__)
+        @click.option('-v', '--verbose', count=True)
+        def rooptimize(verbose):
+            if verbose < 5:
+                logger.setLevel(25 - verbose * 5)
+            else:
+                logger.setLevel(logging.NOTSET + 1)
 
-        with utils.stdout_redirect_to_tqdm():
-            # call the function and do stuff
-            args.func(args)
+        @rooptimize.command(short_help='Write supercuts template')
+        @click.argument('file')
+        @add_options(__tree_options)
+        @click.option(
+            '-o',
+            '--output',
+            default='supercuts.json',
+            help='output json file to store the generated supercuts template',
+        )
+        @click.option(
+            '--fixedBranches', multiple=True, help='branches that should remain fixed'
+        )
+        @click.option(
+            '--skipBranches', multiple=True, help='branches that should be skipped'
+        )
+        def generate(
+            file, tree_names, eventweight, output, fixedbranches, skipbranches
+        ):
+            """Given a single FILE that contains the general structure of the tree, generate a supercuts file that works on it."""
+            pass
+
+        @rooptimize.command(
+            short_help='Apply the cuts',
+            epilog='cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.',
+        )
+        @click.argument('files', nargs=-1, type=click.Path())
+        @add_options(__tree_options, __supercuts_options, __parallel_options)
+        @click.option(
+            '-o',
+            '--output',
+            default='cuts',
+            help='output directory to store the <hash>.json files',
+        )
+        @click.option(
+            '--weightsFile',
+            default='weights.json',
+            help='json file containing weights by DSID',
+        )
+        @click.option(
+            '--overwrite/--no-overwrite',
+            default=False,
+            help="If flagged, will remove the output directory before creating it, if it already exists",
+        )
+        @click.option(
+            '--show-subtasks/--hide-subtasks',
+            default=True,
+            help="Show or hide the subtask progress on cuts. This might be needed if you get annoyed by how buggy the output looks.",
+        )
+        def cuts(files, tree_names, output, weightsFile, overwrite, show_subtasks):
+            """Process ROOT ntuples and apply cuts"""
+            pass
+
+        @rooptimize.command(
+            short_help='Calculate significances for a series of computed cuts',
+            epilog='optimize will take in numerous signal, background and calculate the significances for each signal and combine backgrounds automatically.',
+        )
+        @add_options(__rescale_options, __did_to_group_options)
+        @click.option('--signal', multiple=True, help='signal file pattern')
+        @click.option('--bkgd', multiple=True, help='background file pattern')
+        @click.option(
+            '--searchDirectory',
+            default='cuts',
+            help='Directory that contains all the json files.',
+        )
+        @click.option(
+            '--bkgdUncertainty',
+            default=0.3,
+            help='background uncertainty for calculating significance',
+        )
+        @click.option(
+            '--bkgStatUncertainty',
+            default=0.3,
+            help='background statistical uncertainty for calculating significance',
+        )
+        @click.option(
+            '--insignificance',
+            default=0.5,
+            help='minimum number of signal events for calculating significance',
+        )
+        @click.option(
+            '--lumi',
+            default=1.0,
+            help='Apply a global luminosity scale factor (units are ifb)',
+        )
+        @click.option(
+            '-o',
+            '--output',
+            default='significances',
+            help='output directory to store the <hash>.json files',
+        )
+        @click.option(
+            '-n',
+            '--max-num-hashes',
+            default=25,
+            help='Maximimum number of hashes to print for each significance file',
+        )
+        def optimize():
+            """Process ROOT ntuples and Optimize Cuts."""
+            pass
+
+        @rooptimize.command(
+            short_help='Translate hash to cut',
+            epilog='hash will take in a list of hashes and dump the cuts associated with them',
+        )
+        @click.argument('hash', nargs=-1)
+        @add_options(__supercuts_options)
+        @click.option(
+            '-o',
+            '--output',
+            default='outputHash',
+            help='output directory to store the <hash>.json files',
+        )
+        @click.option(
+            '--use-summary/--no-use-summary',
+            default=True,
+            help='If flagged, read in the list of hashes from the provided summary.json file',
+        )
+        def hash():
+            """Look up the cut(s) for a HASH from an optimization. If --use-summary is flagged, you can pass in a summary.json file instead."""
+            pass
+
+        @rooptimize.command(
+            short_help='Summarize Optimization Results',
+            epilog='summary will take in significances and summarize in a json file',
+        )
+        @add_options(__parallel_options)
+        @click.option(
+            '--searchDirectory',
+            default='cuts',
+            help='Directory that contains the significances.',
+        )
+        @click.option('--massWindows', help='File that maps DID to mass.')
+        @click.option(
+            '-o', '--output', default='summary.json', help='Output json to make'
+        )
+        @click.option(
+            '--stop-masses', multiple=True, default=5000, help='Allowed stop masses'
+        )
+        def summary():
+            """Given the results of optimize (significances), generate a table of results for each mass point."""
+            pass
+
+        # set the functions that get called with the given arguments
+        # cuts_parser.set_defaults(func=do_cuts)
+        # optimize_parser.set_defaults(func=do_optimize)
+        # generate_parser.set_defaults(func=do_generate)
+        # hash_parser.set_defaults(func=do_hash)
+        # summary_parser.set_defaults(func=do_summary)
 
     except Exception:
         logger.exception("{0}\nAn exception was caught!".format("-" * 20))
-
-
-if __name__ == "__main__":
-    rooptimize()
