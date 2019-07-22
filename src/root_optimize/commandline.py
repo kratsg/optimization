@@ -311,47 +311,6 @@ def do_optimize(args):
 
 
 # @echo(write=logger.debug)
-def do_generate(args):
-    if os.path.isfile(args.output_filename):
-        raise IOError("Output file already exists: {0}".format(args.output_filename))
-
-    if len(args.tree_names) > 1:
-        raise ValueError("Must only specify one tree name.")
-
-    # this is a dict that holds the tree
-    tree = uproot.open(args.file)[args.tree_names[0]]
-
-    supercuts = []
-
-    for b in tree.keys():
-        if utils.match_branch(b, args.skip_branches):
-            logger.log(25, "{0:32s}:\tSkipping as requested".format(b))
-            continue
-
-        if utils.match_branch(b, args.fixed_branches):
-            supercuts.append({"selections": "{0:s} > {{0}}".format(b), "pivot": 0})
-        else:
-            supercuts.append(
-                {
-                    "selections": "{0:s} > {{0}}".format(b.decode('utf-8')),
-                    "st3": [NoIndent([0.0, 10.0, 1.0])],
-                }
-            )
-
-    with open(args.output_filename, "w+") as f:
-        f.write(
-            json.dumps(
-                sorted(supercuts, key=operator.itemgetter("selections")),
-                sort_keys=True,
-                indent=4,
-                cls=NoIndentEncoder,
-            )
-        )
-
-    return True
-
-
-# @echo(write=logger.debug)
 def do_hash(args):
     # first start by making the output directory
     if not os.path.exists(args.output_directory):
@@ -451,7 +410,7 @@ __tree_options = [
     click.option(
         '--tree-names',
         multiple=True,
-        default='oTree',
+        default=['oTree'],
         help="names of the tree containing the ntuples",
     ),
     click.option(
@@ -516,7 +475,7 @@ with utils.stdout_redirect_to_tqdm():
         @click.option(
             '-o',
             '--output',
-            default='supercuts.json',
+            default=None,
             help='output json file to store the generated supercuts template',
         )
         @click.option(
@@ -529,7 +488,43 @@ with utils.stdout_redirect_to_tqdm():
             file, tree_names, eventweight, output, fixedbranches, skipbranches
         ):
             """Given a single FILE that contains the general structure of the tree, generate a supercuts file that works on it."""
-            pass
+            if len(tree_names) > 1:
+                raise ValueError("Must only specify one tree name.")
+
+            # this is a dict that holds the tree
+            tree = uproot.open(file)[tree_names[0]]
+
+            supercuts = []
+
+            for b in tree.keys():
+                if utils.match_branch(b, skipbranches):
+                    logger.log(25, "{0:32s}:\tSkipping as requested".format(b))
+                    continue
+
+                if utils.match_branch(b, fixedbranches):
+                    supercuts.append(
+                        {"selections": "{0:s} > {{0}}".format(b), "pivot": 0}
+                    )
+                else:
+                    supercuts.append(
+                        {
+                            "selections": "{0:s} > {{0}}".format(b.decode('utf-8')),
+                            "st3": [NoIndent([0.0, 10.0, 1.0])],
+                        }
+                    )
+
+            result = json.dumps(
+                sorted(supercuts, key=operator.itemgetter("selections")),
+                sort_keys=True,
+                indent=4,
+                cls=NoIndentEncoder,
+            )
+
+            if output is None:
+                click.echo(result)
+            else:
+                with open(output, "w+") as f:
+                    f.write(result)
 
         @rooptimize.command(
             short_help='Apply the cuts',
