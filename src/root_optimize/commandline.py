@@ -41,274 +41,6 @@ from joblib import Parallel, delayed
 import multiprocessing
 
 # @echo(write=logger.debug)
-def do_cuts(args):
-    # before doing anything, let's ensure the directory we make is ok
-    if not os.path.exists(args.output_directory):
-        os.makedirs(args.output_directory)
-    elif args.overwrite:
-        import shutil
-
-        shutil.rmtree(args.output_directory)
-    else:
-        raise IOError(
-            "Output directory already exists: {0:s}".format(args.output_directory)
-        )
-
-    if len(args.tree_names) == 1 and len(args.files) > 1:
-        args.tree_names *= len(args.files)
-    if len(args.tree_names) != len(args.files):
-        raise ValueError(
-            "You gave us incompatible numbers of files ({}) and tree names ({})".format(
-                len(args.files), len(args.tree_names)
-            )
-        )
-
-    # first step is to group by the sample DID
-    dids = defaultdict(list)
-    trees = {}
-    for fname, tname in zip(args.files, args.tree_names):
-        did = utils.get_did(fname)
-        dids[did].append(fname)
-        if trees.setdefault(did, tname) != tname:
-            raise ValueError(
-                'Found incompatible tree names ({}, {}) for the same DSID ({})'.format(
-                    tname, trees[did], did
-                )
-            )
-
-    # load in the supercuts file
-    supercuts = utils.read_supercuts_file(args.supercuts)
-
-    # load up the weights file
-    if not os.path.isfile(args.weightsFile):
-        raise ValueError(
-            "The supplied weights file `{0}` does not exist or I cannot find it.".format(
-                args.weightsFile
-            )
-        )
-    else:
-        weights = json.load(open(args.weightsFile))
-
-    # parallelize
-    num_cores = min(multiprocessing.cpu_count(), args.num_cores)
-    logger.log(25, "Using {0} cores".format(num_cores))
-
-    pids = None
-    # if pids is None, do_cut() will disable the progress
-    if not args.hide_subtasks:
-        from numpy import memmap, uint64
-
-        pids = memmap(
-            os.path.join(tempfile.mkdtemp(), "pids"),
-            dtype=uint64,
-            shape=num_cores,
-            mode="w+",
-        )
-
-    overall_progress = tqdm.tqdm(
-        total=len(dids),
-        desc="Num. files",
-        position=0,
-        leave=True,
-        unit="file",
-        dynamic_ncols=True,
-    )
-
-    class CallBack(object):
-        completed = defaultdict(int)
-
-        def __init__(self, index, parallel):
-            self.index = index
-            self.parallel = parallel
-
-        def __call__(self, index):
-            CallBack.completed[self.parallel] += 1
-            overall_progress.update()
-            overall_progress.refresh()
-            if self.parallel._original_iterable:
-                self.parallel.dispatch_next()
-
-    import joblib.parallel
-
-    joblib.parallel.CallBack = CallBack
-
-    results = Parallel(n_jobs=num_cores)(
-        delayed(utils.do_cut)(
-            did,
-            files,
-            supercuts,
-            weights,
-            trees[did],
-            args.output_directory,
-            args.eventWeightBranch,
-            pids,
-        )
-        for did, files in dids.items()
-    )
-
-    overall_progress.close()
-
-    for did, result in zip(dids, results):
-        logger.log(25, "DID {0:s}: {1:s}".format(did, "ok" if result[0] else "not ok"))
-
-    logger.log(
-        25,
-        "Total CPU elapsed time: {0}".format(
-            utils.secondsToStr(sum(result[1] for result in results))
-        ),
-    )
-
-    return True
-
-
-# @echo(write=logger.debug)
-def do_optimize(args):
-
-    # before doing anything, let's ensure the directory we make is ok
-    if not os.path.exists(args.output_directory):
-        os.makedirs(args.output_directory)
-    else:
-        raise IOError(
-            "Output directory already exists: {0:s}".format(args.output_directory)
-        )
-
-    rescale = None
-    did_to_group = None
-    if args.rescale:
-        rescale = json.load(open(args.rescale))
-        if args.did_to_group is None:
-            raise ValueError(
-                "If you are going to rescale, you need to pass in the --did-to-group mapping dict."
-            )
-        did_to_group = json.load(open(args.did_to_group))
-
-    logger.log(25, "Reading in all background files to calculate total background")
-
-    total_bkgd = defaultdict(lambda: {"raw": 0.0, "weighted": 0.0, "scaled": 0.0})
-    bkgd_dids = []
-
-    # make sure messages are only logged once, not multiple times
-    duplicate_log_filter = utils.DuplicateFilter()
-    logger.addFilter(duplicate_log_filter)
-
-    # for each bkgd file, open, read, load, and combine
-    for bkgd in args.bkgd:
-        # expand out patterns if needed
-        for fname in glob.glob(os.path.join(args.search_directory, bkgd)):
-            did = utils.get_did(fname)
-            logger.log(25, "\tLoading {0:s} ({1:s})".format(did, fname))
-            # generate a list of background dids
-            bkgd_dids.append(did)
-            with open(fname, "r") as f:
-                bkgd_data = json.load(f)
-                for cuthash, counts_dict in bkgd_data.items():
-                    for counts_type, counts in counts_dict.items():
-                        total_bkgd[cuthash][counts_type] += counts
-                        if counts_type == "scaled" and rescale:
-                            if did in rescale:
-                                scale_factor = rescale.get(did, 1.0)
-                                total_bkgd[cuthash][counts_type] *= scale_factor
-                                logger.log(
-                                    25,
-                                    "\t\tApplying scale factor for DID#{0:s}: {1:0.2f}".format(
-                                        did, scale_factor
-                                    ),
-                                )
-                            if did_to_group[did] in rescale:
-                                scale_factor = rescale.get(did_to_group[did], 1.0)
-                                logger.log(
-                                    25,
-                                    '\t\tApplying scale factor for DID#{0:s} because it belongs in group "{1:s}": {2:0.2f}'.format(
-                                        did, did_to_group[did], scale_factor
-                                    ),
-                                )
-                                total_bkgd[cuthash][counts_type] *= scale_factor
-
-    # remove the filter and clear up memory of stored logs
-    logger.removeFilter(duplicate_log_filter)
-    del duplicate_log_filter
-
-    # create hash for background
-    bkgdHash = hashlib.md5(str(sorted(bkgd_dids)).encode('utf-8')).hexdigest()
-    logger.log(25, "List of backgrounds produces hash: {0:s}".format(bkgdHash))
-    # write the backgrounds to a file
-    with open(
-        os.path.join(args.output_directory, "{0:s}.json".format(bkgdHash)), "w+"
-    ) as f:
-        f.write(json.dumps(sorted(bkgd_dids)))
-
-    logger.log(25, "Calculating significance for each signal file")
-    # for each signal file, open, read, load, and divide with the current background
-    for signal in args.signal:
-        # expand out patterns if needed
-        for fname in glob.glob(os.path.join(args.search_directory, signal)):
-            did = utils.get_did(fname)
-            logger.log(
-                25, "\tCalculating significances for {0:s} ({1:s})".format(did, fname)
-            )
-            significances = []
-            with open(fname, "r") as f:
-                signal_data = json.load(f)
-                for cuthash, counts_dict in signal_data.items():
-                    sig_dict = dict(
-                        [("hash", cuthash)]
-                        + [
-                            (
-                                "significance_{0:s}".format(counts_type),
-                                utils.get_significance(
-                                    args.lumi * 1000 * counts,
-                                    args.lumi * 1000 * total_bkgd[cuthash][counts_type],
-                                    args.insignificanceThreshold,
-                                    args.bkgdUncertainty,
-                                    args.bkgdStatUncertainty,
-                                    total_bkgd[cuthash]["raw"],
-                                ),
-                            )
-                            for counts_type, counts in counts_dict.items()
-                        ]
-                        + [
-                            (
-                                "yield_{0:s}".format(counts_type),
-                                {
-                                    "sig": args.lumi * 1000 * counts,
-                                    "bkg": args.lumi
-                                    * 1000
-                                    * total_bkgd[cuthash][counts_type],
-                                },
-                            )
-                            for counts_type, counts in counts_dict.items()
-                        ]
-                    )
-                    significances.append(sig_dict)
-            logger.log(
-                25,
-                "\t\tCalculated significances for {0:d} cuts".format(
-                    len(significances)
-                ),
-            )
-            # at this point, we have a list of significances that we can dump to a file
-            with open(
-                os.path.join(
-                    args.output_directory, "s{0:s}.b{1:s}.json".format(did, bkgdHash)
-                ),
-                "w+",
-            ) as f:
-                f.write(
-                    json.dumps(
-                        sorted(
-                            significances,
-                            key=operator.itemgetter("significance_scaled"),
-                            reverse=True,
-                        )[: args.max_num_hashes],
-                        sort_keys=True,
-                        indent=4,
-                    )
-                )
-
-    return True
-
-
-# @echo(write=logger.debug)
 def do_hash(args):
     # first start by making the output directory
     if not os.path.exists(args.output_directory):
@@ -499,7 +231,7 @@ with utils.stdout_redirect_to_tqdm():
         )
         @click.option(
             '-o',
-            '--output',
+            '--output-directory',
             default='cuts',
             help='output directory to store the <hash>.json files',
         )
@@ -522,39 +254,39 @@ with utils.stdout_redirect_to_tqdm():
             files,
             tree_names,
             eventweight,
-            output,
+            supercuts,
+            ncores,
+            output_directory,
             weightsfile,
             overwrite,
             show_subtasks,
         ):
             """Process ROOT ntuples and apply cuts"""
             # before doing anything, let's ensure the directory we make is ok
-            if not os.path.exists(args.output_directory):
-                os.makedirs(args.output_directory)
-            elif args.overwrite:
+            if not os.path.exists(output_directory):
+                os.makedirs(output_directory)
+            elif overwrite:
                 import shutil
 
-                shutil.rmtree(args.output_directory)
+                shutil.rmtree(output_directory)
             else:
                 raise IOError(
-                    "Output directory already exists: {0:s}".format(
-                        args.output_directory
-                    )
+                    "Output directory already exists: {0:s}".format(output_directory)
                 )
 
-            if len(args.tree_names) == 1 and len(args.files) > 1:
-                args.tree_names *= len(args.files)
-            if len(args.tree_names) != len(args.files):
+            if len(tree_names) == 1 and len(files) > 1:
+                tree_names *= len(files)
+            if len(tree_names) != len(files):
                 raise ValueError(
                     "You gave us incompatible numbers of files ({}) and tree names ({})".format(
-                        len(args.files), len(args.tree_names)
+                        len(files), len(tree_names)
                     )
                 )
 
             # first step is to group by the sample DID
             dids = defaultdict(list)
             trees = {}
-            for fname, tname in zip(args.files, args.tree_names):
+            for fname, tname in zip(files, tree_names):
                 did = utils.get_did(fname)
                 dids[did].append(fname)
                 if trees.setdefault(did, tname) != tname:
@@ -565,25 +297,25 @@ with utils.stdout_redirect_to_tqdm():
                     )
 
             # load in the supercuts file
-            supercuts = utils.read_supercuts_file(args.supercuts)
+            supercuts = utils.read_supercuts_file(supercuts)
 
             # load up the weights file
-            if not os.path.isfile(args.weightsFile):
+            if not os.path.isfile(weightsfile):
                 raise ValueError(
                     "The supplied weights file `{0}` does not exist or I cannot find it.".format(
-                        args.weightsFile
+                        weightsfile
                     )
                 )
             else:
-                weights = json.load(open(args.weightsFile))
+                weights = json.load(open(weightsfile))
 
             # parallelize
-            num_cores = min(multiprocessing.cpu_count(), args.num_cores)
+            num_cores = min(multiprocessing.cpu_count(), ncores)
             logger.log(25, "Using {0} cores".format(num_cores))
 
             pids = None
             # if pids is None, do_cut() will disable the progress
-            if not args.hide_subtasks:
+            if show_subtasks:
                 from numpy import memmap, uint64
 
                 pids = memmap(
@@ -627,8 +359,8 @@ with utils.stdout_redirect_to_tqdm():
                     supercuts,
                     weights,
                     trees[did],
-                    args.output_directory,
-                    args.eventWeightBranch,
+                    output_directory,
+                    eventweight,
                     pids,
                 )
                 for did, files in dids.items()
@@ -644,7 +376,7 @@ with utils.stdout_redirect_to_tqdm():
             logger.log(
                 25,
                 "Total CPU elapsed time: {0}".format(
-                    secondsToStr(sum(result[1] for result in results))
+                    utils.secondsToStr(sum(result[1] for result in results))
                 ),
             )
 
@@ -654,13 +386,9 @@ with utils.stdout_redirect_to_tqdm():
             short_help='Calculate significances for a series of computed cuts',
             epilog='optimize will take in numerous signal, background and calculate the significances for each signal and combine backgrounds automatically.',
         )
-        @click.option(
-            '--rescale',
-            help='json dict of groups and dids to apply a scale factor to. If not provided, no scaling will be done.',
-        )
-        @click.option('--did-to-group', help='json dict mapping a did to a group')
         @click.option('--signal', multiple=True, help='signal file pattern')
         @click.option('--bkgd', multiple=True, help='background file pattern')
+        @click.option('--did-to-group', help='json dict mapping a did to a group')
         @click.option(
             '--searchDirectory',
             default='cuts',
@@ -672,12 +400,12 @@ with utils.stdout_redirect_to_tqdm():
             help='background uncertainty for calculating significance',
         )
         @click.option(
-            '--bkgStatUncertainty',
+            '--bkgdStatUncertainty',
             default=0.3,
             help='background statistical uncertainty for calculating significance',
         )
         @click.option(
-            '--insignificance',
+            '--insignificanceThreshold',
             default=0.5,
             help='minimum number of signal events for calculating significance',
         )
@@ -685,6 +413,10 @@ with utils.stdout_redirect_to_tqdm():
             '--lumi',
             default=1.0,
             help='Apply a global luminosity scale factor (units are ifb)',
+        )
+        @click.option(
+            '--rescale',
+            help='json dict of groups and dids to apply a scale factor to. If not provided, no scaling will be done.',
         )
         @click.option(
             '-o',
@@ -698,9 +430,169 @@ with utils.stdout_redirect_to_tqdm():
             default=25,
             help='Maximimum number of hashes to print for each significance file',
         )
-        def optimize():
+        def optimize(
+            signal,
+            bkgd,
+            did_to_group,
+            searchdirectory,
+            bkgduncertainty,
+            bkgdstatuncertainty,
+            insignificancethreshold,
+            lumi,
+            rescale,
+            output,
+            max_num_hashes,
+        ):
             """Process ROOT ntuples and Optimize Cuts."""
-            pass
+            # before doing anything, let's ensure the directory we make is ok
+            if not os.path.exists(output):
+                os.makedirs(output)
+            else:
+                raise IOError("Output directory already exists: {0:s}".format(output))
+
+            rescale = None
+            did_to_group = None
+            if rescale:
+                rescale = json.load(open(rescale))
+                if did_to_group is None:
+                    raise ValueError(
+                        "If you are going to rescale, you need to pass in the --did-to-group mapping dict."
+                    )
+                did_to_group = json.load(open(did_to_group))
+
+            logger.log(
+                25, "Reading in all background files to calculate total background"
+            )
+
+            total_bkgd = defaultdict(
+                lambda: {"raw": 0.0, "weighted": 0.0, "scaled": 0.0}
+            )
+            bkgd_dids = []
+
+            # make sure messages are only logged once, not multiple times
+            duplicate_log_filter = utils.DuplicateFilter()
+            logger.addFilter(duplicate_log_filter)
+
+            # for each bkgd file, open, read, load, and combine
+            for b in bkgd:
+                # expand out patterns if needed
+                for fname in glob.glob(os.path.join(searchdirectory, b)):
+                    did = utils.get_did(fname)
+                    logger.log(25, "\tLoading {0:s} ({1:s})".format(did, fname))
+                    # generate a list of background dids
+                    bkgd_dids.append(did)
+                    with open(fname, "r") as f:
+                        bkgd_data = json.load(f)
+                        for cuthash, counts_dict in bkgd_data.items():
+                            for counts_type, counts in counts_dict.items():
+                                total_bkgd[cuthash][counts_type] += counts
+                                if counts_type == "scaled" and rescale:
+                                    if did in rescale:
+                                        scale_factor = rescale.get(did, 1.0)
+                                        total_bkgd[cuthash][counts_type] *= scale_factor
+                                        logger.log(
+                                            25,
+                                            "\t\tApplying scale factor for DID#{0:s}: {1:0.2f}".format(
+                                                did, scale_factor
+                                            ),
+                                        )
+                                    if did_to_group[did] in rescale:
+                                        scale_factor = rescale.get(
+                                            did_to_group[did], 1.0
+                                        )
+                                        logger.log(
+                                            25,
+                                            '\t\tApplying scale factor for DID#{0:s} because it belongs in group "{1:s}": {2:0.2f}'.format(
+                                                did, did_to_group[did], scale_factor
+                                            ),
+                                        )
+                                        total_bkgd[cuthash][counts_type] *= scale_factor
+
+            # remove the filter and clear up memory of stored logs
+            logger.removeFilter(duplicate_log_filter)
+            del duplicate_log_filter
+
+            # create hash for background
+            bkgdHash = hashlib.md5(str(sorted(bkgd_dids)).encode('utf-8')).hexdigest()
+            logger.log(25, "List of backgrounds produces hash: {0:s}".format(bkgdHash))
+            # write the backgrounds to a file
+            with open(os.path.join(output, "{0:s}.json".format(bkgdHash)), "w+") as f:
+                f.write(json.dumps(sorted(bkgd_dids)))
+
+            logger.log(25, "Calculating significance for each signal file")
+            # for each signal file, open, read, load, and divide with the current background
+            for sig in signal:
+                # expand out patterns if needed
+                for fname in glob.glob(os.path.join(searchdirectory, sig)):
+                    did = utils.get_did(fname)
+                    logger.log(
+                        25,
+                        "\tCalculating significances for {0:s} ({1:s})".format(
+                            did, fname
+                        ),
+                    )
+                    significances = []
+                    with open(fname, "r") as f:
+                        signal_data = json.load(f)
+                        for cuthash, counts_dict in signal_data.items():
+                            sig_dict = dict(
+                                [("hash", cuthash)]
+                                + [
+                                    (
+                                        "significance_{0:s}".format(counts_type),
+                                        utils.get_significance(
+                                            lumi * 1000 * counts,
+                                            lumi
+                                            * 1000
+                                            * total_bkgd[cuthash][counts_type],
+                                            insignificancethreshold,
+                                            bkgduncertainty,
+                                            bkgdstatuncertainty,
+                                            total_bkgd[cuthash]["raw"],
+                                        ),
+                                    )
+                                    for counts_type, counts in counts_dict.items()
+                                ]
+                                + [
+                                    (
+                                        "yield_{0:s}".format(counts_type),
+                                        {
+                                            "sig": lumi * 1000 * counts,
+                                            "bkg": lumi
+                                            * 1000
+                                            * total_bkgd[cuthash][counts_type],
+                                        },
+                                    )
+                                    for counts_type, counts in counts_dict.items()
+                                ]
+                            )
+                            significances.append(sig_dict)
+                    logger.log(
+                        25,
+                        "\t\tCalculated significances for {0:d} cuts".format(
+                            len(significances)
+                        ),
+                    )
+                    # at this point, we have a list of significances that we can dump to a file
+                    with open(
+                        os.path.join(
+                            output, "s{0:s}.b{1:s}.json".format(did, bkgdHash)
+                        ),
+                        "w+",
+                    ) as f:
+                        f.write(
+                            json.dumps(
+                                sorted(
+                                    significances,
+                                    key=operator.itemgetter("significance_scaled"),
+                                    reverse=True,
+                                )[:max_num_hashes],
+                                sort_keys=True,
+                                indent=4,
+                            )
+                        )
+
+            return True
 
         @rooptimize.command(
             short_help='Translate hash to cut',
