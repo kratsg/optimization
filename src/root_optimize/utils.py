@@ -497,3 +497,9 @@ def get_summary(filename, mass_windows, stop_masses=[]):
             "m_stop": int(m_stop),
             "m_lsp": int(m_lsp),
         }
+
+
+def secondsToStr(t):
+    return "%d:%02d:%02d.%03d" % reduce(
+        lambda ll, b: divmod(ll[0], b) + ll[1:], [(t * 1000,), 1000, 60, 60]
+    )

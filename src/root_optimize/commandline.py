@@ -42,8 +42,6 @@ import multiprocessing
 
 # @echo(write=logger.debug)
 def do_cuts(args):
-    from root_optimize.timing import secondsToStr
-
     # before doing anything, let's ensure the directory we make is ok
     if not os.path.exists(args.output_directory):
         os.makedirs(args.output_directory)
@@ -156,7 +154,7 @@ def do_cuts(args):
     logger.log(
         25,
         "Total CPU elapsed time: {0}".format(
-            secondsToStr(sum(result[1] for result in results))
+            utils.secondsToStr(sum(result[1] for result in results))
         ),
     )
 
@@ -454,8 +452,6 @@ def add_options(*options):
 # set verbosity for python printing
 with utils.stdout_redirect_to_tqdm():
     try:
-        # start execution of actual program
-        from root_optimize import timing
 
         @click.group(
             context_settings=dict(help_option_names=['-h', '--help']),
