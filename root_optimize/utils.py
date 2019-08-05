@@ -245,11 +245,12 @@ def get_ttree(tree_name, filenames, eventWeightBranch):
 
   # make sure the branches are compatible between the two
   branches = set(i.GetName() for i in tree.GetListOfBranches())
+  aliases = set(i.GetName() for i in tree.GetListOfAliases())
 
   # user can pass in a selection for the branch
   for ewBranch in selection_to_branches(eventWeightBranch, tree):
-    if not ewBranch in branches:
-      raise ValueError('The event weight branch does not exist: {0}'.format(ewBranch))
+    if not ewBranch in branches and not ewBranch in aliases:
+      raise ValueError('The event weight branch (or alias) does not exist: {0}'.format(ewBranch))
 
   return tree
 
@@ -272,7 +273,9 @@ def selection_to_branches(selection_string, tree):
 
 #@echo(write=logger.debug)
 def tree_get_branches(tree, eventWeightBranch):
-  return [i.GetName() for i in tree.GetListOfBranches() if not i.GetName() in eventWeightBranch]
+  branches = [i.GetName() for i in tree.GetListOfBranches()]
+  aliases = [i.GetName() for i in tree.GetListOfAliases()]
+  return [b for b in branches+aliases if not b in eventWeightBranch]
 
 #@echo(write=logger.debug)
 def get_cut(superCuts, index=0):
