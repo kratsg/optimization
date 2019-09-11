@@ -132,17 +132,17 @@ class DummyTqdmFile(object):
 
 
 @contextlib.contextmanager
-def stdout_redirect_to_tqdm():
-    save_stdout = sys.stdout
+def std_out_err_redirect_tqdm():
+    orig_out_err = sys.stdout, sys.stderr
     try:
-        sys.stdout = DummyTqdmFile(sys.stdout)
-        yield save_stdout
+        sys.stdout, sys.stderr = map(DummyTqdmFile, orig_out_err)
+        yield orig_out_err[0]
     # Relay exceptions
     except Exception as exc:
         raise exc
-    # Always restore sys.stdout if necessary
+    # Always restore sys.stdout/err if necessary
     finally:
-        sys.stdout = save_stdout
+        sys.stdout, sys.stderr = orig_out_err
 
 
 # @echo(write=logger.debug)
@@ -406,8 +406,8 @@ def do_cut(
         events_tqdm = tqdm(
             total=uproot.numentries(files, tree_name),
             disable=(position == -1),
-            position=2 * position,
-            leave=True,
+            position=2 * position + 1,
+            leave=False,
             mininterval=5,
             maxinterval=10,
             unit="events",
@@ -421,19 +421,25 @@ def do_cut(
             reportfile=True,
             reportentries=True,
         ):
+            import time, random
+
+            time.sleep(0.2 * random.randrange(1, 5))
             events_tqdm.set_description(
-                "Working on {0:s}".format(file.name.decode('utf-8'))
+                "({1:d}) Working on {0:s}".format(
+                    tree_name.decode('utf-8'), 2 * position + 1
+                )
             )
             for cut in tqdm(
                 get_cut(copy.deepcopy(supercuts)),
-                desc="Applying cuts",
+                desc="({1:d}) Applying cuts to {0:s}".format(
+                    file.name.decode('utf-8'), 2 * position + 2
+                ),
                 total=get_n_cuts(supercuts),
                 disable=(position == -1),
-                position=2 * position + 1,
-                leave=True,
-                mininterval=5,
-                maxinterval=10,
+                position=2 * position + 2,
+                leave=False,
                 unit="cuts",
+                miniters=10,
                 dynamic_ncols=True,
             ):
                 cut_hash = get_cut_hash(cut)
@@ -443,7 +449,6 @@ def do_cut(
 
             events_tqdm.update(stop - start)
 
-        logger.info("Applied {0:d} cuts".format(len(cuts)))
         with open(
             "{0:s}/{1:s}.json".format(output_directory, tree_name.decode('utf-8')), "w+"
         ) as f:

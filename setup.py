@@ -61,9 +61,9 @@ setup(
         "Topic :: Utilities",
     ],
     install_requires=[
-        "joblib~=0.8",
-        "numexpr~=2.6",
-        "tqdm~=4.15",
+        "joblib",
+        "numexpr",
+        "tqdm",
         "formulate",
         "uproot",
     ],

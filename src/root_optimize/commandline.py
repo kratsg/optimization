@@ -123,40 +123,42 @@ def do_cuts(args):
         desc="Num. trees",
         position=0,
         leave=True,
-        unit="file",
-        dynamic_ncols=True,
+        unit="tree",
+        ncols=120,
+        miniters=1,
     )
 
-    class CallBack(object):
+    class BatchCompletionCallBack(object):
         completed = defaultdict(int)
 
-        def __init__(self, index, parallel):
+        def __init__(self, time, index, parallel):
             self.index = index
             self.parallel = parallel
 
         def __call__(self, index):
-            CallBack.completed[self.parallel] += 1
+            BatchCompletionCallBack.completed[self.parallel] += 1
             overall_progress.update()
-            overall_progress.refresh()
-            if self.parallel._original_iterable:
+            # overall_progress.refresh()
+            if self.parallel._original_iterator is not None:
                 self.parallel.dispatch_next()
 
     import joblib.parallel
 
-    joblib.parallel.CallBack = CallBack
+    joblib.parallel.BatchCompletionCallBack = BatchCompletionCallBack
 
-    results = Parallel(n_jobs=num_cores)(
-        delayed(utils.do_cut)(
-            tree_name,
-            files,
-            supercuts,
-            weights,
-            args.output_directory,
-            args.eventWeightBranch,
-            pids,
+    with utils.std_out_err_redirect_tqdm():
+        results = Parallel(n_jobs=num_cores)(
+            delayed(utils.do_cut)(
+                tree_name,
+                files,
+                supercuts,
+                weights,
+                args.output_directory,
+                args.eventWeightBranch,
+                pids,
+            )
+            for tree_name, files in trees.items()
         )
-        for tree_name, files in trees.items()
-    )
 
     overall_progress.close()
 
@@ -906,9 +908,8 @@ def rooptimize():
         else:
             logger.setLevel(logging.NOTSET + 1)
 
-        with utils.stdout_redirect_to_tqdm():
-            # call the function and do stuff
-            args.func(args)
+        # call the function and do stuff
+        args.func(args)
 
     except Exception:
         logger.exception("{0}\nAn exception was caught!".format("-" * 20))
