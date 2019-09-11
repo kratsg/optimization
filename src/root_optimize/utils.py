@@ -367,7 +367,7 @@ def apply_cuts(events, cuts, eventWeightBranch):
 
 # @echo(write=logger.debug)
 def do_cut(
-    did, files, supercuts, weights, tree_name, output_directory, eventWeightBranch, pids
+    tree_name, files, supercuts, weights, output_directory, eventWeightBranch, pids
 ):
 
     position = -1
@@ -400,11 +400,8 @@ def do_cut(
         if missingBranches:
             sys.exit(1)
 
-        # get the scale factor
-        sample_scaleFactor = get_scaleFactor(weights, did)
-
         # iterate over the cuts available
-        cuts = defaultdict(lambda: {'raw': 0, 'weighted': 0, 'scaled': 0})
+        cuts = defaultdict(lambda: {'raw': 0, 'weighted': 0})
 
         events_tqdm = tqdm(
             total=uproot.numentries(files, tree_name),
@@ -441,19 +438,21 @@ def do_cut(
             ):
                 cut_hash = get_cut_hash(cut)
                 rawEvents, weightedEvents = apply_cuts(events, cut, eventWeightBranch)
-                scaledEvents = weightedEvents * sample_scaleFactor
                 cuts[cut_hash]['raw'] += rawEvents
                 cuts[cut_hash]['weighted'] += weightedEvents
-                cuts[cut_hash]['scaled'] += scaledEvents
 
             events_tqdm.update(stop - start)
 
         logger.info("Applied {0:d} cuts".format(len(cuts)))
-        with open("{0:s}/{1:s}.json".format(output_directory, did), "w+") as f:
+        with open(
+            "{0:s}/{1:s}.json".format(output_directory, tree_name.decode('utf-8')), "w+"
+        ) as f:
             f.write(json.dumps(cuts, sort_keys=True, indent=4))
             result = True
     except:
-        logger.exception("Caught an error - skipping {0:s}".format(did))
+        logger.exception(
+            "Caught an error - skipping {0:s}".format(tree_name.decode('utf-8'))
+        )
         result = False
     end = clock()
     return (result, end - start)

@@ -329,7 +329,7 @@ Variable | Type | Description | Default
 -v, --verbose | count | enable more verbose output | 0
 --debug | bool | enable full-on debugging | False
 -b, --batch | bool | enable batch mode for ROOT | False
---tree | string | ttree name in the ntuples | oTree
+--tree-pattern | string | patterns for ttree names in the files | *
 --eventWeight | string | event weight branch name | event_weight
 --supercuts | string | path to json dict of supercuts for generating cuts | supercuts.json
 --weightsFile | string | .json file containing weights in proper formatting - see SampleWeights

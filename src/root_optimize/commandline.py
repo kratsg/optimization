@@ -29,6 +29,8 @@ from collections import defaultdict
 import tempfile
 import tqdm
 import uproot
+import re
+import fnmatch
 
 # root_optimize
 from . import utils
@@ -54,27 +56,38 @@ def do_cuts(args):
             "Output directory already exists: {0:s}".format(args.output_directory)
         )
 
-    if len(args.tree_names) == 1 and len(args.files) > 1:
-        args.tree_names *= len(args.files)
-    if len(args.tree_names) != len(args.files):
-        raise ValueError(
-            "You gave us incompatible numbers of files ({}) and tree names ({})".format(
-                len(args.files), len(args.tree_names)
-            )
-        )
+    tree_patterns = [
+        re.compile(str.encode(fnmatch.translate(tree_pattern)))
+        for tree_pattern in args.tree_patterns
+    ]
 
     # first step is to group by the sample DID
-    dids = defaultdict(list)
-    trees = {}
-    for fname, tname in zip(args.files, args.tree_names):
-        did = utils.get_did(fname)
-        dids[did].append(fname)
-        if trees.setdefault(did, tname) != tname:
-            raise ValueError(
-                'Found incompatible tree names ({}, {}) for the same DSID ({})'.format(
-                    tname, trees[did], did
+    trees = defaultdict(list)
+    for fname in args.files:
+        with uproot.open(fname) as f:
+            tree_names = set(
+                sorted(
+                    tname.split(b';')[0]
+                    for tname in f.allkeys(
+                        filterclass=lambda cls: issubclass(
+                            cls, uproot.tree.TTreeMethods
+                        )
+                    )
                 )
             )
+            logger.log(25, "{0:s} has {1:d} trees".format(fname, len(tree_names)))
+            for tree_name in tree_names:
+                matched = any(
+                    tree_pattern.search(tree_name) for tree_pattern in tree_patterns
+                )
+                if matched:
+                    trees[tree_name].append(fname)
+                logger.log(
+                    25,
+                    "  - [{1:s}] {0:s}".format(
+                        tree_name.decode('utf-8'), "x" if matched else " "
+                    ),
+                )
 
     # load in the supercuts file
     supercuts = utils.read_supercuts_file(args.supercuts)
@@ -106,8 +119,8 @@ def do_cuts(args):
         )
 
     overall_progress = tqdm.tqdm(
-        total=len(dids),
-        desc="Num. files",
+        total=len(trees),
+        desc="Num. trees",
         position=0,
         leave=True,
         unit="file",
@@ -134,22 +147,26 @@ def do_cuts(args):
 
     results = Parallel(n_jobs=num_cores)(
         delayed(utils.do_cut)(
-            did,
+            tree_name,
             files,
             supercuts,
             weights,
-            trees[did],
             args.output_directory,
             args.eventWeightBranch,
             pids,
         )
-        for did, files in dids.items()
+        for tree_name, files in trees.items()
     )
 
     overall_progress.close()
 
-    for did, result in zip(dids, results):
-        logger.log(25, "DID {0:s}: {1:s}".format(did, "ok" if result[0] else "not ok"))
+    for tree_name, result in zip(trees, results):
+        logger.log(
+            25,
+            "Tree {0:s}: {1:s}".format(
+                tree_name.decode('utf-8'), "ok" if result[0] else "not ok"
+            ),
+        )
 
     logger.log(
         25,
@@ -548,14 +565,14 @@ def rooptimize():
     )
     # these are options allowing for various additional configurations in filtering container and types to dump in the trees
     tree_parser.add_argument(
-        "--tree",
+        "--tree-pattern",
         type=str,
         nargs="+",
         required=False,
-        dest="tree_names",
-        metavar="<tree name>",
-        help="names of the tree containing the ntuples",
-        default="oTree",
+        dest="tree_patterns",
+        metavar="<tree pattern>",
+        help="patterns to match against tree names in ntuples (default is all trees)",
+        default="*",
     )
     tree_parser.add_argument(
         "--eventWeight",
