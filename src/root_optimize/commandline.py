@@ -191,80 +191,31 @@ def do_optimize(args):
             "Output directory already exists: {0:s}".format(args.output_directory)
         )
 
-    rescale = None
-    did_to_group = None
-    if args.rescale:
-        rescale = json.load(open(args.rescale))
-        if args.did_to_group is None:
-            raise ValueError(
-                "If you are going to rescale, you need to pass in the --did-to-group mapping dict."
-            )
-        did_to_group = json.load(open(args.did_to_group))
-
     logger.log(25, "Reading in all background files to calculate total background")
 
-    total_bkgd = defaultdict(lambda: {"raw": 0.0, "weighted": 0.0, "scaled": 0.0})
-    bkgd_dids = []
-
-    # make sure messages are only logged once, not multiple times
-    duplicate_log_filter = utils.DuplicateFilter()
-    logger.addFilter(duplicate_log_filter)
+    total_bkgd = defaultdict(lambda: {"raw": 0.0, "weighted": 0.0})
+    bkgd_files = []
+    sig_files = []
 
     # for each bkgd file, open, read, load, and combine
     for bkgd in args.bkgd:
         # expand out patterns if needed
         for fname in glob.glob(os.path.join(args.search_directory, bkgd)):
-            did = utils.get_did(fname)
-            logger.log(25, "\tLoading {0:s} ({1:s})".format(did, fname))
-            # generate a list of background dids
-            bkgd_dids.append(did)
+            logger.log(25, "\tLoading {0:s}".format(fname))
+            bkgd_files.append(os.path.basename(fname))
             with open(fname, "r") as f:
                 bkgd_data = json.load(f)
                 for cuthash, counts_dict in bkgd_data.items():
                     for counts_type, counts in counts_dict.items():
                         total_bkgd[cuthash][counts_type] += counts
-                        if counts_type == "scaled" and rescale:
-                            if did in rescale:
-                                scale_factor = rescale.get(did, 1.0)
-                                total_bkgd[cuthash][counts_type] *= scale_factor
-                                logger.log(
-                                    25,
-                                    "\t\tApplying scale factor for DID#{0:s}: {1:0.2f}".format(
-                                        did, scale_factor
-                                    ),
-                                )
-                            if did_to_group[did] in rescale:
-                                scale_factor = rescale.get(did_to_group[did], 1.0)
-                                logger.log(
-                                    25,
-                                    '\t\tApplying scale factor for DID#{0:s} because it belongs in group "{1:s}": {2:0.2f}'.format(
-                                        did, did_to_group[did], scale_factor
-                                    ),
-                                )
-                                total_bkgd[cuthash][counts_type] *= scale_factor
-
-    # remove the filter and clear up memory of stored logs
-    logger.removeFilter(duplicate_log_filter)
-    del duplicate_log_filter
-
-    # create hash for background
-    bkgdHash = hashlib.md5(str(sorted(bkgd_dids)).encode('utf-8')).hexdigest()
-    logger.log(25, "List of backgrounds produces hash: {0:s}".format(bkgdHash))
-    # write the backgrounds to a file
-    with open(
-        os.path.join(args.output_directory, "{0:s}.json".format(bkgdHash)), "w+"
-    ) as f:
-        f.write(json.dumps(sorted(bkgd_dids)))
 
     logger.log(25, "Calculating significance for each signal file")
     # for each signal file, open, read, load, and divide with the current background
     for signal in args.signal:
         # expand out patterns if needed
         for fname in glob.glob(os.path.join(args.search_directory, signal)):
-            did = utils.get_did(fname)
-            logger.log(
-                25, "\tCalculating significances for {0:s} ({1:s})".format(did, fname)
-            )
+            sig_files.append(os.path.basename(fname))
+            logger.log(25, "\tCalculating significances for {0:s}".format(fname))
             significances = []
             with open(fname, "r") as f:
                 signal_data = json.load(f)
@@ -308,7 +259,7 @@ def do_optimize(args):
             # at this point, we have a list of significances that we can dump to a file
             with open(
                 os.path.join(
-                    args.output_directory, "s{0:s}.b{1:s}.json".format(did, bkgdHash)
+                    args.output_directory, "{0:s}".format(os.path.basename(fname))
                 ),
                 "w+",
             ) as f:
@@ -316,13 +267,26 @@ def do_optimize(args):
                     json.dumps(
                         sorted(
                             significances,
-                            key=operator.itemgetter("significance_scaled"),
+                            key=operator.itemgetter("significance_weighted"),
                             reverse=True,
                         )[: args.max_num_hashes],
                         sort_keys=True,
                         indent=4,
                     )
                 )
+
+        bkgd_files = sorted(bkgd_files)
+        sig_files = sorted(sig_files)
+
+        # write the files used to a file
+        with open(os.path.join(args.output_directory, "config.json"), "w+") as f:
+            f.write(
+                json.dumps(
+                    {'backgrounds': bkgd_files, 'signals': sig_files},
+                    sort_keys=True,
+                    indent=4,
+                )
+            )
 
     return True
 
