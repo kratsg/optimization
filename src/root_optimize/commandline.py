@@ -226,8 +226,8 @@ def do_optimize(args):
                             (
                                 "significance_{0:s}".format(counts_type),
                                 utils.get_significance(
-                                    args.lumi * 1000 * counts,
-                                    args.lumi * 1000 * total_bkgd[cuthash][counts_type],
+                                    counts,
+                                    total_bkgd[cuthash][counts_type],
                                     args.insignificanceThreshold,
                                     args.bkgdUncertainty,
                                     args.bkgdStatUncertainty,
@@ -240,10 +240,8 @@ def do_optimize(args):
                             (
                                 "yield_{0:s}".format(counts_type),
                                 {
-                                    "sig": args.lumi * 1000 * counts,
-                                    "bkg": args.lumi
-                                    * 1000
-                                    * total_bkgd[cuthash][counts_type],
+                                    "sig": counts,
+                                    "bkg": total_bkgd[cuthash][counts_type],
                                 },
                             )
                             for counts_type, counts in counts_dict.items()
@@ -645,7 +643,7 @@ def rooptimize():
         usage="%(prog)s <file.root> ... [options]",
         help="Apply the cuts",
         formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
-        epilog="cut will take in a series of files and calculate the unscaled and scaled counts for all cuts possible.",
+        epilog="cut will take in a series of files and calculate the unweighted and weighted counts for all cuts possible.",
     )
     cuts_parser.add_argument(
         "--weightsFile",
@@ -739,15 +737,6 @@ def rooptimize():
         metavar="<min events>",
         help="minimum number of signal events for calculating significance",
         default=0.5,
-    )
-    optimize_parser.add_argument(
-        "--lumi",
-        type=float,
-        required=False,
-        dest="lumi",
-        metavar="<scaled lumi>",
-        help="Apply a global luminosity factor (units are ifb)",
-        default=1.0,
     )
     optimize_parser.add_argument(
         "-o",

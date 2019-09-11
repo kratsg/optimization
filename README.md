@@ -172,11 +172,10 @@ We use `numpy` and `awkward-array` in order to calculate the number of events pa
 
 #### Calculating the significances
 
-After that, we just (at a bare minimum) specify the `signal` and `bkgd` json cut files. The following example takes the `0L_a` files and calculates significances for two different values of luminosity
+After that, we just (at a bare minimum) specify the `signal` and `bkgd` json cut files. The following example takes the `0L_a` files and calculates significances:
 
 ```bash
-rooptimize optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a_lumi1 --lumi=1
-rooptimize optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a_lumi2 --lumi=2
+rooptimize optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a
 ```
 
 and this will automatically combine background and produce a significances file for each signal DID passed in.
@@ -342,9 +341,8 @@ Variable | Type | Description
 hash | 32-bit string | md5 hash of the cut
 raw | integer | raw number of events passing cut
 weighted | float | apply event weights to events passing cut
-scaled | float | apply sample weights and event weights to events passing cut
 
-Note that weights are applied in order of prominance and specificity: weighted events are applying the monte-carlo event weights (from the generators themselves). Scaled events are with the mc weights applied but also scaled using the sample weights (the ones that differ from sample to sample) and this does not include luminosity at this stage. The calculation of significance includes the luminosity scale factor.
+Weighted events are applying the monte-carlo event weights that you specify. The calculation of significance is done for both the raw events and weighted events.
 
 The output is a directory of json files which will look like
 
@@ -353,7 +351,6 @@ The output is a directory of json files which will look like
     ...
     "09a130622e1e6345b83739b3527eccb1": {
         "raw": 90909,
-        "scaled": 90909.0,
         "weighted": 2.503
     },
     ...
@@ -394,7 +391,6 @@ Variable | Type | Description | Default
 --bkgdStatUncertainty | float | bkgd statistical uncertainty for significance | 0.3
 --insignificance | int | min. number of events for non-zero sig. | 0.5
 --o, --output | string | output directory to store significances calculated | significances
---lumi | float | apply the luminosity when calculating significances, to avoid having to redo all the cuts | 1.0
 -n, --max-num-hashes | int | maximum number of hashes to dump in the significance files | 25
 --rescale | string | a file containing groups and dids to apply a scale factor to | None
 --did-to-group | string | json dict mapping did to group. Needed for --rescale | None
@@ -415,10 +411,8 @@ The output is a directory of json files which will look like
     {
         "hash": "7595976a84303a003f6a4a7458f12b8d",
         "significance_raw": 7.643122000999725,
-        "significance_scaled": 4.382066929290212,
         "significance_weighted": 18.34212454602254,
         "yield_raw": { ... },
-        "yield_scaled": { ... },
         "yield_weighted": { ... }
     },
     ...
@@ -433,28 +427,22 @@ if a significance was calculated successfully or
     {
         "hash": "c911af35708dcdc51380ebbde81c9b1e",
         "significance_raw": -3,
-        "significance_scaled": -1,
         "significance_weighted": -3,
         "yield_raw": { ... },
-        "yield_scaled": { ... },
         "yield_weighted": { ... }
     },
     {
         "hash": "b383cea24037667ffb6136d670a33468",
         "significance_raw": -2,
-        "significance_scaled": -1,
         "significance_weighted": -2,
         "yield_raw": { ... },
-        "yield_scaled": { ... },
         "yield_weighted": { ... }
     },
     {
         "hash": "095414bacf1022f2c941cc6164b175a1",
         "significance_raw": 9.421795580339449,
-        "significance_scaled": -2,
         "significance_weighted": 20.37611073465684,
         "yield_raw": { ... },
-        "yield_scaled": { ... },
         "yield_weighted": { ... }
     },
     ...

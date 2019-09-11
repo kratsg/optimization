@@ -472,9 +472,9 @@ def get_summary(filename, mass_windows, stop_masses=[]):
         entry = json.load(f)[0]
 
         cut_hash = entry["hash"]
-        significance = entry["significance_scaled"]
-        signal_yield = entry["yield_scaled"]["sig"]
-        bkgd_yield = entry["yield_scaled"]["bkg"]
+        significance = entry["significance_weighted"]
+        signal_yield = entry["yield_weighted"]["sig"]
+        bkgd_yield = entry["yield_weighted"]["bkg"]
 
         ratio = -1
         try:
