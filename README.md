@@ -331,7 +331,6 @@ Variable | Type | Description | Default
 --tree-pattern | string | patterns for ttree names in the files | *
 --eventWeight | string | event weight branch name | event_weight
 --supercuts | string | path to json dict of supercuts for generating cuts | supercuts.json
---weightsFile | string | .json file containing weights in proper formatting - see SampleWeights
 --o, --output | directory | output directory to store json files containing cuts | cuts
 
 #### Output

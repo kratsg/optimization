@@ -101,16 +101,6 @@ def do_cuts(args):
         )
     )
 
-    # load up the weights file
-    if not os.path.isfile(args.weightsFile):
-        raise ValueError(
-            "The supplied weights file `{0}` does not exist or I cannot find it.".format(
-                args.weightsFile
-            )
-        )
-    else:
-        weights = json.load(open(args.weightsFile))
-
     # parallelize
     num_cores = min(multiprocessing.cpu_count(), args.num_cores)
     logger.log(25, "Using {0} cores".format(num_cores))
@@ -653,15 +643,6 @@ def rooptimize():
         help="Apply the cuts",
         formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
         epilog="cut will take in a series of files and calculate the unweighted and weighted counts for all cuts possible.",
-    )
-    cuts_parser.add_argument(
-        "--weightsFile",
-        type=str,
-        required=False,
-        dest="weightsFile",
-        metavar="<weights file>",
-        help="json file containing weights by DID",
-        default="weights.json",
     )
     cuts_parser.add_argument(
         "-o",
