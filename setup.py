@@ -30,7 +30,7 @@ long_description = read(
 
 setup(
     name="root_optimize",
-    version="0.6.3",
+    version="0.7.0",
     python_requires=">=3",
     description="Perform optimizations on flat ROOT TTrees",
     author="Giordon Stark",
