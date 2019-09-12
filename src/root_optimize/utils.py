@@ -459,9 +459,7 @@ def do_cut(
                 dynamic_ncols=True,
             ):
                 cut_hash = get_cut_hash(cut)
-                rawEvents, weightedEvents = apply_cuts(
-                    events, cut, eventWeightBranch, aliases
-                )
+                rawEvents, weightedEvents = apply_cuts(events, cut, eventWeightBranch)
                 cuts[cut_hash]['raw'] += rawEvents
                 cuts[cut_hash]['weighted'] += weightedEvents
 

@@ -160,7 +160,7 @@ which will write branches that match `multiplicity_topTag*` to have a fixed cut 
 
 #### Running the cuts
 
-After that, we just specify all of our ROOT files. The script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified either as a pattern or just explicitly writing them out. We will group every output by the DID passed in, so please try not to deviate from the default sample names or this breaks the code quite badly.
+After that, we just specify all of our ROOT files. The script takes advantage of `TChain` and \*nix file handling, it will automatically handle multiple files specified either as a pattern or just explicitly writing them out. We will group every output by the filenames/treenames passed in.
 
 ```bash
 rooptimize cut TA07_MBJ10V1/*_0L_a/fetch/data-optimizationTree/*.root --supercuts=supercuts_small.json -o cuts_0L_a -b
@@ -178,7 +178,7 @@ After that, we just (at a bare minimum) specify the `signal` and `bkgd` json cut
 rooptimize optimize --signal 37* --bkgd 4* --searchDirectory=cuts_0L_a -b --o=significances_0L_a
 ```
 
-and this will automatically combine background and produce a significances file for each signal DID passed in.
+and this will automatically combine background and produce a significances file for each signal passed in.
 
 #### Looking up a cut (or two)
 
@@ -356,7 +356,7 @@ The output is a directory of json files which will look like
 }
 ```
 
-This code will group your input files by DIDs and will try its best to do its job to group your sample files.
+This code will group your input files by filenames and tree names and will try its best to do its job to group your sample files.
 
 ### Action:Optimize
 
@@ -391,8 +391,6 @@ Variable | Type | Description | Default
 --insignificance | int | min. number of events for non-zero sig. | 0.5
 --o, --output | string | output directory to store significances calculated | significances
 -n, --max-num-hashes | int | maximum number of hashes to dump in the significance files | 25
---rescale | string | a file containing groups and dids to apply a scale factor to | None
---did-to-group | string | json dict mapping did to group. Needed for --rescale | None
 
 #### Output
 
@@ -508,7 +506,7 @@ usage: rooptimize summary --searchDirectory significances/ --massWindows massWin
 Variable | Type | Description
 ---------|------|------------
 --searchDirectory | str | The directory containing the significances produced from `rooptimize optimize`
---massWindows | str | The file containing the mapping between DID and mass
+--massWindows | str | The file containing the mapping between filename and mass
 
 #### Optional Parameters
 
@@ -524,7 +522,7 @@ Variable | Type | Description| Default
 
 #### Output
 
-The summary subcommand will create an output json file containing a list of dictionaries, one for each signal DID used in optimization. It will contain the following variables in each dictionary:
+The summary subcommand will create an output json file containing a list of dictionaries, one for each signal used in optimization. It will contain the following variables in each dictionary:
 
 Variable | Type | Description
 ---------|------|------------

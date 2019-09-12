@@ -408,7 +408,7 @@ def do_summary(args):
     logger.log(25, "Using {0} cores".format(num_cores))
     results = Parallel(n_jobs=num_cores)(
         delayed(utils.get_summary)(filename, mass_windows, args.stop_masses)
-        for filename in glob.glob(os.path.join(args.search_directory, "s*.b*.json"))
+        for filename in glob.glob(os.path.join(args.search_directory, "*.json"))
     )
     results = filter(None, results)
     logger.log(25, "Generated summary for {0} items".format(len(results)))
@@ -492,14 +492,6 @@ def rooptimize():
         add_help=False,
         formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
     )
-    rescale_parser = argparse.ArgumentParser(
-        add_help=False,
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-    )
-    did_to_group_parser = argparse.ArgumentParser(
-        add_help=False,
-        formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30),
-    )
 
     # general arguments for all
     main_parser.add_argument(
@@ -555,26 +547,6 @@ def rooptimize():
         metavar="<n>",
         help="Number of cores to use for parallelization. Defaults to max.",
         default=multiprocessing.cpu_count(),
-    )
-
-    rescale_parser.add_argument(
-        "--rescale",
-        required=False,
-        type=str,
-        dest="rescale",
-        metavar="<file.json>",
-        help="json dict of groups and dids to apply a scale factor to. If not provided, no scaling will be done.",
-        default=None,
-    )
-
-    did_to_group_parser.add_argument(
-        "--did-to-group",
-        required=False,
-        type=str,
-        dest="did_to_group",
-        metavar="<file.json>",
-        help="json dict mapping a did to a group.",
-        default=None,
     )
 
     """ add subparsers """
@@ -670,9 +642,9 @@ def rooptimize():
     # needs: signal, bkgd, bkgdUncertainty, insignificanceThreshold, tree, eventWeight
     optimize_parser = subparsers.add_parser(
         "optimize",
-        parents=[main_parser, rescale_parser, did_to_group_parser],
+        parents=[main_parser],
         description="Process ROOT ntuples and Optimize Cuts. v.{0}".format(__version__),
-        usage="%(prog)s  --signal={DID1}.json {DID2}.json [..] --bkgd={DID3}.json {DID4}.json {DID5}.json [...] [options]",
+        usage="%(prog)s  --signal='Sig*' [..] --bkgd='Bkg*' [...] [options]",
         help="Calculate significances for a series of computed cuts",
         formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
         epilog="optimize will take in numerous signal, background and calculate the significances for each signal and combine backgrounds automatically.",
@@ -682,7 +654,7 @@ def rooptimize():
         required=True,
         type=str,
         nargs="+",
-        metavar="{DID}.json",
+        metavar="pattern",
         help="signal file patterns",
     )
     optimize_parser.add_argument(
@@ -690,7 +662,7 @@ def rooptimize():
         required=True,
         type=str,
         nargs="+",
-        metavar="{DID}.json",
+        metavar="pattern",
         help="background file patterns",
     )
     optimize_parser.add_argument(
@@ -698,7 +670,7 @@ def rooptimize():
         required=False,
         type=str,
         dest="search_directory",
-        help="Directory that contains all the {DID}.json files.",
+        help="Directory that contains all the cuts.",
         default="cuts",
     )
     optimize_parser.add_argument(
@@ -806,7 +778,7 @@ def rooptimize():
         required=True,
         type=str,
         dest="mass_windows",
-        help="File that maps DID to mass",
+        help="File that maps filename to mass",
     )
     summary_parser.add_argument(
         "--output",
