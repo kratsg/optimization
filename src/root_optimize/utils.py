@@ -479,7 +479,11 @@ def do_cut(
     return (result, end - start)
 
 
-def get_summary(filename, mass_windows, stop_masses=[]):
+def extract_summary_items_from_name(interpretations, fmtstr, filename):
+    return dict(zip(interpretation.split(":"), re.search(fmtstr, filename)))
+
+
+def get_summary(filename, interpretations, fmt_pattern, stop_masses=[]):
     """ Primarily used from within do_summary
         - given a significance file, the mass windows, produce a summary dictionary for it
   """
@@ -498,22 +502,12 @@ def get_summary(filename, mass_windows, stop_masses=[]):
         except:
             pass
 
-        did = get_did(os.path.basename(filename))
-
-        m_gluino, m_stop, m_lsp = [
-            int(item) for item in mass_windows.get(did, (0, 0, 0))
-        ]
-        if not m_stop in stop_masses:
-            return {}
-
         return {
             "hash": cut_hash,
             "significance": significance,
             "signal": signal_yield,
             "bkgd": bkgd_yield,
             "ratio": ratio,
-            "did": did,
-            "m_gluino": int(m_gluino),
-            "m_stop": int(m_stop),
-            "m_lsp": int(m_lsp),
+            "filename": filename,
+            **dict(zip(interpretations, fmt_pattern.search(filename).groups())),
         }

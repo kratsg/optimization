@@ -479,15 +479,12 @@ signal_direction | string | `? = >` or `? = <`, cuts obey the rule `value ? pivo
 Optimize results to summary json. Given the finished results of an optimization, produce a json summarizing it entirely.
 
 ```bash
-usage: rooptimize summary --searchDirectory significances/ --massWindows massWindows.txt [options]
+usage: rooptimize summary [options]
 ```
 
 #### Required Parameters
 
-Variable | Type | Description
----------|------|------------
---searchDirectory | str | The directory containing the significances produced from `rooptimize optimize`
---massWindows | str | The file containing the mapping between filename and mass
+No required parameters
 
 #### Optional Parameters
 
@@ -499,20 +496,24 @@ Variable | Type | Description| Default
 -b, --batch | bool | enable batch mode for ROOT | False
 --ncores | int | Number of cores to use for parallelization | <num cores>
 -o, --output | str | Name of output file to use | summary.json
---stop-masses | int | Allowed stop masses to include in summary | [5000]
+--searchDirectory | str | The directory containing the significances produced from `rooptimize optimize`
+-f, --fmtstr | str | format string for matching against signal filenames in config.json | "([a-zA-Z]+)_(\d+)_(\d+)_(\d+)"
+-p, --interpretation | str | how to interpret the corresponding format string | "signal_type:gluino:stop:neutralino"
+
 
 #### Output
 
-The summary subcommand will create an output json file containing a list of dictionaries, one for each signal used in optimization. It will contain the following variables in each dictionary:
+The summary subcommand will create an output json file containing a list of dictionaries, one for each signal used in optimization. It will contain the following variables in each dictionary (assuming defaults):
 
 Variable | Type | Description
 ---------|------|------------
 bkgd | float | Background yield
-did | str | DID of signal
+filename | str | signal filename used
 hash | 32-bit string | md5 hash of the optimal cut
-m_gluino | int | Mass of Gluino
-m_lsp | int | Mass of LSP
-m_stop | int | Mass of Stop
+gluino | str | Mass of Gluino
+neutralino | str | Mass of LSP
+stop | str | Mass of Stop
+signal_type | str | type of signal
 ratio | float | Ratio of signal/bkgd
 significance | float | Significance of optimal cut
 
@@ -523,13 +524,14 @@ This will look something like:
     ...
     {
         "bkgd": 5.656293846714225,
-        "did": "370102",
+        "filename": "significances/Gtt_900_5000_400.json",
         "hash": "dc41780c77207a9a5dcf6b97b0cac5ac",
-        "m_gluino": 900,
-        "m_lsp": 400,
-        "m_stop": 5000,
+        "gluino": "900",
+        "neutralino": "400",
+        "stop": "5000",
         "ratio": 79.33950854202577,
         "signal": 448.76757396759103,
+        "signal_type": "Gtt",
         "significance": 29.78897424015455
     },
     ...

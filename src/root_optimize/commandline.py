@@ -398,25 +398,27 @@ def do_summary(args):
     # first check if output exists
     if os.path.exists(args.output):
         raise IOError("Output already exists: {0:s}".format(args.output))
-    if not os.path.exists(args.mass_windows):
-        raise IOError(
-            "Cannot find the mass_windows file: {0:s}".format(args.mass_windows)
-        )
 
-    mass_windows = utils.load_mass_windows(args.mass_windows)
     num_cores = min(multiprocessing.cpu_count(), args.num_cores)
     logger.log(25, "Using {0} cores".format(num_cores))
+
+    config = json.load(open(os.path.join(args.search_directory, "config.json")))
+
     results = Parallel(n_jobs=num_cores)(
-        delayed(utils.get_summary)(filename, mass_windows, args.stop_masses)
-        for filename in glob.glob(os.path.join(args.search_directory, "*.json"))
+        delayed(utils.get_summary)(
+            os.path.join(args.search_directory, filename),
+            args.interpretation.split(":"),
+            re.compile(args.fmtstr),
+        )
+        for filename in config['signals']
     )
-    results = filter(None, results)
+    results = list(filter(None, results))
     logger.log(25, "Generated summary for {0} items".format(len(results)))
 
     with open(args.output, "w+") as f:
         f.write(
             json.dumps(
-                sorted(results, key=operator.itemgetter("did")),
+                sorted(results, key=operator.itemgetter("filename")),
                 sort_keys=True,
                 indent=4,
             )
@@ -761,24 +763,32 @@ def rooptimize():
         description="Given the results of optimize (significances), generate a table of results for each mass point. v.{0}".format(
             __version__
         ),
-        usage="%(prog)s --searchDirectory significances/ --massWindows massWindows.txt [options]",
+        usage="%(prog)s [options]",
         help="Summarize Optimization Results",
         formatter_class=lambda prog: CustomFormatter(prog, max_help_position=50),
         epilog="summary will take in significances and summarize in a json file",
     )
     summary_parser.add_argument(
         "--searchDirectory",
-        required=True,
+        required=False,
         type=str,
         dest="search_directory",
         help="Directory that contains the significances",
+        default="significances",
     )
     summary_parser.add_argument(
-        "--massWindows",
-        required=True,
+        "-f",
+        "--fmtstr",
         type=str,
-        dest="mass_windows",
-        help="File that maps filename to mass",
+        help="format of object names",
+        default="([a-zA-Z]+)_(\d+)_(\d+)_(\d+)",
+    )
+    summary_parser.add_argument(
+        "-p",
+        "--interpretation",
+        type=str,
+        help="interpretation of object name",
+        default="signal_type:gluino:stop:neutralino",
     )
     summary_parser.add_argument(
         "--output",
@@ -787,14 +797,6 @@ def rooptimize():
         dest="output",
         help="Output json to make",
         default="summary.json",
-    )
-    summary_parser.add_argument(
-        "--stop-masses",
-        required=False,
-        type=int,
-        nargs="+",
-        help="Allowed stop masses",
-        default=[5000],
     )
 
     # set the functions that get called with the given arguments
