@@ -3,13 +3,7 @@ import os, io
 
 extras_require = {
     "plot": ["rootpy"],
-    "develop": [
-        "pytest",
-        "pytest-runner",
-        "flake8",
-        "black;python_version>='3.6'",
-        "bumpversion",
-    ],
+    "develop": ["pytest", "pytest-runner", "flake8", "black", "bumpversion"],
 }
 extras_require["complete"] = sorted(set(sum(extras_require.values(), [])))
 
@@ -60,13 +54,7 @@ setup(
         "Topic :: Scientific/Engineering",
         "Topic :: Utilities",
     ],
-    install_requires=[
-        "joblib",
-        "numexpr",
-        "tqdm",
-        "formulate",
-        "uproot",
-    ],
+    install_requires=["joblib", "numexpr", "tqdm", "formulate", "uproot"],
     extras_require=extras_require,
     entry_points={
         "console_scripts": ["rooptimize=root_optimize.commandline:rooptimize"]
