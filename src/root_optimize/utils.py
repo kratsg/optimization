@@ -31,6 +31,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# for regular expressions in:
+#   supercuts_to_branches
+#   expand_supercuts
+strformat_chars = re.compile("[{}]")
+supercutvar_chars = re.compile("VVV(.*?)VVV")
+
 
 def format_arg_value(arg_val):
     """ Return a string representing a (name, value) pair.
@@ -293,16 +299,21 @@ def cuts_to_selection(cuts):
     return "({})".format(")*(".join(map(cut_to_selection, cuts)))
 
 
-strformat_chars = re.compile("[{}]")
 # @echo(write=logger.debug)
-def selection_to_branches(selection_string):
-    return formulate.from_auto(strformat_chars.sub('', selection_string)).variables
+def extract_branch_names(string):
+    try:
+        string = string.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+
+    return formulate.from_auto(string).variables
 
 
 def supercuts_to_branches(supercuts):
     return set(
         itertools.chain.from_iterable(
-            selection_to_branches(supercut["selections"]) for supercut in supercuts
+            extract_branch_names(strformat_chars.sub('', supercut["selections"]))
+            for supercut in supercuts
         )
     )
 
@@ -356,6 +367,35 @@ def apply_cut(arr, cut):
     return ne.evaluate(cut_to_selection(cut), local_dict=arr)
 
 
+def expand_definition(component, aliases):
+    found_substitution = any(a for a in aliases.keys() if a in component.variables)
+    if not found_substitution:
+        component = copy.deepcopy(component)
+    elif isinstance(component, formulate.expression.SingleComponent):
+        component = copy.deepcopy(aliases.get(str(component), component))
+    else:
+        # component is an expression
+        component._args = [expand_definition(arg, aliases) for arg in component.args]
+        component = expand_definition(component, aliases)
+    return component
+
+
+def expand_selection(selection, aliases):
+    return expand_definition(formulate.from_auto(selection), aliases).to_numexpr()
+
+
+def expand_supercuts(supercuts, aliases):
+    supercuts = copy.deepcopy(supercuts)
+    for supercut in supercuts:
+        supercut["selections"] = supercutvar_chars.sub(
+            r'{\1}',
+            expand_selection(
+                strformat_chars.sub('VVV', supercut["selections"]), aliases
+            ),
+        )
+    return supercuts
+
+
 # @echo(write=logger.debug)
 def apply_cuts(events, cuts, eventWeightBranch):
     entireSelection = "{0:s}*{1:s}".format(eventWeightBranch, cuts_to_selection(cuts))
@@ -367,7 +407,13 @@ def apply_cuts(events, cuts, eventWeightBranch):
 
 # @echo(write=logger.debug)
 def do_cut(
-    tree_name, files, supercuts, weights, output_directory, eventWeightBranch, pids
+    tree_name,
+    files,
+    supercuts,
+    proposedBranches,
+    output_directory,
+    eventWeightBranch,
+    pids,
 ):
 
     position = -1
@@ -380,25 +426,39 @@ def do_cut(
 
     start = clock()
     try:
-        branchesSpecified = supercuts_to_branches(supercuts)
-        eventWeightBranchesSpecified = selection_to_branches(eventWeightBranch)
-        branches = list(
-            itertools.chain(branchesSpecified, eventWeightBranchesSpecified)
-        )
-
+        branches = []
+        aliases = {}
         missingBranches = False
         for fname in files:
-            tree = uproot.open(fname)[tree_name]
-            for branch in branches:
-                if branch not in tree:
-                    logger.error(
-                        'branch {} not found in {} for {}'.format(
-                            branch, tree_name, fname
-                        )
-                    )
-                    missingBranches |= True
+            with uproot.open(fname) as f:
+                tree = f[tree_name]
+                for branch in proposedBranches:
+                    if branch in tree:
+                        branches.append(branch)
+                    else:
+                        if branch in tree.aliases:
+                            aliases[branch.decode()] = formulate.from_auto(
+                                tree.aliases[branch].decode()
+                            )
+                            branches.extend(extract_branch_names(tree.aliases[branch]))
+                        else:
+                            logger.error(
+                                'branch {} not found in {} for {}'.format(
+                                    branch, tree_name, fname
+                                )
+                            )
+                            missingBranches |= True
         if missingBranches:
             sys.exit(1)
+
+        for alias, alias_expr in aliases.items():
+            alias_expr = expand_definition(alias_expr, aliases)
+            branches.extend(extract_branch_names(alias_expr.to_numexpr()))
+            aliases[alias] = alias_expr
+
+        branches = set(branches)
+        eventWeightBranch = expand_selection(eventWeightBranch, aliases)
+        supercuts = expand_supercuts(supercuts, aliases)
 
         # iterate over the cuts available
         cuts = defaultdict(lambda: {'raw': 0, 'weighted': 0})
@@ -421,9 +481,6 @@ def do_cut(
             reportfile=True,
             reportentries=True,
         ):
-            import time, random
-
-            time.sleep(0.2 * random.randrange(1, 5))
             events_tqdm.set_description(
                 "({1:d}) Working on {0:s}".format(
                     tree_name.decode('utf-8'), 2 * position + 1
@@ -443,7 +500,9 @@ def do_cut(
                 dynamic_ncols=True,
             ):
                 cut_hash = get_cut_hash(cut)
-                rawEvents, weightedEvents = apply_cuts(events, cut, eventWeightBranch)
+                rawEvents, weightedEvents = apply_cuts(
+                    events, cut, eventWeightBranch, aliases
+                )
                 cuts[cut_hash]['raw'] += rawEvents
                 cuts[cut_hash]['weighted'] += weightedEvents
 

@@ -31,6 +31,7 @@ import tqdm
 import uproot
 import re
 import fnmatch
+import itertools
 
 # root_optimize
 from . import utils
@@ -61,7 +62,7 @@ def do_cuts(args):
         for tree_pattern in args.tree_patterns
     ]
 
-    # first step is to group by the sample DID
+    # first step is to group by the tree name
     trees = defaultdict(list)
     for fname in args.files:
         with uproot.open(fname) as f:
@@ -91,6 +92,14 @@ def do_cuts(args):
 
     # load in the supercuts file
     supercuts = utils.read_supercuts_file(args.supercuts)
+
+    branchesSpecified = utils.supercuts_to_branches(supercuts)
+    eventWeightBranchesSpecified = utils.extract_branch_names(args.eventWeightBranch)
+    proposedBranches = set(
+        map(
+            str.encode, itertools.chain(branchesSpecified, eventWeightBranchesSpecified)
+        )
+    )
 
     # load up the weights file
     if not os.path.isfile(args.weightsFile):
@@ -152,7 +161,7 @@ def do_cuts(args):
                 tree_name,
                 files,
                 supercuts,
-                weights,
+                proposedBranches,
                 args.output_directory,
                 args.eventWeightBranch,
                 pids,
