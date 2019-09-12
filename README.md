@@ -103,38 +103,19 @@ rooptimize -h
 #### On a CVMFS-enabled machine
 
 
-First, set up python and pip using [lcgenv](https://gitlab.cern.ch/GENSER/lcgenv):
+First, set up a virtual environment using `python3` on the CVMFS-enabled machine and install the package:
 
 ```bash
-lsetup "lcgenv -p LCG_87 x86_64-slc6-gcc62-opt pip"
-pip install --user virtualenvwrapper
+python3 -m venv optimization
+source optimization/bin/activate
+pip install root-optimize
+rooptimize -h
 ```
 
-which gets us virtual environments to work with. To make sure these are sourced correctly, you need to add `$HOME/.local/bin` to your path and `$HOME/.local/lib/python2.7/site-packages` to your python path:
+which gets us a virtual environment (`optimization`) to work with. Lastly, all that's left when you log-in next time is
 
 ```bash
-echo 'export PATH=$HOME/.local/bin:$PATH' >> $HOME/.bash_profile
-echo 'export PYTHONPATH=$HOME/.local/lib/python2.7/site-packages:$PYTHONPATH' >> $HOME/.bash_profile
-```
-
-Lastly, all that's left to do is have a function in your bash profile you can run to set up the paths correctly
-
-```bash
-venv(){
-  export WORKON_HOME=$HOME/.virtualenvs
-  export PROJECT_HOME=$HOME/Devel
-  source $HOME/.local/bin/virtualenvwrapper.sh
-}
-```
-
-which provides a `venv` function to allow you to use virtual environments for your python installations which help encapsulate your work. This should be run when you need to use your python setup, and should be called after an `lsetup python` command. It means that your site packages (eg: for tarballing) will be located in `$HOME/.virtualenvs/<NAME>/lib/python2.7/site-packages` where `<NAME>` is the name of the virtual environment you make.
-
-Go ahead and close that shell down and start with a clean slate. Now, you simply need to follow the instructions in the [Using virtual environment](#using-virtual-environment) subsection above. In future shells, you can do the following pattern to set up python, ROOT, and then go into your virtual environment:
-
-```bash
-lsetup root "lcgenv -p LCG_87 x86_64-slc6-gcc62-opt pip"
-venv
-workon optimization
+source optimization/bin/activate
 rooptimize -h
 ```
 
