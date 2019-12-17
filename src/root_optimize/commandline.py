@@ -293,11 +293,11 @@ def do_generate(args):
     if os.path.isfile(args.output_filename):
         raise IOError("Output file already exists: {0}".format(args.output_filename))
 
-    if len(args.tree_names) > 1:
+    if len(args.tree_patterns) > 1:
         raise ValueError("Must only specify one tree name.")
 
     # this is a dict that holds the tree
-    tree = uproot.open(args.file)[args.tree_names[0]]
+    tree = uproot.open(args.file)[args.tree_patterns[0]]
 
     supercuts = []
 
