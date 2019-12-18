@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 # import all libraries
 import argparse
 import json
-import hashlib
 import copy
 import operator
 import glob
@@ -363,7 +362,11 @@ def do_hash(args):
                     json.dumps(
                         [
                             {
-                                k: (NoIndent(v) if k == "pivot" else v)
+                                k: (
+                                    NoIndent(tuple(map(float, v)))
+                                    if k == "pivot"
+                                    else v
+                                )
                                 for k, v in d.items()
                                 if k in ["selections", "pivot", "fixed"]
                             }

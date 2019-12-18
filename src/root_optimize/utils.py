@@ -480,7 +480,7 @@ def do_cut(
 
 
 def extract_summary_items_from_name(interpretations, fmtstr, filename):
-    return dict(zip(interpretation.split(":"), re.search(fmtstr, filename)))
+    return dict(zip(interpretations.split(":"), re.search(fmtstr, filename)))
 
 
 def get_summary(filename, interpretations, fmt_pattern, stop_masses=[]):
