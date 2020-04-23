@@ -25,7 +25,6 @@ import operator
 import glob
 import os
 from collections import defaultdict
-import tempfile
 import tqdm
 import uproot
 import re
