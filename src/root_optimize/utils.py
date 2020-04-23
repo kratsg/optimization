@@ -372,16 +372,12 @@ def do_cut(
     proposedBranches,
     output_directory,
     eventWeightBranch,
-    pids,
+    position,
+    hide_subtask,
 ):
 
-    position = -1
-    if pids is not None:
-        # handle pid registration
-        if os.getpid() not in pids:
-            pids[np.argmax(pids == 0)] = os.getpid()
-        # this gives us the position of this particular process in our list of processes
-        position = np.where(pids == os.getpid())[0][0]
+    if hide_subtask:
+        position = -1
 
     start = clock()
     try:
