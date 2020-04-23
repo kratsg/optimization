@@ -104,18 +104,6 @@ def do_cuts(args):
     num_cores = min(multiprocessing.cpu_count(), args.num_cores)
     logger.log(25, "Using {0} cores".format(num_cores))
 
-    pids = None
-    # if pids is None, do_cut() will disable the progress
-    if not args.hide_subtasks:
-        from numpy import memmap, uint64
-
-        pids = memmap(
-            os.path.join(tempfile.mkdtemp(), "pids"),
-            dtype=uint64,
-            shape=num_cores,
-            mode="w+",
-        )
-
     overall_progress = tqdm.tqdm(
         total=len(trees),
         desc="Num. trees",
@@ -153,9 +141,10 @@ def do_cuts(args):
                 proposedBranches,
                 args.output_directory,
                 args.eventWeightBranch,
-                pids,
+                index,
+                args.hide_subtasks,
             )
-            for tree_name, files in trees.items()
+            for index, (tree_name, files) in enumerate(trees.items())
         )
 
     overall_progress.close()
