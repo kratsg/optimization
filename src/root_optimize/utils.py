@@ -298,9 +298,18 @@ def get_cut(superCuts, index=0):
                 for cut in get_cut(superCuts, index + 1):
                     yield cut
         except KeyError:
-            item["fixed"] = True
-            for cut in get_cut(superCuts, index + 1):
-                yield cut
+            try: # look for "list" key 
+                for pivot in itertools.product(*item["list"]): # chiara: change here
+                    # set the pivot value
+                    item["pivot"] = pivot
+                    item["fixed"] = False
+                    # recursively call, yield the result which is the superCuts
+                    for cut in get_cut(superCuts, index + 1):
+                        yield cut
+            except KeyError: # if "st3" and "list" keys are not there, it's a fixed cut
+                item["fixed"] = True
+                for cut in get_cut(superCuts, index + 1):
+                    yield cut
 
 
 def get_n_cuts(supercuts):
@@ -311,6 +320,8 @@ def get_n_cuts(supercuts):
                 lambda x, y: x * y,
                 (np.ceil((st3[1] - st3[0]) / st3[2]) for st3 in supercut["st3"]),
             )
+        if "list" in supercut: # if it's a list of values, just look at len()
+            total *= reduce((lambda x, y: x * y), [len(l) for l in supercut["list"]])             
     return total
 
 
