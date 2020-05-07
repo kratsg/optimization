@@ -580,6 +580,7 @@ Key | Type | Description
 ----|------|------------
 selections | string | the various selections to apply for the cut
 st3 | list | a list of [start, stop, step] values for each set of pivots
+list | list | a list of [cut1, cut2, ..., cutN] values for each set of pivots
 
 **Note**: the direction in which cuts are generated can be controlled by running cuts in increasing values (`start < stop`, `step > 0`) or decreasing values (`start > stop`, `step < 0`).
 
