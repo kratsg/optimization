@@ -1,3 +1,5 @@
+Mostly deprecated -- use it for a brute-force approach,, but it's not being maintained anymore! Please see the work on [cabin](https://github.com/scipp-atlas/cabin) by Juan Robles and Mike Hance.
+
 # Optimization - A uproot Codebase
 
 This tool allows you to take a series of ROOT ntuples, signal & background, apply a lot of cuts automatically, and figure out the most optimal selections to maximize significance. It comes packed with a lot of features
