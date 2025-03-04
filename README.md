@@ -1,3 +1,5 @@
+<h1>Deprecated</h1>
+
 Mostly deprecated -- use it for a brute-force approach,, but it's not being maintained anymore! Please see the work on [cabin](https://github.com/scipp-atlas/cabin) by Juan Robles and Mike Hance.
 
 # Optimization - A uproot Codebase
